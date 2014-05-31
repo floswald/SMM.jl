@@ -1,18 +1,19 @@
 
-module Mopt
+module MomOpt
+
+
+# imports
+using DataFrames
+import Base.show
+
 
 # includes
 include("incmopt.jl")
 
-# imports
-
-
-
 # exports
+export Mopt, Testparam
 	
-	# types
 
-	# methods
 
 
 
