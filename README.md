@@ -22,6 +22,9 @@ you need an objective function that has an input/output structure as follows:
 	newval = 3.4
 	eval(parse("p.$(i) = newval"))
 	```
+	3. OK 1 and 2 doesnt work.
+	4. `p` is a `Dict`
+	
 * data moments. 
 
 * Output: 
