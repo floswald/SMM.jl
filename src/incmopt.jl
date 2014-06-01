@@ -66,6 +66,7 @@ function show(io::IO,m::Moptim)
 	print(io,"\nMoment to use:\n")
 	print(io,m.moments_to_use)
 	print(io,"\n\nMode: $(m.mode)\n")
+	print(io,"\nName of objective function: $(m.objfunc)\n")
 	if !m.prepared
 		print(io,"\n\ncall MoptPrepare(m) to setup cluster\n")
 	else 

@@ -9,6 +9,8 @@ For an R implementation which is the basis of this package, see [https://github.
 ## Useage
 
 ```julia
+using Mopt
+
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
 
@@ -62,6 +64,8 @@ runMopt(M)
 
 ### Objective Function
 
+Your objective function must be callable as `objfunc(p,moments,whichmom,...)`, where the first three arguments are compulsory and are explained below.
+
 you need an objective function that has an input/output structure as follows:
 
 #### Input: 
@@ -78,7 +82,7 @@ you need an objective function that has an input/output structure as follows:
 
 set up a `Moptim` object by calling the constructor. there is a list of **compulsory arguments**, which must be supplied in the following **order**: 
 
-1. `p`: the initial value of the full parameter vector. (Note: your objective function must be callable as `objfunc(p,moments,whichmom)`).
+1. `p`: the initial value of the full parameter vector.
 2. `params_to_sample`: a `DataFrame` with as many rows as parameters you want to sample. (all other parameters remain fixed). There **must** be three columns called `name` (name of param to sample), `lb` (lower bound) and `ub` (upper bound)
 3. `objfunc`: `ASCIIString` containing the name of your objective function
 4. `moments`: a `DataFrame` with 3 columns, `name`, `data` and `sd`. This is the complete set of moments that you have in the data / that is produced by your model
