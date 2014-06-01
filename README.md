@@ -47,6 +47,8 @@ Moment to use:
 ASCIIString["alpha"]
 
 Mode: serial
+
+Name of objective function: Testobj
 Number of chains: 3
 
 # call MoptPrepare to setup cluster
