@@ -6,6 +6,48 @@ This package implements several MCMC algorithms to optimize a non-differentiable
 
 For an R implementation which is the basis of this package, see [https://github.com/tlamadon/mopt](https://github.com/tlamadon/mopt)
 
+## Useage
+
+```julia
+# get a parameter vector
+p = ["a" => 3.1 , "b" => 4.9]
+
+# get some moments
+mom = Mopt.DataFrame(data=rand(3),sd=rand(3)*0.1,name=["alpha","beta","gamma"])
+
+# which parameters to sample
+whichpar = Mopt.DataFrame(name=["a","b"],lb=[-1,0],ub=[2,2])
+
+# initiate
+M = Mopt.Moptim(p,whichpar,"Testobj",mom; moments_to_use=["alpha"]);
+
+# show
+M
+Moptim Object:
+==============
+
+Parameters to sample:
+2x3 DataFrame
+|-------|------|----|----|
+| Row # | name | lb | ub |
+| 1     | "a"  | -1 | 2  |
+| 2     | "b"  | 0  | 2  |
+
+Moment Table:
+3x3 DataFrame
+|-------|----------|-----------|---------|
+| Row # | data     | sd        | name    |
+| 1     | 0.456844 | 0.0054598 | "alpha" |
+| 2     | 0.346488 | 0.02305   | "beta"  |
+| 3     | 0.28146  | 0.0990934 | "gamma" |
+
+Moment to use:
+ASCIIString["alpha"]
+
+Mode: serial
+Number of chains: 3
+```
+
 ## API
 
 * the custom type is called `Moptim`
