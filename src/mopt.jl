@@ -1,5 +1,5 @@
 
-module MomOpt
+module Mopt
 
 
 # imports
@@ -11,7 +11,7 @@ import Base.show
 include("incmopt.jl")
 
 # exports
-export Mopt, Testparam
+export Moptim, Testparam
 	
 
 
