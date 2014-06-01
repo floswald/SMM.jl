@@ -46,6 +46,13 @@ ASCIIString["alpha"]
 
 Mode: serial
 Number of chains: 3
+
+# call MoptPrepare to setup cluster
+# if required
+MoptPrepare(M)
+
+# run estimation
+runMopt(M)
 ```
 
 ## API
