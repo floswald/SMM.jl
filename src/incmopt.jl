@@ -98,7 +98,7 @@ end
 # call this function to set up
 # the cluster. 
 # maps choice of "mode" into an action
-function MoptPrepare(m::Moptim)
+function MoptPrepare!(m::Moptim)
 
 	if m.prepared
 		println("you're good to go")
@@ -116,10 +116,20 @@ function MoptPrepare(m::Moptim)
 
 end
 
-# function evaluateObjective(m::Moptim)
+function evaluateObjective(m::Moptim)
 
-# 	if m.mode=="serial"
-# 		vals = eval(parse("$(m.objfun)("))
+	if m.mode=="serial"
+		vals = eval(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))
+	else
+		if !m.prepared
+			error("you must call MoptPrepare before evaluating the objective")
+		end
+
+		# @parallel?
+		vals = eval(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))
+	end
+	return vals
+end
 
 
 

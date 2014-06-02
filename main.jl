@@ -32,7 +32,7 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 	mm = mm[findin(mm[:name],whichmom),:]
 
 	# compute distance
-	v = sum((mm[:data]-mm[:model])^2)
+	v = sum((mm[:data].-mm[:model]).^2)
 end
 
 
