@@ -80,27 +80,67 @@ Number of chains: 3
 END SHOW
 ===========================
 
-# evaluate Objective
+# evaluate objective on all chains
 Mopt.evaluateObjective(M)
-66.52527074806204
+3-element Array{Any,1}:
+ nothing
+ nothing
+ nothing
+
+# show Chain data
+map(x -> show(M.chains[x].data),keys(M.chains))
+1x3 DataFrame
+|-------|----|------|---------|
+| Row # | id | iter | value   |
+| 1     | 2  | 0    | 75.9237 |1x3 DataFrame
+|-------|----|------|---------|
+| Row # | id | iter | value   |
+| 1     | 3  | 0    | 75.9237 |1x3 DataFrame
+|-------|----|------|---------|
+| Row # | id | iter | value   |
+| 1     | 1  | 0    | 75.9237 |
+
+# this will happen under the hood:
+
+# update each chain with a new param value
+p1 = { i => ["a" => 3.1 + rand() , "b" => 4.9 + rand()] for i=1:M.N}
+map(x -> Mopt.updateChain!(M.chains[x],p1[x]), keys(M.chains))
+
+Mopt.evaluateObjective(M)
+# show Chain data
+map(x -> show(M.chains[x].data),keys(M.chains))
+2x3 DataFrame
+|-------|----|------|---------|
+| Row # | id | iter | value   |
+| 1     | 2  | 0    | 75.9237 |
+| 2     | 2  | 1    | 96.5537 |2x3 DataFrame
+|-------|----|------|---------|
+| Row # | id | iter | value   |
+| 1     | 3  | 0    | 75.9237 |
+| 2     | 3  | 1    | 85.0446 |2x3 DataFrame
+|-------|----|------|---------|
+| Row # | id | iter | value   |
+| 1     | 1  | 0    | 75.9237 |
+| 2     | 1  | 1    | 88.3354 |
 
 
-# call MoptPrepare to setup cluster
-# if required
-MoptPrepare(M)
 
-# run estimation
+# final step is to
 runMopt(M)
 ```
 
 ## API
 
-* the custom type is called `Moptim`
-* the module is called `Mopt`
+* there are two custom types: `Moptim` and `MCMChain`
+* A `Moptim` object operates on one or more `MCMChain`s.
+* An `MCMChain` is characterized by a vector of parameters, a `DataFrame` tracking it's state and `Dict` of all parameters up to now.
+* the `Moptim` object must get the evaluation values from each `MCMChain`, compute accept/reject for each, and choose a new parameter vector for each.
+* `Moptim` also takes care of all `I/O` and reporting functions.
+* the name of the module is `Mopt`
 
 ### Objective Function
 
-Your objective function must be callable as `objfunc(p,moments,whichmom,...)`, where the first three arguments are compulsory and are explained below.
+You supply an objective function to the constructor of `Moptim` must be callable as `objfunc(p,moments,whichmom,...)`, where the first three arguments are compulsory and are explained below.
 
 you need an objective function that has an input/output structure as follows:
 
@@ -120,7 +160,7 @@ set up a `Moptim` object by calling the constructor. there is a list of **compul
 
 1. `p`: the initial value of the full parameter vector.
 2. `params_to_sample`: a `DataFrame` with as many rows as parameters you want to sample. (all other parameters remain fixed). There **must** be three columns called `name` (name of param to sample), `lb` (lower bound) and `ub` (upper bound)
-3. `objfunc`: type `Function` representing your objective function. Internally we evaluate `Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use)`
+3. `objfunc`: type `Function` representing your objective function. Internally we evaluate `Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use)`. 
 4. `moments`: a `DataFrame` with 3 columns, `name`, `data` and `sd`. This is the complete set of moments that you have in the data / that is produced by your model
 
 Then there is a list of **optional arguments** which have to be supplied by *keyword*. If you don't supply them, we'll take a default value:

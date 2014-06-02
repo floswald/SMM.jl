@@ -52,5 +52,20 @@ M = Mopt.Moptim(p,whichpar,Testobj,mom; moments_to_use=["alpha"]);
 # show
 M
 
-# evaluate objective
+# evaluate objective on all chains
 Mopt.evaluateObjective(M)
+
+# show Chain data
+map(x -> show(M.chains[x].data),keys(M.chains))
+
+# this will happen under the hood:
+
+# update each chain with a new param value
+p1 = { i => ["a" => 3.1 + rand() , "b" => 4.9 + rand()] for i=1:M.N}
+map(x -> Mopt.updateChain!(M.chains[x],p1[x]), keys(M.chains))
+
+Mopt.evaluateObjective(M)
+# show Chain data
+map(x -> show(M.chains[x].data),keys(M.chains))
+
+

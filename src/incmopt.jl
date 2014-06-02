@@ -1,9 +1,22 @@
 
 
+type MCMChain
+
+	id   :: Int
+	iter :: Int
+	p    :: Dict 	# current param value
+	data :: DataFrame 	# DataFrame(id,iter,value)
+	phist :: Dict 	# all previous params, indexed by iter
+
+	function MCMChain(p,id)
+		new(id,0,p,DataFrame(),[0 => p])
+	end
+end
+
 
 type Moptim
 
-	# chain setup
+	# Moptim setup
 	initial_value    :: Dict 	# initial parameter value as a dict
 	params_to_sample :: DataFrame 	
 	objfunc          :: Function # objective function
@@ -12,14 +25,11 @@ type Moptim
 	shock_var        :: Float64 # variance of shock
 	np_shock         :: Float64
 	save_freq        :: Int
-	# params_all       :: Array{ASCIIString,1}	# names of all parameters
 	N                :: Int 	# number of chains
 	n_untempered     :: Int 	# number of chains untemprered
-	iter             :: Int 	# iteration
+	maxiter          :: Int 	# maximum number of iterations
 	run              :: Int 	# number of run
 	i                :: Int 	# ?
-	# use_last_run     :: Bool 	
-	# save_error       :: Bool
 
 	# cluster setup
 	mode             :: ASCIIString	# {'serial','mpi'}
@@ -27,11 +37,12 @@ type Moptim
 	# paths for I/O
 	paths :: Dict
 
-	prepared :: Bool
+	prepared      :: Bool
 	current_param :: Dict 	# current parameter value
+	chains        :: Dict 	# collection of MCMChain's 
 
 	# constructor
-	function Moptim(initial_value,params_to_sample,objfunc,moments; moments_to_use=moments[:name],shock_var=1.0,np_shock=1.0,save_freq=25,N=3,n_untempered=1,mode="serial",paths=["chain"=> ".","lastparam"=>".","errorparam"=>".","wd"=>".","source_on_nodes"=>"workers.jl","logdir"=>"./log"])
+	function Moptim(initial_value,params_to_sample,objfunc,moments; moments_to_use=moments[:name],shock_var=1.0,np_shock=1.0,save_freq=25,N=3,n_untempered=1,mode="serial",paths=["chain"=> ".","lastparam"=>".","errorparam"=>".","wd"=>".","include_on_workers"=>"workers.jl","logdir"=>"./log"])
 
 		iter = 0
 		run = 0
@@ -48,6 +59,9 @@ type Moptim
 		# assign initial param to current param
 		current_param = initial_value
 
+		# setup chains
+		chains = {i => MCMChain(current_param,i) for i = 1:N}
+
 		if mode == "serial"
 			prepared = true
 		else
@@ -55,7 +69,7 @@ type Moptim
 		end
 
 
-		return new(initial_value,params_to_sample,objfunc,moments,moments_to_use,shock_var,np_shock,save_freq,N,n_untempered,iter,run,i,mode,paths,prepared,current_param)
+		return new(initial_value,params_to_sample,objfunc,moments,moments_to_use,shock_var,np_shock,save_freq,N,n_untempered,iter,run,i,mode,paths,prepared,current_param,chains)
 
 	end	# constructor
 end	#type
@@ -75,7 +89,7 @@ function show(io::IO,m::Moptim)
 	if !m.prepared
 		print(io,"\ncall MoptPrepare(m) to setup cluster\n")
 	else 
-		print(io,"Number of chains: $(m.N)\n")
+		print(io,"\nNumber of chains: $(m.N)\n")
 	end
 	print(io,"END SHOW\n")
 	print(io,"===========================\n")
@@ -106,6 +120,7 @@ function MoptPrepare!(m::Moptim)
 	else
 
 		# setup cluster
+		@everywhere include(m.include_on_workers)
 
 		# set m.N = # of workers
 
@@ -116,19 +131,71 @@ function MoptPrepare!(m::Moptim)
 
 end
 
+
+# evaluate the objective function
+# on all chains at their respective
+# parameter values
 function evaluateObjective(m::Moptim)
 
 	if m.mode=="serial"
-		vals = eval(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))
+		# vals = eval(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))
+		vals = map( x -> evalChain!(x,m) , values(m.chains))
 	else
 		if !m.prepared
 			error("you must call MoptPrepare before evaluating the objective")
 		end
 
-		# @parallel?
-		vals = eval(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))
+		# pmap?
+		vals = pmap( x -> evalChain!(x,m) , values(m.chains))
+		# m.chains is a dict of different m.current_param. 
+		# each different m.current_param represents a chain
 	end
 	return vals
+end
+
+
+
+
+# evalute chain
+# calls the objective function with the 
+# parameter vector currently stored in that chain
+function evalChain!(c::MCMChain,m::Moptim)
+
+	# call objective function of m
+	x = eval(Expr(:call,m.objfunc,c.p,m.moments,m.moments_to_use))
+
+	# store results in c
+	c.data = rbind(c.data,DataFrame(id=c.id,iter=c.iter,value=x))
+	c.phist[c.iter] = c.p
+
+	return nothing
+end
+
+# update param on chain
+function updateChain!(c::MCMChain,p::Dict)
+	c.p = p
+	c.iter += 1
+	return nothing
+end
+
+# update param
+function updateParam(m::Moptim)
+
+	# for all chains in m.chains
+	# compute a new guess
+
+	# this is the actual MCMC algorithm
+	# for each chain takes current and last value
+	# and accepts/rejects it
+
+end
+
+
+# MCMChain methods
+function summaryChain(c::MCMChain)
+
+	# compute summary stats of chain
+
 end
 
 
