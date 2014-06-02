@@ -25,7 +25,7 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
 	# perform computations of the objective function
 	# and add the resulting model moments
-	mm = cbind(mm,[x["a"] + x["b"] + rand() for i=1:nrow(mm)])
+	mm = cbind(mm,[x["a"] + x["b"] + i for i=1:nrow(mm)])
 	names!(mm,[nm, :model])
 
 	# subset to required moments only
@@ -51,3 +51,6 @@ M = Mopt.Moptim(p,whichpar,Testobj,mom; moments_to_use=["alpha"]);
 
 # show
 M
+
+# evaluate objective
+Mopt.evaluateObjective(M)

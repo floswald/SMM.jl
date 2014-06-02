@@ -19,15 +19,16 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
 	# perform computations of the objective function
 	# and add the resulting model moments
-	mm = cbind(mm,[x["a"] + x["b"] + rand() for i=1:nrow(mm)])
+	mm = cbind(mm,[x["a"] + x["b"] + i for i=1:nrow(mm)])
 	names!(mm,[nm, :model])
 
 	# subset to required moments only
 	mm = mm[findin(mm[:name],whichmom),:]
 
 	# compute distance
-	v = sum((mm[:data]-mm[:model])^2)
+	v = sum((mm[:data].-mm[:model]).^2)
 end
+
 
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
@@ -78,6 +79,11 @@ objective function call: Testobj(["a"=>3.1,"b"=>4.9],3x3 DataFrame
 Number of chains: 3
 END SHOW
 ===========================
+
+# evaluate Objective
+Mopt.evaluateObjective(M)
+66.52527074806204
+
 
 # call MoptPrepare to setup cluster
 # if required
