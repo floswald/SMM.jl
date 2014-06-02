@@ -6,7 +6,7 @@ type Moptim
 	# chain setup
 	initial_value    :: Dict 	# initial parameter value as a dict
 	params_to_sample :: DataFrame 	
-	objfunc          :: ASCIIString 	# name of objective function
+	objfunc          :: Function # objective function
 	moments          :: DataFrame	# columns: data, sd
 	moments_to_use   :: Array{ASCIIString,1} 	#names of moments to use
 	shock_var        :: Float64 # variance of shock
@@ -28,6 +28,7 @@ type Moptim
 	paths :: Dict
 
 	prepared :: Bool
+	current_param :: Dict 	# current parameter value
 
 	# constructor
 	function Moptim(initial_value,params_to_sample,objfunc,moments; moments_to_use=moments[:name],shock_var=1.0,np_shock=1.0,save_freq=25,N=3,n_untempered=1,mode="serial",paths=["chain"=> ".","lastparam"=>".","errorparam"=>".","wd"=>".","source_on_nodes"=>"workers.jl","logdir"=>"./log"])
@@ -44,6 +45,9 @@ type Moptim
 		# names in params_to_sample_ must be members of key(initial_value_)
 		@assert length(setdiff(collect(keys(initial_value)),params_to_sample[:name])) == 0
 
+		# assign initial param to current param
+		current_param = initial_value
+
 		if mode == "serial"
 			prepared = true
 		else
@@ -51,7 +55,7 @@ type Moptim
 		end
 
 
-		return new(initial_value,params_to_sample,objfunc,moments,moments_to_use,shock_var,np_shock,save_freq,N,n_untempered,iter,run,i,mode,paths,prepared)
+		return new(initial_value,params_to_sample,objfunc,moments,moments_to_use,shock_var,np_shock,save_freq,N,n_untempered,iter,run,i,mode,paths,prepared,current_param)
 
 	end	# constructor
 end	#type
@@ -65,13 +69,16 @@ function show(io::IO,m::Moptim)
 	print(io,m.moments)
 	print(io,"\nMoment to use:\n")
 	print(io,m.moments_to_use)
-	print(io,"\n\nMode: $(m.mode)\n")
-	print(io,"\nName of objective function: $(m.objfunc)\n")
+	print(io,"\nMode: $(m.mode)\n")
+	print(io,"\nobjective function: $(m.objfunc)\n")
+	print(io,"\nobjective function call: $(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))\n")
 	if !m.prepared
-		print(io,"\n\ncall MoptPrepare(m) to setup cluster\n")
+		print(io,"\ncall MoptPrepare(m) to setup cluster\n")
 	else 
 		print(io,"Number of chains: $(m.N)\n")
 	end
+	print(io,"END SHOW\n")
+	print(io,"===========================\n")
 end
 
 
@@ -96,35 +103,41 @@ function MoptPrepare(m::Moptim)
 	if m.prepared
 		println("you're good to go")
 		return nothing
+	else
+
+		# setup cluster
+
+		# set m.N = # of workers
+
+		# send data to workers
+
+		# set m.prepared = true
 	end
 
-	# setup cluster
-
-	# set m.N = # of workers
-
-	# send data to workers
-
-	# set m.prepared = true
-
 end
+
+# function evaluateObjective(m::Moptim)
+
+# 	if m.mode=="serial"
+# 		vals = eval(parse("$(m.objfun)("))
 
 
 
 
 
 # define Test objective function
-function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+# function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
-	mm = copy(mom)
-	nm = names(mm)
+# 	mm = copy(mom)
+# 	nm = names(mm)
 
-	# add the model moments
-	mm = cbind(mm,[x["a"] + x["b"] + rand() for i=1:nrow(mm)])
-	names!(mm,[nm, :model])
+# 	# add the model moments
+# 	mm = cbind(mm,[x["a"] + x["b"] + rand() for i=1:nrow(mm)])
+# 	names!(mm,[nm, :model])
 
-	# subset to required moments only
-	mm = mm[findin(mm[:name],whichmom),:]
+# 	# subset to required moments only
+# 	mm = mm[findin(mm[:name],whichmom),:]
 
-	# compute distance
-	v = sum((mm[:data]-mm[:model])^2)
-end
+# 	# compute distance
+# 	v = sum((mm[:data]-mm[:model])^2)
+# end

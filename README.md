@@ -11,6 +11,24 @@ For an R implementation which is the basis of this package, see [https://github.
 ```julia
 using Mopt
 
+# define a Test objective function
+function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+
+	mm = copy(mom)
+	nm = names(mm)
+
+	# perform computations of the objective function
+	# and add the resulting model moments
+	mm = cbind(mm,[x["a"] + x["b"] + rand() for i=1:nrow(mm)])
+	names!(mm,[nm, :model])
+
+	# subset to required moments only
+	mm = mm[findin(mm[:name],whichmom),:]
+
+	# compute distance
+	v = sum((mm[:data]-mm[:model])^2)
+end
+
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
 
@@ -21,7 +39,7 @@ mom = Mopt.DataFrame(data=rand(3),sd=rand(3)*0.1,name=["alpha","beta","gamma"])
 whichpar = Mopt.DataFrame(name=["a","b"],lb=[-1,0],ub=[2,2])
 
 # initiate
-M = Mopt.Moptim(p,whichpar,"Testobj",mom; moments_to_use=["alpha"]);
+M = Mopt.Moptim(p,whichpar,Testobj,mom; moments_to_use=["alpha"]);
 
 # show
 M
@@ -48,8 +66,18 @@ ASCIIString["alpha"]
 
 Mode: serial
 
-Name of objective function: Testobj
+objective function: Testobj
+
+objective function call: Testobj(["a"=>3.1,"b"=>4.9],3x3 DataFrame
+|-------|-----------|-----------|---------|
+| Row # | data      | sd        | name    |
+| 1     | 0.083618  | 0.0836773 | "alpha" |
+| 2     | 0.0267149 | 0.064383  | "beta"  |
+| 3     | 0.409283  | 0.070542  | "gamma" |,ASCIIString["alpha"])
+
 Number of chains: 3
+END SHOW
+===========================
 
 # call MoptPrepare to setup cluster
 # if required
@@ -86,7 +114,7 @@ set up a `Moptim` object by calling the constructor. there is a list of **compul
 
 1. `p`: the initial value of the full parameter vector.
 2. `params_to_sample`: a `DataFrame` with as many rows as parameters you want to sample. (all other parameters remain fixed). There **must** be three columns called `name` (name of param to sample), `lb` (lower bound) and `ub` (upper bound)
-3. `objfunc`: `ASCIIString` containing the name of your objective function
+3. `objfunc`: type `Function` representing your objective function. Internally we evaluate `Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use)`
 4. `moments`: a `DataFrame` with 3 columns, `name`, `data` and `sd`. This is the complete set of moments that you have in the data / that is produced by your model
 
 Then there is a list of **optional arguments** which have to be supplied by *keyword*. If you don't supply them, we'll take a default value:
