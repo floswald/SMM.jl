@@ -56,16 +56,17 @@ M
 Mopt.evaluateObjective(M)
 
 # show Chain data
-map(x -> show(M.chains[x].data),keys(M.chains))
+Mopt.showChainData(M)
 
 # this will happen under the hood:
 
 # update each chain with a new param value
 p1 = { i => ["a" => 3.1 + rand() , "b" => 4.9 + rand()] for i=1:M.N}
-map(x -> Mopt.updateChain!(M.chains[x],p1[x]), keys(M.chains))
+Mopt.updateAllChains!(M,p1)
+
 
 Mopt.evaluateObjective(M)
 # show Chain data
-map(x -> show(M.chains[x].data),keys(M.chains))
+Mopt.showChainData(M)
 
 

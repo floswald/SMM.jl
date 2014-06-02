@@ -138,19 +138,16 @@ end
 function evaluateObjective(m::Moptim)
 
 	if m.mode=="serial"
-		# vals = eval(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))
-		vals = map( x -> evalChain!(x,m) , values(m.chains))
+		for v in values(m.chains) 
+			evalChain!(v,m) 
+		end
 	else
 		if !m.prepared
 			error("you must call MoptPrepare before evaluating the objective")
 		end
-
-		# pmap?
-		vals = pmap( x -> evalChain!(x,m) , values(m.chains))
-		# m.chains is a dict of different m.current_param. 
-		# each different m.current_param represents a chain
+		pmap( x -> evalChain!(x,m) , values(m.chains))
 	end
-	return vals
+	return nothing
 end
 
 
@@ -171,10 +168,18 @@ function evalChain!(c::MCMChain,m::Moptim)
 	return nothing
 end
 
-# update param on chain
-function updateChain!(c::MCMChain,p::Dict)
-	c.p = p
+# update param on a single chain
+function updateChain!(c::MCMChain,newp::Dict)
+	c.p = newp
 	c.iter += 1
+	return nothing
+end
+
+# update all chains
+function updateAllChains!(m::Moptim,newps::Dict)
+	for x in keys(m.chains) 
+		updateChain!(m.chains[x],newps[x]) 
+	end
 	return nothing
 end
 
@@ -199,6 +204,12 @@ function summaryChain(c::MCMChain)
 end
 
 
+function showChainData(m::Moptim)
+	for x in keys(m.chains) 
+		println(m.chains[x].data) 
+	end
+	return nothing
+end
 
 
 

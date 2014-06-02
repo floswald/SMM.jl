@@ -82,46 +82,53 @@ END SHOW
 
 # evaluate objective on all chains
 Mopt.evaluateObjective(M)
-3-element Array{Any,1}:
- nothing
- nothing
- nothing
 
 # show Chain data
-map(x -> show(M.chains[x].data),keys(M.chains))
+Mopt.showChainData(M)
 1x3 DataFrame
 |-------|----|------|---------|
 | Row # | id | iter | value   |
-| 1     | 2  | 0    | 75.9237 |1x3 DataFrame
+| 1     | 2  | 0    | 77.6813 |
+
+1x3 DataFrame
 |-------|----|------|---------|
 | Row # | id | iter | value   |
-| 1     | 3  | 0    | 75.9237 |1x3 DataFrame
+| 1     | 3  | 0    | 77.6813 |
+
+1x3 DataFrame
 |-------|----|------|---------|
 | Row # | id | iter | value   |
-| 1     | 1  | 0    | 75.9237 |
+| 1     | 1  | 0    | 77.6813 |
 
 # this will happen under the hood:
 
 # update each chain with a new param value
 p1 = { i => ["a" => 3.1 + rand() , "b" => 4.9 + rand()] for i=1:M.N}
-map(x -> Mopt.updateChain!(M.chains[x],p1[x]), keys(M.chains))
+Mopt.updateAllChains!(M,p1)
 
+# evaluate again
 Mopt.evaluateObjective(M)
+
 # show Chain data
-map(x -> show(M.chains[x].data),keys(M.chains))
+Mopt.showChainData(M)
 2x3 DataFrame
 |-------|----|------|---------|
 | Row # | id | iter | value   |
-| 1     | 2  | 0    | 75.9237 |
-| 2     | 2  | 1    | 96.5537 |2x3 DataFrame
+| 1     | 2  | 0    | 77.6813 |
+| 2     | 2  | 1    | 107.266 |
+
+2x3 DataFrame
 |-------|----|------|---------|
 | Row # | id | iter | value   |
-| 1     | 3  | 0    | 75.9237 |
-| 2     | 3  | 1    | 85.0446 |2x3 DataFrame
+| 1     | 3  | 0    | 77.6813 |
+| 2     | 3  | 1    | 97.5952 |
+
+2x3 DataFrame
 |-------|----|------|---------|
 | Row # | id | iter | value   |
-| 1     | 1  | 0    | 75.9237 |
-| 2     | 1  | 1    | 88.3354 |
+| 1     | 1  | 0    | 77.6813 |
+| 2     | 1  | 1    | 87.455  |
+
 
 
 
