@@ -145,10 +145,19 @@ end
 function evalChain!(c::MCMChain,m::Moptim)
 
 	# call objective function of m
+	# x could be a tuple of values: (value, time, status)
 	x = eval(Expr(:call,m.objfunc,c.p,m.moments,m.moments_to_use))
 
+	# TODO check length of x
+	# and hope the user returns the correct order?
+
 	# store results in c
-	c.data = rbind(c.data,DataFrame(id=c.id,iter=c.iter,value=x))
+	# 
+	# make a vector out of dict p
+	tmp = DataFrame(id=c.id,iter=c.iter,value=x[1],time=x[2],status=x[3])
+	# add param
+	tmp = hcat(tmp,)
+	c.data = rbind(c.data,)
 	c.phist[c.iter] = c.p
 
 	return nothing
@@ -198,20 +207,3 @@ function showChainData(m::Moptim)
 end
 
 
-
-# define Test objective function
-# function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
-
-# 	mm = copy(mom)
-# 	nm = names(mm)
-
-# 	# add the model moments
-# 	mm = cbind(mm,[x["a"] + x["b"] + rand() for i=1:nrow(mm)])
-# 	names!(mm,[nm, :model])
-
-# 	# subset to required moments only
-# 	mm = mm[findin(mm[:name],whichmom),:]
-
-# 	# compute distance
-# 	v = sum((mm[:data]-mm[:model])^2)
-# end
