@@ -1,20 +1,5 @@
 
 
-type MCMChain
-
-	id    :: Int
-	iter  :: Int
-	p     :: Dict 	# current param value
-	data  :: DataFrame 	# DataFrame(id,iter,value,accept,status,time,param)
-
-	function MCMChain(p,id)
-		df = DataFrame(1,4+length(p))
-		names!(df,[:id,:iter,:value,:status, [symbol(collect(keys(p))[i]) for i=1:length(p)]])
-		new(id,0,p,df)
-	end
-end
-
-
 type Moptim
 
 	# Moptim setup
