@@ -36,7 +36,6 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 end
 
 
-
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
 
