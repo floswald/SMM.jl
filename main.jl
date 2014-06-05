@@ -20,6 +20,7 @@ include("test/test_mopt.jl")
 # define a Test objective function
 function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
+	t0 = time()
 	mm = copy(mom)
 	nm = names(mm)
 
@@ -33,6 +34,15 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
 	# compute distance
 	v = sum((mm[:data].-mm[:model]).^2)
+
+	# status
+	status = 1
+
+	# time out
+	t0 = time() - t0
+
+	# return a tuple
+	(v,t0,status)
 end
 
 
