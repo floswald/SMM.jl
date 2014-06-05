@@ -1,19 +1,5 @@
 
 
-type MCMChain
-
-	id   :: Int
-	iter :: Int
-	p    :: Dict 	# current param value
-	data :: DataFrame 	# DataFrame(id,iter,value)
-	phist :: Dict 	# all previous params, indexed by iter
-
-	function MCMChain(p,id)
-		new(id,0,p,DataFrame(),[0 => p])
-	end
-end
-
-
 type Moptim
 
 	# Moptim setup
