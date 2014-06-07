@@ -41,8 +41,9 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 	# time out
 	t0 = time() - t0
 
-	# return a tuple
-	(v,t0,status)
+	# return a dict
+	ret = ["value" => v, "param" => x, "time" => t0, "status" => status, "moments" => mm]
+	return ret
 end
 
 
