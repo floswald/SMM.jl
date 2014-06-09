@@ -16,7 +16,7 @@
 # defining an abstract chain type in case 
 # some algorithm need additional information
 # on top of (eval, moment, parameter)
-abstract type AbstractChain
+abstract AbstractChain
 
 
 # the default chain type
@@ -32,8 +32,8 @@ type Chain
   function Chain(MProb,L)
     evals      = @data([0.0 for i = 1:L])
     accept     = @data([false for i = 1:L])
-    parameters = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))
-    moments    = Dict( map( x -> ( x, @data([0.0 for i = 1:L])), ms_names(MProb)))
+    parameters = { x => zeros(L) for x in ps_names(MProb) }
+    moments = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
     return new(1,evals,accept,parameters,moments)
   end
 end
@@ -48,6 +48,7 @@ function appendEval!(chain::Chain, vals::Dict)
   for (k,v) in vals["params"]
     chain.params[k][chain.i] = v
   end
+  return nothing
 end
 
 

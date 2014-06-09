@@ -37,7 +37,7 @@ end #type
 
 # returns the list of paramaters to sample
 function ps_names(mprob::MProb)
-  return(keys(mprob.params))
+  return(keys(mprob.initial_value))
 end
 
 function ms_names(mprob::MProb)

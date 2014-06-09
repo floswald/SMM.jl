@@ -8,12 +8,12 @@ import Base.show
 
 
 # includes
-# include("chains.jl")
 include("mprob.jl")
+include("chains.jl")
 # include("incmopt.jl")
 
 # exports
-export MProb
+export MProb, Chain
 	
 
 

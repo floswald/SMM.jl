@@ -29,7 +29,7 @@
 
 
 # define an abstract type and set/get for it
-abstract type MAlgo
+abstract MAlgo
 
 # getter and setters for Algo
 function getindex(algo::MAlgo, key)
