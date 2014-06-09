@@ -21,6 +21,13 @@ abstract type MAlgo
 #   prepared      :: Bool
 #   current_param :: Dict   # current parameter value
 #   chains        :: MCMChain   # object of type MCMChain
+    # paths=[
+    #   "chain"=> ".",
+    #   "lastparam"=>".",
+    #   "errorparam"=>".",
+    #   "wd"=>".",
+    #   "include_on_workers"=>"workers.jl",
+    #   "logdir"=>"./log"])
 # end
 
 # getter and setters for Algo

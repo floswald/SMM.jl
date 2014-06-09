@@ -8,20 +8,12 @@ import Base.show
 
 
 # includes
-include("chains.jl")
-include("incmopt.jl")
-
-# MCMChain methods
-function summaryChain(c::MCMChain)
-
-	# compute summary stats of chain
-
-end
-
-
+# include("chains.jl")
+include("mprob.jl")
+# include("incmopt.jl")
 
 # exports
-export Moptim, Testparam
+export MProb
 	
 
 

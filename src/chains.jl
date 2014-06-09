@@ -24,12 +24,11 @@ abstract type AbstractChain
 # for each parameters
 type Chain
   i::Int             # current index
-  evals::Array       # array of evaluations
+  evals::DataArray   # DataArray of evaluations (can hold NA)
   parameters::Dict   # dictionary of array, 1 for each parameter
   moments::Dict      # dictionary of array, 1 for each moment
 
-  function Chain(MProb)
-    L = 3000;
+  function Chain(MProb,L)
     evals = zeros(L)
     parameters = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))
     moments    = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))

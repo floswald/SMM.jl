@@ -2,12 +2,14 @@
 
 # main dev routine for Mopt.jl
 
-cd("/Users/florianoswald/git/MOpt.jl/")
+home = ENV["HOME"]
+cd("$home/git/MOpt.jl")
 
-include("src/mopt.jl")
-
-# run tests
+# to develop with tests: run this
 include("test/test_mopt.jl")
+
+# to develop in main: run this
+include("src/mopt.jl")
 
 
 
@@ -49,34 +51,22 @@ end
 
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
+# define params to use with bounds
+pb= [ "a" => [0,1] , "b" => [0,1] ]
 
 # get some moments
-mom = Mopt.DataFrame(data=rand(3),sd=rand(3)*0.1,name=["alpha","beta","gamma"])
+moms = [
+	"alpha" => [ 0.8 , 0.02 ],
+	"beta"  => [ 0.8 , 0.02 ],
+	"gamma" => [ 0.8 , 0.02 ]
+]
 
-# which pars to sample
-whichpar = Mopt.DataFrame(name=["a","b"],lb=[-1,0],ub=[2,2])
+submoms = ["alpha", "beta"]
 
-# initiate
-M = Mopt.Moptim(p,whichpar,Testobj,mom; moments_to_use=["alpha"]);
+# Define an Moment Optimization Problem
+mprob = Mopt.MProb(p,pb,Testobj,moms;moments_subset=submoms)
 
 # show
-M
-
-# evaluate objective on all chains
-Mopt.evaluateObjective(M)
-
-# show Chain data
-Mopt.showChainData(M)
-
-# this will happen under the hood:
-
-# update each chain with a new param value
-p1 = { i => ["a" => 3.1 + rand() , "b" => 4.9 + rand()] for i=1:M.N}
-Mopt.updateAllChains!(M,p1)
-
-
-Mopt.evaluateObjective(M)
-# show Chain data
-Mopt.showChainData(M)
+mprob
 
 

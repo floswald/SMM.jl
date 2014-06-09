@@ -1,73 +1,110 @@
-home = ENV["HOME"]
-cd("$home/git/MOpt.jl")
-using Base.Test
-using Mopt
 
-include("src/mopt.jl")
+module TestMopt
+
+using FactCheck
+
+# eventually:
+# put push!(LOAD_PATH, "/Path/To/Mopt/module/") into your  ~\.juliarc.jl
+# using Mopt
+
+# for now:
+include("../src/mopt.jl")
+
+
+# create test data:
+# 1) a test objective function
+# 2) parameter Dict
+# 3) parameters to estimate Dict
+# 4) moments dict
+# 5) moments subset Array{String}
+
 
 # test constructor# define a Test objective function
-function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
 
-	mm = copy(mom)
-	nm = names(mm)
+	t0 = time()
 
-	# perform computations of the objective function
-	# and add the resulting model moments
-	mm = cbind(mm,[x["a"] + x["b"] + i for i=1:nrow(mm)])
-	names!(mm,[nm, :model])
+	# perform computations of objective function
+	# create DataFrame to substract model from data:
+	mm = DataFrame(name=collect(keys(mom)),data=collect(values(mom)),model=[x["a"] + x["b"] + i for i=1:nrow(mm)])
 
 	# subset to required moments only
 	mm = mm[findin(mm[:name],whichmom),:]
 
 	# compute distance
 	v = sum((mm[:data].-mm[:model]).^2)
+
+	# status
+	status = 1
+
+	# time out
+	t0 = time() - t0
+
+	# return a dict
+	ret = ["value" => v, "param" => x, "time" => t0, "status" => status, "moments" => mm]
+	return ret
+
 end
 
-# get a parameter vector
-p = [ "a" => 3.1 , 
-			"b" => 4.9]
+# Choose Algorithm and configure it
 
-# define parameter bounds
-pb= [ "a" => [0,1] , 
-			"b" => [0,1] ]
+# malgo = MAlgoRandom(mprob,3)
+# malgo["maxiter"]   = 100
+# malgo["save_freq"] = 5
+# malgo["mode"]      = "serial"
 
-# get some moments
+
+# TESTING
+# =======
+
+# test default constructor type
+p    = ["a" => 3.1 , "b" => 4.9]
+pb   = [ "a" => [0,1] , "b" => [0,1] ]
 moms = [
 	"alpha" => [ 0.8 , 0.02 ],
 	"beta"  => [ 0.8 , 0.02 ],
 	"gamma" => [ 0.8 , 0.02 ]
 ]
 
-# Define an Moment Optimization Problem
-mprob = MProb(p,pb,moms,TestObj)
+facts("Testing the MProb constructor") do
 
-# Choose Algorithm and configure it
+	context("default constructor") do
 
-malgo = MAlgoRandom(mprob,3)
-malgo["maxiter"]   = 100
-malgo["save_freq"] = 5
-malgo["mode"]      = "serial"
+		mprob = Mopt.MProb(p,pb,Testobj,moms)
+		@fact isa(mprob, Mopt.MProb) => true
+
+	end
+
+	context("constructor throws errors") do
+
+		# get an inexisting moment to subset
+		@fact_throws Mopt.MProb(p,pb,Testobj,moms; moments_subset=["alpha","epsilon"]);
+
+		# get some wrong moments
+		moms = [
+			"alpha" => [ 0.8 , 0.02 ],
+			"beta"  => [ 0.8 , 0.02 ],
+			"gamma" => [ 0.8  ]
+		]
+		@fact_throws Mopt.MProb(p,pb,Testobj,moms);
+
+		# i'm giving a parameter "c" that is not in initial_value
+		pb= [ "a" => [0,1] , "c" => [0,1] ]
+		@fact_throws Mopt.MProb(p,pb,Testobj,moms);
+
+		# get some wrong bounds
+		pb= [ "a" => [1,0] , "b" => [0,1] ]
+		@fact_throws Mopt.MProb(p,pb,Testobj,moms);
+	end
+
+end
 
 
 
 
 
 
-
-
-
-# TESTING
-# =======
-
-@test isa(mprob, MProb) == true
-
-# test whether constructor throws errors
-whichpar = Mopt.DataFrame(name=["a","c"],lb=[-1,0],ub=[2,2])
-@test_throws ErrorException Moptim(p,whichpar,Testobj,mom; moments_to_use=["alpha"]);
-
-whichpar = Mopt.DataFrame(name=["a","b"],lb=[-1,0],ub=[2,2])
-mom = Mopt.DataFrame(data=rand(3),sd=rand(3)*0.1,NOTname=["alpha","beta","gamma"])
-@test_throws ErrorException Moptim(p,whichpar,Testobj,mom; moments_to_use=["alpha"]);
+end # module TestMopt
 
 # test dummy functions
 

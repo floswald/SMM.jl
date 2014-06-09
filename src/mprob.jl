@@ -6,57 +6,31 @@ type MProb
 
   # Moptim setup
   initial_value    :: Dict  # initial parameter value as a dict
-  params           :: Dict  # a dictionary of upper and lower bound   
-  moments          :: Dict  # a dictionary of moments to track
-  param_init       :: Dict
+  params_to_sample :: Dict  # a dictionary of upper and lower bound for params we estimate (others are fixed)
   objfunc          :: Function # objective function
+  moments          :: Dict  # a dictionary of moments to track
+  moments_subset   :: Array{ASCIIString}  # an array of moment names to subset objective funciton
 
   # constructor
-  function Moptim(
+  function MProb(
     initial_value,
     params_to_sample,
     objfunc,moments; 
-    moments_to_use=moments[:name],
-    shock_var=1.0,
-    np_shock=1.0,
-    save_freq=25,
-    N=3,
-    n_untempered=1,
-    mode="serial",
-    paths=[
-      "chain"=> ".",
-      "lastparam"=>".",
-      "errorparam"=>".",
-      "wd"=>".",
-      "include_on_workers"=>"workers.jl",
-      "logdir"=>"./log"])
+    moments_subset=collect(keys(moments)))
 
-    iter = 0
-    run = 0
-    i   = 0
+    # assert that moments_subset is a subset of moment keys
+    @assert issubset(moments_subset, keys(moments))
 
-    # test format of moments_
-    @assert haskey(moments.colindex,:name)
-    @assert haskey(moments.colindex,:data)
-    @assert haskey(moments.colindex,:sd)
+    # assert that moments has two entries for each moment: value and sd
+    @assert all(map(x -> length(x),values(moments)) .== 2)
 
-    # names in params_to_sample_ must be members of key(initial_value_)
-    @assert length(setdiff(collect(keys(initial_value)),params_to_sample[:name])) == 0
+    # assert that params_to_sample are subset of initial_value
+    @assert issubset(keys(initial_value),keys(params_to_sample))
 
-    # assign initial param to current param for each chain
-    current_param = {i => initial_value for i=1:N}
+    # assert that params_to_sample has valid bounds: a vector with 2 increasing entries
+    @assert all(map(x -> x[2]-x[1],values(params_to_sample)) .> 0)
 
-    # setup chains
-    chains = MCMChain(initial_value,N,moments)
-
-    if mode == "serial"
-      prepared = true
-    else
-      prepared = false
-    end
-
-
-    return new(initial_value,params_to_sample,objfunc,moments,moments_to_use,shock_var,np_shock,save_freq,N,n_untempered,iter,run,i,mode,paths,prepared,current_param,chains)
+    return new(initial_value,params_to_sample,objfunc,moments,moments_subset)
 
   end # constructor
 end #type
@@ -73,23 +47,27 @@ end
 
 
 
-function show(io::IO,m::Moptim)
-  print(io,"Moptim Object:\n")
+function show(io::IO,m::MProb)
+
+  mdf = DataFrame(moment=collect(keys(m.moments)),value=map(x -> x[1], values(m.moments)),sd=map(x -> x[2], values(m.moments)))
+  pdf = DataFrame(param=collect(keys(m.params_to_sample)),lb=map(x -> x[1], values(m.params_to_sample)),ub=map(x -> x[2], values(m.params_to_sample)))
+
+  print(io,"MProb Object:\n")
   print(io,"==============\n\n")
   print(io,"Parameters to sample:\n")
-  print(io,m.params_to_sample)
+  print(io,pdf)
   print(io,"\nMoment Table:\n")
-  print(io,m.moments)
-  print(io,"\nMoment to use:\n")
-  print(io,m.moments_to_use)
-  print(io,"\nMode: $(m.mode)\n")
-  print(io,"\nobjective function: $(m.objfunc)\n")
-  print(io,"\nobjective function call: $(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))\n")
-  if !m.prepared
-    print(io,"\ncall MoptPrepare(m) to setup cluster\n")
-  else 
-    print(io,"\nNumber of chains: $(m.N)\n")
-  end
-  print(io,"END SHOW\n")
+  print(io,mdf)
+  print(io,"Moment to use:\n")
+  print(io,m.moments_subset)
+  print(io,"\n")
+  print(io,"\nobjective function: $(m.objfunc)\n\n")
+  # print(io,"\nobjective function call: $(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))\n")
+  # if !m.prepared
+  #   print(io,"\ncall MoptPrepare(m) to setup cluster\n")
+  # else 
+  #   print(io,"\nNumber of chains: $(m.N)\n")
+  # end
+  print(io,"\nEND SHOW MProb\n")
   print(io,"===========================\n")
 end
