@@ -4,7 +4,7 @@
 # but also about the moments and their names.
 type MProb
 
-  # Moptim setup
+  # setup
   initial_value    :: Dict  # initial parameter value as a dict
   params_to_sample :: Dict  # a dictionary of upper and lower bound for params we estimate (others are fixed)
   objfunc          :: Function # objective function

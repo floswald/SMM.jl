@@ -56,14 +56,21 @@ end
 # and appendEval
 function updateChain!(chain::Chain,m::MProb,p::Dict)
 
-    # update counter on chain
-    chain.i += 1
+    if chain.i == length(chain.evals)
+        println("reached end of chain")
+        return true
+    else
+        # update counter on chain
+        chain.i += 1
 
-    # evaluate objective function
-    v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+        # evaluate objective function
+        v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
 
-    # append to chain
-    appendEval!(chain,v)
+        # append to chain
+        appendEval!(chain,v)
+
+    end
+
 
 end
 
@@ -77,8 +84,8 @@ type MChain
   n :: Int # number of chains
   chains :: Array
 
-  function MChain(n,MProb)
-    chains = [  Chain(Mprob) for i in 1:n ]
+  function MChain(n,MProb,L)
+    chains = [  Chain(Mprob,L) for i in 1:n ]
     return new(n,chains)
   end
 end

@@ -49,12 +49,13 @@ end
 # -------------------------
 
 type MAlgoRandom <: MAlgo
+  m    :: MProb # an MProb
   opts :: Dict	# list of options
   i    :: Int 	# iteration
   current_param :: Dict
 
-  function MAlgoRandom(opts=["N"=>3,"shock_var"=>1.0,mode="serial"],current_param=["a"=>1.1,"b" => 1.3])
-    return new(opts,0,current_param)
+  function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,mode="serial"],current_param=["a"=>1.1,"b" => 1.3])
+    return new(m,opts,0,current_param)
   end
 end
 
