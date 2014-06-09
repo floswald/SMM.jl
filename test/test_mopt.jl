@@ -28,11 +28,14 @@ function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
 	# create DataFrame to substract model from data:
 	mm = DataFrame(name=collect(keys(mom)),data=collect(values(mom)),model=[x["a"] + x["b"] + i for i=1:nrow(mm)])
 
+	# get model moments as a dict
+	mdict = {i => mm[i,:model] for i in keys(mom) }
+
 	# subset to required moments only
 	mm = mm[findin(mm[:name],whichmom),:]
 
 	# compute distance
-	v = sum((mm[:data].-mm[:model]).^2)
+	v = sum((mm[:data] - mm[:model]).^2)
 
 	# status
 	status = 1
@@ -41,7 +44,7 @@ function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
 	t0 = time() - t0
 
 	# return a dict
-	ret = ["value" => v, "param" => x, "time" => t0, "status" => status, "moments" => mm]
+	ret = ["value" => v, "param" => x, "time" => t0, "status" => status, "moments" => mdict]
 	return ret
 
 end

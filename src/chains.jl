@@ -24,25 +24,28 @@ abstract type AbstractChain
 # for each parameters
 type Chain
   i::Int             # current index
-  evals::DataArray   # DataArray of evaluations (can hold NA)
-  parameters::Dict   # dictionary of array, 1 for each parameter
-  moments::Dict      # dictionary of array, 1 for each moment
+  evals     ::DataArray   # DataArray of evaluations (can hold NA)
+  accept    ::DataArray   # DataArray of accept/reject(can hold NA)
+  parameters::Dict   # dictionary of arrays(L,1), 1 for each parameter
+  moments   ::Dict      # dictionary of DataArrays(L,1), 1 for each moment
 
   function Chain(MProb,L)
-    evals = zeros(L)
+    evals      = @data([0.0 for i = 1:L])
+    accept     = @data([false for i = 1:L])
     parameters = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))
-    moments    = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))
-    return new(1,evals,parameters,moments)
+    moments    = Dict( map( x -> ( x, @data([0.0 for i = 1:L])), ms_names(MProb)))
+    return new(1,evals,accept,parameters,moments)
   end
 end
 
 # append an evaluation, the parameters and the moment to the stored data
-function appendEval!(chain::Chain, eval, moments::Dict, params::Dict)
-  chain.evals[chain.i] = eval
-  for (k,v) in moments
+# TODO let objfunc return a dict(eval,moments,params)
+function appendEval!(chain::Chain, vals::Dict)
+  chain.evals[chain.i] = vals["value"]
+  for (k,v) in vals["moments"]
     chain.moments[k][chain.i] = v
   end
-  for (k,v) in params
+  for (k,v) in vals["params"]
     chain.params[k][chain.i] = v
   end
 end
@@ -61,6 +64,23 @@ type MChain
     return new(n,chains)
   end
 end
+
+
+# evaluating the objective
+function updateChain!(chain::Chain,m::MProb,p::Dict)
+
+    # update counter on chain
+    chain.i += 1
+
+    # evaluate objective function
+    v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+
+    # append to chain
+    appendEval!(chain,v)
+
+end
+
+
 
 
 ## -------------- OLD ----------------------------
