@@ -52,6 +52,22 @@ function appendEval!(chain::Chain, vals::Dict)
   return nothing
 end
 
+# evaluating the objective
+# and appendEval
+function updateChain!(chain::Chain,m::MProb,p::Dict)
+
+    # update counter on chain
+    chain.i += 1
+
+    # evaluate objective function
+    v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+
+    # append to chain
+    appendEval!(chain,v)
+
+end
+
+
 
 ## MULTIPLE CHAINS
 ## ===============
@@ -68,19 +84,6 @@ type MChain
 end
 
 
-# evaluating the objective
-function updateChain!(chain::Chain,m::MProb,p::Dict)
-
-    # update counter on chain
-    chain.i += 1
-
-    # evaluate objective function
-    v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
-
-    # append to chain
-    appendEval!(chain,v)
-
-end
 
 
 

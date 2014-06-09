@@ -6,7 +6,8 @@ home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
 # to develop with tests: run this
-include("test/test_mopt.jl")
+include("test/test_MProb.jl")
+include("test/test_chains.jl")
 
 # to develop in main: run this
 include("src/mopt.jl")
@@ -17,10 +18,6 @@ include("src/mopt.jl")
 
 # workbench
 # =========
-
-
-
-
 
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
