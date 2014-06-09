@@ -3,14 +3,13 @@ module Mopt
 
 
 # imports
-using DataFrames
+using  DataFrames
 import Base.show
 
 
 # includes
 include("chains.jl")
 include("incmopt.jl")
-
 
 # MCMChain methods
 function summaryChain(c::MCMChain)

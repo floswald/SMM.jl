@@ -1,22 +1,70 @@
-# Types and methods related to the storing
-# and updating of chains
-type MChain
 
-  n :: Int # number of chains
-  i :: Int # current position in the chain
-  L :: Int # total length of the chain
+# the goal here is to have a convenient way of 
+# storing the different evaluations.
+# That includes the realizations of the objective
+# function, the moments, and the value of the parameters
+# that went in the evaluation.
+# It might also include additional information
+#
+# so usually we'll have to refer to a chain number, an iteration, and an object
+# which might be either a moment, a parameter, or an output.
+#
+# Because the chains might grow over time and because storing a in a DataFrame 
+# is not always easy, we are going to use vectors for each.
 
-    function MChain(n,L,param_names,moment_names)
-    new(n,1,L,DataFrame(),DataFrame(),DataFrame())
+
+# defining an abstract chain type in case 
+# some algorithm need additional information
+# on top of (eval, moment, parameter)
+abstract type AbstractChain
+
+
+# the default chain type
+# we create a dictionary with arrays
+# for each parameters
+type Chain
+  i::Int             # current index
+  evals::Array       # array of evaluations
+  parameters::Dict   # dictionary of array, 1 for each parameter
+  moments::Dict      # dictionary of array, 1 for each moment
+
+  function Chain(MProb)
+    L = 3000;
+    evals = zeros(L)
+    parameters = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))
+    moments    = Dict( map( x -> ( x, zeros(L)), ps_names(MProb)))
+    return new(1,evals,parameters,moments)
   end
 end
 
-function appendEval!(mc::MChain, value, moments, params)
-  mc.i = mc.i +1
-  mc.evals [mc.i]  = value
-  mc.params[mc.i]  = collect(values(params))	# that does not append row-wise
-  mc.moments[mc.i] = collect(values(moments))
+# append an evaluation, the parameters and the moment to the stored data
+function appendEval!(chain::Chain, eval, moments::Dict, params::Dict)
+  chain.evals[chain.i] = eval
+  for (k,v) in moments
+    chain.moments[k][chain.i] = v
+  end
+  for (k,v) in params
+    chain.params[k][chain.i] = v
+  end
 end
+
+
+## MULTIPLE CHAINS
+## ===============
+
+# Stores multilpe chains
+type MChain
+  n :: Int # number of chains
+  chains :: Array
+
+  function MChain(n,MProb)
+    chains = [  Chain(Mprob) for i in 1:n ]
+    return new(n,chains)
+  end
+end
+
+
+## -------------- OLD ----------------------------
 
 
 type MCMChain

@@ -2,7 +2,26 @@
 # created by the user. This is where the 
 # argument should be set.
 
-abstract ChainAlgoAbstract
+abstract type MAlgo
+#   shock_var        :: Float64 # variance of shock
+#   np_shock         :: Float64
+#   save_freq        :: Int
+#   N                :: Int   # number of chains
+#   n_untempered     :: Int   # number of chains untemprered
+#   maxiter          :: Int   # maximum number of iterations
+#   run              :: Int   # number of run
+#   i                :: Int   # ?
+
+#   # cluster setup
+#   mode             :: ASCIIString # {'serial','mpi'}
+
+#   # paths for I/O
+#   paths :: Dict
+
+#   prepared      :: Bool
+#   current_param :: Dict   # current parameter value
+#   chains        :: MCMChain   # object of type MCMChain
+# end
 
 # getter and setters for Algo
 function getindex(algo::ChainAlgoAbstract, key)
@@ -21,7 +40,7 @@ end
 # An implementation example
 # -------------------------
 
-type ChainAlgoRandom <: ChainAlgoAbstract
+type MAlgoRandom <: MAlgo
   opts :: Dict
   i :: Int
 
