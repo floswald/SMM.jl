@@ -52,27 +52,7 @@ function appendEval!(chain::Chain, vals::Dict)
   return nothing
 end
 
-# evaluating the objective
-# and appendEval
-function updateChain!(chain::Chain,m::MProb,p::Dict)
 
-    if chain.i == length(chain.evals)
-        println("reached end of chain")
-        return true
-    else
-        # update counter on chain
-        chain.i += 1
-
-        # evaluate objective function
-        v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
-
-        # append to chain
-        appendEval!(chain,v)
-
-    end
-
-
-end
 
 
 

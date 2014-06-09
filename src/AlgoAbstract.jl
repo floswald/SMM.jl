@@ -53,9 +53,14 @@ type MAlgoRandom <: MAlgo
   opts :: Dict	# list of options
   i    :: Int 	# iteration
   current_param :: Dict
+  chains :: MChain
 
-  function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,mode="serial"],current_param=["a"=>1.1,"b" => 1.3])
-    return new(m,opts,0,current_param)
+  function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,mode="serial","maxiter"=100],current_param=["a"=>1.1,"b" => 1.3])
+
+  	# create chains
+  	chains = MChain(opts["N"],m,opts["maxiter"])
+
+    return new(m,opts,0,current_param,chains)
   end
 end
 
@@ -64,6 +69,30 @@ function computeNewGuess( algo::MAlgoRandom  )
   algo.current_param = algo.current_param + shock_var
 end
 
+
+
+# TODO: make a method of MAlgo
+# evaluating the objective
+# and appendEval
+function updateChain!(chain::Chain,m::MProb,p::Dict)
+
+    if chain.i == length(chain.evals)
+        println("reached end of chain")
+        return true
+    else
+        # update counter on chain
+        chain.i += 1
+
+        # evaluate objective function
+        v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+
+        # append to chain
+        appendEval!(chain,v)
+
+    end
+
+
+end
 
 
 
