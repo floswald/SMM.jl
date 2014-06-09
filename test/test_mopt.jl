@@ -1,7 +1,7 @@
 
 module TestMopt
 
-using FactCheck
+using FactCheck, DataFrames
 
 # eventually:
 # put push!(LOAD_PATH, "/Path/To/Mopt/module/") into your  ~\.juliarc.jl
@@ -19,35 +19,6 @@ include("../src/mopt.jl")
 # 5) moments subset Array{String}
 
 
-# test constructor# define a Test objective function
-function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
-
-	t0 = time()
-
-	# perform computations of objective function
-	# create DataFrame to substract model from data:
-	mm = DataFrame(name=collect(keys(mom)),data=collect(values(mom)),model=[x["a"] + x["b"] + i for i=1:nrow(mm)])
-
-	# get model moments as a dict
-	mdict = {i => mm[i,:model] for i in keys(mom) }
-
-	# subset to required moments only
-	mm = mm[findin(mm[:name],whichmom),:]
-
-	# compute distance
-	v = sum((mm[:data] - mm[:model]).^2)
-
-	# status
-	status = 1
-
-	# time out
-	t0 = time() - t0
-
-	# return a dict
-	ret = ["value" => v, "param" => x, "time" => t0, "status" => status, "moments" => mdict]
-	return ret
-
-end
 
 # Choose Algorithm and configure it
 
@@ -73,7 +44,7 @@ facts("Testing the MProb constructor") do
 
 	context("default constructor") do
 
-		mprob = Mopt.MProb(p,pb,Testobj,moms)
+		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
 		@fact isa(mprob, Mopt.MProb) => true
 
 	end
@@ -81,7 +52,7 @@ facts("Testing the MProb constructor") do
 	context("constructor throws errors") do
 
 		# get an inexisting moment to subset
-		@fact_throws Mopt.MProb(p,pb,Testobj,moms; moments_subset=["alpha","epsilon"]);
+		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms; moments_subset=["alpha","epsilon"]);
 
 		# get some wrong moments
 		moms = [
@@ -89,7 +60,7 @@ facts("Testing the MProb constructor") do
 			"beta"  => [ 0.8 , 0.02 ],
 			"gamma" => [ 0.8  ]
 		]
-		@fact_throws Mopt.MProb(p,pb,Testobj,moms);
+		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms);
 
 		# i'm giving a parameter "c" that is not in initial_value
 		pb= [ "a" => [0,1] , "c" => [0,1] ]
@@ -98,11 +69,11 @@ facts("Testing the MProb constructor") do
 			"beta"  => [ 0.8 , 0.02 ],
 			"gamma" => [ 0.8 , 0.02 ]
 		]
-		@fact_throws Mopt.MProb(p,pb,Testobj,moms);
+		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms);
 
 		# get some wrong bounds
 		pb= [ "a" => [1,0] , "b" => [0,1] ]
-		@fact_throws Mopt.MProb(p,pb,Testobj,moms);
+		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms);
 	end
 
 end
@@ -116,7 +87,7 @@ facts("testing MProb methods") do
 		"beta"  => [ 0.8 , 0.02 ],
 		"gamma" => [ 0.8 , 0.02 ]
 	]
-	mprob = Mopt.MProb(p,pb,Testobj,moms);
+	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms);
 	@fact collect(Mopt.ps_names(mprob)) == collect(keys(pb)) => true
 	@fact collect(Mopt.ms_names(mprob)) == collect(keys(moms)) => true
 
@@ -126,6 +97,7 @@ end
 
 # TESTING Chains
 # ==============
+
 
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
@@ -137,9 +109,11 @@ moms = [
 
 facts("Testing Chains constructor") do
 	
-	mprob = Mopt.MProb(p,pb,Testobj,moms)
+	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
 	L = 9
 	chain = Mopt.Chain(mprob,L)
+
+	@fact chain.i => 0 
 
 	context("length of members") do
 
@@ -161,6 +135,38 @@ facts("Testing Chains constructor") do
 
 	end
 
+end
+
+facts("testing Chains methods") do
+	
+	context("test appendEval!") do
+
+		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
+		L = 9
+		chain = Mopt.Chain(mprob,L)
+
+		# verify values are zero:
+		@fact all(chain.evals .== 0.0) => true
+		@fact chain.i => 0 
+
+		# set i to 1 to test this:
+		chain.i = 1
+
+		# update chain with v
+		Mopt.appendEval!(chain,v)
+
+		# verify new values on chain
+		@fact chain.i => 1 
+		@fact chain.evals[1] => v["value"]
+		for nm in Mopt.ps_names(mprob)
+			@fact chain.parameters[nm][1] => v["params"][nm]
+		end
+		for nm in Mopt.ms_names(mprob)
+			@fact chain.moments[nm][1] => v["moments"][nm]
+		end
+
+	end
 
 
 

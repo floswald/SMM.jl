@@ -1,77 +1,81 @@
 
-# there are 2 types of information that will be required. 
-#
-# 1. information about the prbolem to solve, such as
-# the number of parameters, the moments, etc ...  this will be stored in MProb
-#
-# 2. information about the way to solve the problem, such as which algorithm to use,
-# the parameters for this algorithm, the paths, etc... this will be stored in MAlgo
+# define a Test objective function
+function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
+
+	t0 = time()
+	mm = DataFrame(name=collect(keys(mom)),data=map(x -> x[1],values(mom)),model=[x["a"] + x["b"] + i for i=1:length(mom)])
+
+	# get model moments as a dict
+	mdict = {i => mm[findin(mm[:name],[i]),:model][1] for i in collect(keys(mom)) }
+
+	# subset to required moments only
+	mm = mm[findin(mm[:name],whichmom),:]
+
+	# compute distance
+	v = sum((mm[:data] - mm[:model]).^2)
+
+	# status
+	status = 1
+
+	# time out
+	t0 = time() - t0
+
+	# return a dict
+	ret = ["value" => v, "params" => x, "time" => t0, "status" => status, "moments" => mdict]
+	return ret
+
+end
 
 
 
+# # call this function to set up
+# # the cluster. 
+# # maps choice of "mode" into an action
+# function MoptPrepare!(m::Moptim)
 
+# 	if m.prepared
+# 		println("you're good to go")
+# 		return nothing
+# 	else
 
-# tried that: doesnt work because the Mopt needs to take a generic parameter type, like a vector or a dict. otherwise every user will have their own param type. I don't even know the name of that user type, let alone it's structure.
-# a test param type
-# type Testparam
-# 	a :: Float64
-# 	b :: Float64
+# 		# setup cluster
+# 		@everywhere include(m.include_on_workers)
 
-# 	function Testparam(a,b) 
-# 	return new(a,b)
+# 		# set m.N = # of workers
+
+# 		# send data to workers
+
+# 		# set m.prepared = true
 # 	end
+
 # end
 
 
+# function evaluateObjective(m::Moptim)
 
-# call this function to set up
-# the cluster. 
-# maps choice of "mode" into an action
-function MoptPrepare!(m::Moptim)
+# 	if m.mode =="serial"
+# 		v = map(x -> evaluateChainID(x,m), 1:m.N )
+# 	else
+# 		v = pmap(x -> evaluateChainID(x,m), 1:m.N )
 
-	if m.prepared
-		println("you're good to go")
-		return nothing
-	else
+# 	end
+# 	return v
 
-		# setup cluster
-		@everywhere include(m.include_on_workers)
+# end
 
-		# set m.N = # of workers
+# function evaluateChainID(m::Moptim,i::Int)
 
-		# send data to workers
+# 	# eval chain i with param[i]
+# 	x = eval(Expr(:call,m.objfunc,m.current_param[i],m.moments,m.moments_to_use))
+# 	return x
 
-		# set m.prepared = true
-	end
+# end
 
-end
-
-
-function evaluateObjective(m::Moptim)
-
-	if m.mode =="serial"
-		v = map(x -> evaluateChainID(x,m), 1:m.N )
-	else
-		v = pmap(x -> evaluateChainID(x,m), 1:m.N )
-
-	end
-	return v
-
-end
-
-function evaluateChainID(m::Moptim,i::Int)
-
-	# eval chain i with param[i]
-	x = eval(Expr(:call,m.objfunc,m.current_param[i],m.moments,m.moments_to_use))
-	return x
-
-end
-
-function collectChains(m::Moptim)
+# function collectChains(m::Moptim)
 
 
 
-end
+# end
 
 
 

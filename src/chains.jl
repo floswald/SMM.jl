@@ -34,19 +34,20 @@ type Chain
     accept     = @data([false for i = 1:L])
     parameters = { x => zeros(L) for x in ps_names(MProb) }
     moments = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(1,evals,accept,parameters,moments)
+    return new(0,evals,accept,parameters,moments)
   end
 end
 
-# append an evaluation, the parameters and the moment to the stored data
-# TODO let objfunc return a dict(eval,moments,params)
+
+# appends values from objective function
+# at CURRENT iteration
 function appendEval!(chain::Chain, vals::Dict)
   chain.evals[chain.i] = vals["value"]
   for (k,v) in vals["moments"]
     chain.moments[k][chain.i] = v
   end
   for (k,v) in vals["params"]
-    chain.params[k][chain.i] = v
+    chain.parameters[k][chain.i] = v
   end
   return nothing
 end

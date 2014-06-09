@@ -10,10 +10,14 @@ import Base.show
 # includes
 include("mprob.jl")
 include("chains.jl")
-# include("incmopt.jl")
+include("incmopt.jl")
 
+
+
+
+	
 # exports
-export MProb, Chain
+export MProb, Chain, Testobj
 	
 
 
