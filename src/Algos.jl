@@ -65,8 +65,8 @@ function computeNextIteration!( algo::MAlgoRandom  )
 			for ch in 1:algo["N"]
 		  	# this updating rule can differ by chain!
 
-		  	# TODO this should change only algo.m.params_to_sample!
-		  		algo.candidate_param[ch] = algo.current_param[ch] + randn()*shock_var
+		  	# TODO this should change only the subset in algo.m.params_to_sample!
+	  		algo.candidate_param[ch] = algo.current_param[ch] + randn()*shock_var
 		    end
 		else
 			# candidate = initial_value, so ok for first iteration
@@ -110,6 +110,7 @@ function computeNextIteration!( algo::MAlgoRandom  )
 					else
 						ACC = false
 						v[ch]["params"] = algo.current_param[ch]	# reset param in output of obj to previous value
+						v[ch]["moments"] = getMoments(algo.MChains,ch)[algo.i-1]	# reset moments in output of obj to previous value
 					end
 					status = 1
 				end

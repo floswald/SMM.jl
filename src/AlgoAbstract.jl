@@ -29,10 +29,9 @@ end
 # wrapper to evaluateChainID
 # calls map(evaluateChainID) or pmap(evaluateChainID) depending on opts
 function updateChains!(algo::MAlgo)
-
-	# add 1 to iteration count on algo
-	updateIter!(algo)
-	computeNextIteration!( algo )
+	
+	updateIter!(algo)  # add 1 to iteration count on algo
+	computeNextIteration!( algo )  # compute next iteration on all chains
 
 end
     
