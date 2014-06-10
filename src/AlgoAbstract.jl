@@ -53,18 +53,19 @@ end
 # 2) method computeNewGuess
 
 type MAlgoRandom <: MAlgo
-  m    :: MProb # an MProb
-  opts :: Dict	# list of options
-  i    :: Int 	# iteration
+  m             :: MProb # an MProb
+  opts          :: Dict	# list of options
+  i             :: Int 	# iteration
   current_param :: Array{Dict,1}  # current param value: one Dict for each chain
-  chains :: MChain 	# collection of Chains: if N==1, length(chains) = 1
+  chains        :: MChain 	# collection of Chains: if N==1, length(chains) = 1
 
-  function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,mode="serial","maxiter"=100],current_param=["a"=>1.1,"b" => 1.3])
+  function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100])
 
   	# create chains
   	chains = MChain(opts["N"],m,opts["maxiter"])
+  	cpar = [ m.initial_value for i=1:opts["N"] ] 
 
-    return new(m,opts,0,current_param,chains)
+    return new(m,opts,0,cpar,chains)
   end
 end
 

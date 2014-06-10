@@ -129,31 +129,7 @@ facts("testing Chain methods") do
 
 	end
 
-	# context("test updateChain!()") do
-
-	# 	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-	# 	v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
-	# 	L = 9
-	# 	chain = Mopt.Chain(mprob,L)
-
-	# 	# verify values are zero:
-	# 	@fact all(chain.evals .== 0.0) => true
-	# 	@fact chain.i => 0 
-
-	# 	# call updateChain!
-	# 	Mopt.updateChain!(chain,mprob,p)
-
-	# 	# verify new values on chain
-	# 	@fact chain.evals[1] => v["value"]
-	# 	for nm in Mopt.ps_names(mprob)
-	# 		@fact chain.parameters[nm][1] => v["params"][nm]
-	# 	end
-	# 	for nm in Mopt.ms_names(mprob)
-	# 		@fact chain.moments[nm][1] => v["moments"][nm]
-	# 	end
-
-	# end
-
+	
 
 
 end

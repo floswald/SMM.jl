@@ -11,6 +11,7 @@ import Base.show
 include("mprob.jl")
 include("chains.jl")
 include("incmopt.jl")
+include("AlgoAbstract.jl")
 
 
 
