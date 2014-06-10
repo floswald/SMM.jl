@@ -65,7 +65,7 @@ facts("testing MChain constructor") do
 	end
 end
 
-facts("testing Chain methods") do
+facts("testing Chain/MChain methods") do
 	
 	context("test appendEval!(chain)") do
 
@@ -125,6 +125,25 @@ facts("testing Chain methods") do
 			for nm in Mopt.ms_names(mprob)
 				@fact MC.chains[ix].moments[nm][1] => v[ix]["moments"][nm]
 			end
+		end
+
+	end
+
+	context("testing updateIter(MChain") do
+
+		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+		L = 9
+		n = 17
+		MC = Mopt.MChain(n,mprob,L)
+
+
+		for ix = 1:n
+			@fact MC.chains[ix].i => 0
+		end
+
+		Mopt.updateIter!(MC)
+		for ix = 1:n
+			@fact MC.chains[ix].i => 1
 		end
 
 	end

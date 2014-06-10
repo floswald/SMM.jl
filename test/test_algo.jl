@@ -17,8 +17,6 @@ moms = [
 ]
 
 mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-L = 9
-chain = Mopt.Chain(mprob,L)
 
 facts("testing MAlgoRandom Constructor") do
 
@@ -34,6 +32,10 @@ facts("testing MAlgoRandom Constructor") do
 
 		@fact MA.i => 0
 		@fact MA.chains.n => opts["N"]
+
+		for ix = 1:opts["N"]
+			@fact MA.current_param[ix] => p 
+		end
 
 	end
 
@@ -52,40 +54,55 @@ facts("testing MAlgoRandom Constructor") do
 
 	end
 
-
-
-
 end
 
 
 
+facts("testing MAlgo methods") do
+	
+	context("testing evaluateChainID(algo)") do
+
+		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
+		MA = Mopt.MAlgoRandom(mprob,opts)
+
+		x = Mopt.evaluateChainID(MA,1)
+
+		@fact haskey(x,"value") => true
+		@fact x["params"] => p
+		@fact haskey(x,"moments") => true
+	end
+
+
+	context("updateChains!(algo)") do
+
+		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
+		MA = Mopt.MAlgoRandom(mprob,opts)
+
+		@fact MA.chains.chains[1].i => 0
+		@fact MA.i => 0
+
+		Mopt.updateChains!(MA)
+
+		# compute objective function once
+		v = Mopt.Testobj(p,moms,["alpha", "beta","gamma"])
+
+		# each chain must have those values
+		for ix in 1:opts["N"]
+			ch = Mopt.getChain(MA,ix)	# get each chain
+			@fact ch.i => 1
+			@fact ch.evals[1] => v["value"]
+			for k in keys(ch.parameters)
+				@fact ch.parameters[k][1] => v["params"][k]
+			end
+			for k in keys(ch.moments)
+				@fact ch.moments[k][1] => v["moments"][k]
+			end
+		end # all chains
+	end
+end
 
 
 
 
 end # module
 
-# context("test updateChain!()") do
-
-	# 	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-	# 	v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
-	# 	L = 9
-	# 	chain = Mopt.Chain(mprob,L)
-
-	# 	# verify values are zero:
-	# 	@fact all(chain.evals .== 0.0) => true
-	# 	@fact chain.i => 0 
-
-	# 	# call updateChain!
-	# 	Mopt.updateChain!(chain,mprob,p)
-
-	# 	# verify new values on chain
-	# 	@fact chain.evals[1] => v["value"]
-	# 	for nm in Mopt.ps_names(mprob)
-	# 		@fact chain.parameters[nm][1] => v["params"][nm]
-	# 	end
-	# 	for nm in Mopt.ms_names(mprob)
-	# 		@fact chain.moments[nm][1] => v["moments"][nm]
-	# 	end
-
-	# end

@@ -53,7 +53,9 @@ function appendEval!(chain::Chain, vals::Dict)
 end
 
 
-
+function getEvals(ch::Chain)
+    return ch.evals
+end
 
 
 ## MULTIPLE CHAINS
@@ -82,6 +84,17 @@ function appendEval!(MC::MChain, vals::Array{Dict{ASCIIString,Any},1})
     end 
 end
 
+function updateIter!(MC::MChain)
+    for ix in 1:MC.n
+        MC.chains[ix].i += 1
+    end 
+end
+
+# gets evals array from chain number "which"
+# in multiple chain object ch
+function getEvals(ch::MChain,which::Int)
+    return ch.chains[which].evals
+end
 
 
 ## -------------- OLD ----------------------------

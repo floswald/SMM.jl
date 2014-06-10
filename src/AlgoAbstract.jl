@@ -43,6 +43,11 @@ function computeNewGuesses( algo::MAlgo  )
   error("computeNewGuesses not implemented for this algorithm")
 end
 
+# get chain number "which" from algo
+function getChain(algo::MAlgo, which::Int)
+	algo.chains.chains[which]
+end
+
 
 # An implementation example
 # -------------------------
@@ -90,10 +95,13 @@ end
 function updateChains!(algo::MAlgo)
 
 	# check if we reached end of chain
-    if algo.chains[1].i == length(chain.evals)
+    if algo.i == length(getEvals(algo.chains,1))
         println("reached end of chain")
         return true
     else
+    	# else update iteration on all chains
+    	updateIter!(algo.chains)
+
     	if algo["mode"] == "serial"
 
     		# map over 1:n evaluatceChainID
@@ -114,9 +122,6 @@ end
 # evalute chain number i
 # with param vector number i
 function evaluateChainID(algo::MAlgo,i::Int)
-
-	# update iteration on chain i
-	algo.chains[i] =+ 1
 
 	# eval chain i with param[i]
 	x = eval(Expr(:call,algo.m.objfunc,algo.current_param[i],algo.m.moments,algo.m.moments_subset))
