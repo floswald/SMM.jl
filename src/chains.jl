@@ -84,6 +84,7 @@ function appendEval!(MC::MChain, vals::Array{Dict{ASCIIString,Any},1})
     end 
 end
 
+# update the iteration count on each chain
 function updateIter!(MC::MChain)
     for ix in 1:MC.n
         MC.chains[ix].i += 1

@@ -12,6 +12,7 @@ include("mprob.jl")
 include("chains.jl")
 include("incmopt.jl")
 include("AlgoAbstract.jl")
+include("Algos.jl")
 
 
 
