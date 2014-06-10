@@ -23,11 +23,11 @@ abstract AbstractChain
 # we create a dictionary with arrays
 # for each parameters
 type Chain
-  i::Int             # current index
-  evals     ::DataArray   # DataArray of evaluations (can hold NA)
-  accept    ::DataArray   # DataArray of accept/reject(can hold NA)
-  parameters::Dict   # dictionary of arrays(L,1), 1 for each parameter
-  moments   ::Dict      # dictionary of DataArrays(L,1), 1 for each moment
+              i::Int             # current index
+              evals     ::DataArray   # DataArray of evaluations (can hold NA)
+              accept    ::DataArray   # DataArray of accept/reject(can hold NA)
+              parameters::Dict   # dictionary of arrays(L,1), 1 for each parameter
+              moments   ::Dict      # dictionary of DataArrays(L,1), 1 for each moment
 
   function Chain(MProb,L)
     evals      = @data([0.0 for i = 1:L])
@@ -65,13 +65,22 @@ type MChain
   chains :: Array
 
   function MChain(n,MProb,L)
-    chains = [  Chain(Mprob,L) for i in 1:n ]
+    chains = [ Chain(MProb,L) for i in 1:n ]
     return new(n,chains)
   end
 end
 
 
+# methods for MChain
+function appendEval!(MC::MChain, vals::Array{Dict{ASCIIString,Any},1})
+    @assert length(MC.chains) == length(vals)
 
+    for i in 1:MC.n
+
+        appendEval!(MC.chains[i],vals[i])
+
+    end 
+end
 
 
 

@@ -47,9 +47,27 @@ facts("Testing Chains constructor") do
 
 end
 
+facts("testing MChain constructor") do
+	
+
+	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+	L = 9
+	chain = Mopt.Chain(mprob,L)
+
+	n = 14
+	chains = Mopt.MChain(n,mprob,L)
+
+	@fact isa(chains,Mopt.MChain) => true
+	@fact isa(chains.chains,Array) => true
+	@fact length(chains.chains) => n
+	for ch in 1:n
+		@fact length(chains.chains[ch].evals) => L
+	end
+end
+
 facts("testing Chain methods") do
 	
-	context("test appendEval!()") do
+	context("test appendEval!(chain)") do
 
 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
 		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
@@ -74,6 +92,39 @@ facts("testing Chain methods") do
 		end
 		for nm in Mopt.ms_names(mprob)
 			@fact chain.moments[nm][1] => v["moments"][nm]
+		end
+	end
+
+	context("test appendEval!(chains)") do
+
+		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+		L = 9
+		n = 17
+		v = [ Mopt.Testobj(p,moms,["alpha","beta","gamma"]) for i=1:n ]
+		MC = Mopt.MChain(n,mprob,L)
+
+		# verify values are zero:
+		@fact all(MC.chains[1].evals .== 0.0) => true
+		@fact MC.chains[1].i => 0 
+
+		# set i to 1 to test this, otherwise BoundsError (accessing x[0])
+		for ix = 1:n
+			MC.chains[ix].i = 1
+		end
+
+		# update chain with v
+		Mopt.appendEval!(MC,v)
+
+		# verify new values on each chain
+		for ix = 1:n
+			@fact MC.chains[ix].i => 1 
+			@fact MC.chains[ix].evals[1] => v[ix]["value"]
+			for nm in Mopt.ps_names(mprob)
+				@fact MC.chains[ix].parameters[nm][1] => v[ix]["params"][nm]
+			end
+			for nm in Mopt.ms_names(mprob)
+				@fact MC.chains[ix].moments[nm][1] => v[ix]["moments"][nm]
+			end
 		end
 
 	end

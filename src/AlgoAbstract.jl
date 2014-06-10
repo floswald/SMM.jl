@@ -3,7 +3,7 @@
 # argument should be set.
 
 
-# here is a list of potential options we want to set on each algo:
+# here is a list of potential options we may want to set on each algo:
 
 #   shock_var        :: Float64 # variance of shock
 #   np_shock         :: Float64
@@ -12,7 +12,6 @@
 #   n_untempered     :: Int   # number of chains untemprered
 #   maxiter          :: Int   # maximum number of iterations
 #   run              :: Int   # number of run
-#   i                :: Int   # ?
 
 #   # cluster setup
 #   mode             :: ASCIIString # {'serial','mpi'}
@@ -22,7 +21,7 @@
 
 #   prepared      :: Bool
 #   current_param :: Dict   # current parameter value
-#   chains        :: MCMChain   # object of type MCMChain
+#   chains        :: MChain   # object of type MChain
 # end
 
 
@@ -31,7 +30,7 @@
 # define an abstract type and set/get for it
 abstract MAlgo
 
-# getter and setters for Algo
+# getter and setters for Algo.opts
 function getindex(algo::MAlgo, key)
   return(algo.opts[key])
 end
@@ -40,20 +39,25 @@ function setindex!(algo::MAlgo, val,key)
   algo.opts[key] = val
 end
 
-function computeNewGuess( algo::MAlgo  )
-  error("computeNewGuess not implemented for this algorithm")
+function computeNewGuesses( algo::MAlgo  )
+  error("computeNewGuesses not implemented for this algorithm")
 end
 
 
 # An implementation example
 # -------------------------
 
+# user defines their MCMC algorithm "Random"
+# requires:  
+# 1) type declaration 
+# 2) method computeNewGuess
+
 type MAlgoRandom <: MAlgo
   m    :: MProb # an MProb
   opts :: Dict	# list of options
   i    :: Int 	# iteration
-  current_param :: Dict
-  chains :: MChain
+  current_param :: Array{Dict,1}  # current param value: one Dict for each chain
+  chains :: MChain 	# collection of Chains: if N==1, length(chains) = 1
 
   function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,mode="serial","maxiter"=100],current_param=["a"=>1.1,"b" => 1.3])
 
@@ -64,36 +68,60 @@ type MAlgoRandom <: MAlgo
   end
 end
 
-function computeNewGuess( algo::MAlgoRandom  )
-  algo.i = algo.i +1	# update iteration
-  algo.current_param = algo.current_param + shock_var
+
+# computes new guesses for each chain
+# i.e. computes N new parameter vectors
+function computeNewGuesses( algo::MAlgoRandom  )
+  algo.i += 1	# update iteration on algorithm
+  # here is the meat of your algorithm:
+  # how to go from p(t) to p(t+1) ?
+  for ch in 1:algo["N"]
+  	# this updating rule can differ by chain!
+  	algo.current_param[ch] = algo.current_param[ch] + shock_var
+  end
 end
 
 
 
-# TODO: make a method of MAlgo
-# evaluating the objective
-# and appendEval
-function updateChain!(chain::Chain,m::MProb,p::Dict)
+# updates all chains in algo
+# wrapper to evaluateChainID
+# calls map(evaluateChainID) or pmap(evaluateChainID) depending on opts
+function updateChains!(algo::MAlgo)
 
-    if chain.i == length(chain.evals)
+	# check if we reached end of chain
+    if algo.chains[1].i == length(chain.evals)
         println("reached end of chain")
         return true
     else
-        # update counter on chain
-        chain.i += 1
+    	if algo["mode"] == "serial"
 
-        # evaluate objective function
-        v = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+    		# map over 1:n evaluatceChainID
+    		v = map( x -> evaluateChainID(algo,x), 1:algo["N"])
 
-        # append to chain
-        appendEval!(chain,v)
+    	else
 
+    		# pmap over 1:n evaluateChainID
+    		v = pmap( x -> evaluateChainID(algo,x), 1:algo["N"])
+
+    	end
     end
+    # append value to storage
+    appendEval!(algo.chains,v)
+end
+    
 
+# evalute chain number i
+# with param vector number i
+function evaluateChainID(algo::MAlgo,i::Int)
+
+	# update iteration on chain i
+	algo.chains[i] =+ 1
+
+	# eval chain i with param[i]
+	x = eval(Expr(:call,algo.m.objfunc,algo.current_param[i],algo.m.moments,algo.m.moments_subset))
+	return x
 
 end
-
 
 
 
