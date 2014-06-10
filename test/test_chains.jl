@@ -82,11 +82,12 @@ facts("testing Chain/MChain methods") do
 		chain.i = 1
 
 		# update chain with v
-		Mopt.appendEval!(chain,v)
+		Mopt.appendEval!(chain,v,true)
 
 		# verify new values on chain
 		@fact chain.i => 1 
 		@fact chain.evals[1] => v["value"]
+		@fact chain.accept[1] => true
 		for nm in Mopt.ps_names(mprob)
 			@fact chain.parameters[nm][1] => v["params"][nm]
 		end
@@ -113,20 +114,19 @@ facts("testing Chain/MChain methods") do
 		end
 
 		# update chain with v
-		Mopt.appendEval!(MC,v)
+		which = rand(1:n)
+		Mopt.appendEval!(MC,which,v[which],true)
 
 		# verify new values on each chain
-		for ix = 1:n
-			@fact MC.chains[ix].i => 1 
-			@fact MC.chains[ix].evals[1] => v[ix]["value"]
-			for nm in Mopt.ps_names(mprob)
-				@fact MC.chains[ix].parameters[nm][1] => v[ix]["params"][nm]
-			end
-			for nm in Mopt.ms_names(mprob)
-				@fact MC.chains[ix].moments[nm][1] => v[ix]["moments"][nm]
-			end
+		@fact MC.chains[which].i => 1 
+		@fact MC.chains[which].evals[1] => v[which]["value"]
+		@fact MC.chains[which].accept[1] => true
+		for nm in Mopt.ps_names(mprob)
+			@fact MC.chains[which].parameters[nm][1] => v[which]["params"][nm]
 		end
-
+		for nm in Mopt.ms_names(mprob)
+			@fact MC.chains[which].moments[nm][1] => v[which]["moments"][nm]
+		end
 	end
 
 	context("testing updateIter(MChain") do
@@ -135,7 +135,6 @@ facts("testing Chain/MChain methods") do
 		L = 9
 		n = 17
 		MC = Mopt.MChain(n,mprob,L)
-
 
 		for ix = 1:n
 			@fact MC.chains[ix].i => 0
@@ -147,8 +146,6 @@ facts("testing Chain/MChain methods") do
 		end
 
 	end
-
-	
 
 
 end

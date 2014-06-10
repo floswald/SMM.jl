@@ -31,7 +31,7 @@ facts("testing MAlgoRandom Constructor") do
 		@fact isa(MA.m,Mopt.MProb) => true
 
 		@fact MA.i => 0
-		@fact MA.chains.n => opts["N"]
+		@fact MA.MChains.n => opts["N"]
 
 		for ix = 1:opts["N"]
 			@fact MA.current_param[ix] => p 
@@ -60,16 +60,23 @@ end
 
 facts("testing MAlgo methods") do
 	
-	context("testing evaluateChainID(algo)") do
+	context("testing evaluateObjective(algo)") do
 
 		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
 		MA = Mopt.MAlgoRandom(mprob,opts)
 
-		x = Mopt.evaluateChainID(MA,1)
+		which_chain = 1
+		x = Mopt.evaluateObjective(MA,which_chain)
 
 		@fact haskey(x,"value") => true
 		@fact x["params"] => p
 		@fact haskey(x,"moments") => true
+
+		# change p on MA:
+		newp = ["a" => 103.1 , "b" => -2.2]
+		MA.candidate_param[which_chain] = newp
+		x = Mopt.evaluateObjective(MA,1)
+		@fact x["params"] => newp
 	end
 
 
@@ -78,7 +85,7 @@ facts("testing MAlgo methods") do
 		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
 		MA = Mopt.MAlgoRandom(mprob,opts)
 
-		@fact MA.chains.chains[1].i => 0
+		@fact MA.MChains.chains[1].i => 0
 		@fact MA.i => 0
 
 		Mopt.updateChains!(MA)
@@ -91,6 +98,7 @@ facts("testing MAlgo methods") do
 			ch = Mopt.getChain(MA,ix)	# get each chain
 			@fact ch.i => 1
 			@fact ch.evals[1] => v["value"]
+			@fact ch.accept[1] => true # all true in first eval
 			for k in keys(ch.parameters)
 				@fact ch.parameters[k][1] => v["params"][k]
 			end

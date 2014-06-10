@@ -14,13 +14,9 @@ function setindex!(algo::MAlgo, val,key)
   algo.opts[key] = val
 end
 
-function computeNextIteration!( algo::MAlgo  )
-  error("computeNextIteration not implemented for this algorithm")
-end
-
 # get chain number "which" from algo
 function getChain(algo::MAlgo, which::Int)
-	algo.chains.chains[which]
+	algo.MChains.chains[which]
 end
 
 function updateIter!(algo::MAlgo)
@@ -36,21 +32,17 @@ function updateChains!(algo::MAlgo)
 
 	# add 1 to iteration count on algo
 	updateIter!(algo)
-
-	if algo.i>1 
-		# get a new parameter vector for each chain
-		computeNextIteration!( algo )
-	end
+	computeNextIteration!( algo )
 
 end
     
 
-# evalute chain number i
+# evalute objective function
 # with param vector number i
-function evaluateChainID(algo::MAlgo,i::Int)
+function evaluateObjective(algo::MAlgo,which::Int)
 
-	# eval chain i with param[i]
-	x = eval(Expr(:call,algo.m.objfunc,algo.current_param[i],algo.m.moments,algo.m.moments_subset))
+	# eval chain i with param p
+	x = eval(Expr(:call,algo.m.objfunc,algo.candidate_param[which],algo.m.moments,algo.m.moments_subset))
 	return x
 
 end

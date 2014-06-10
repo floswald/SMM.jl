@@ -41,8 +41,9 @@ end
 
 # appends values from objective function
 # at CURRENT iteration
-function appendEval!(chain::Chain, vals::Dict)
+function appendEval!(chain::Chain, vals::Dict, ACC::Bool)
   chain.evals[chain.i] = vals["value"]
+  chain.accept[chain.i] = ACC
   for (k,v) in vals["moments"]
     chain.moments[k][chain.i] = v
   end
@@ -73,15 +74,10 @@ type MChain
 end
 
 
+
 # methods for MChain
-function appendEval!(MC::MChain, vals::Array{Dict{ASCIIString,Any},1})
-    @assert length(MC.chains) == length(vals)
-
-    for i in 1:MC.n
-
-        appendEval!(MC.chains[i],vals[i])
-
-    end 
+function appendEval!(MC::MChain, which::Int, vals::Dict, acc::Bool)
+    appendEval!(MC.chains[which],vals,acc)
 end
 
 # update the iteration count on each chain
