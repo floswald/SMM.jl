@@ -7,8 +7,6 @@ include("../src/mopt.jl")
 
 # TESTING Chains
 # ==============
-
-
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
 moms = [
@@ -16,6 +14,8 @@ moms = [
 	"beta"  => [ 0.8 , 0.02 ],
 	"gamma" => [ 0.8 , 0.02 ]
 ]
+
+
 
 facts("Testing Chains constructor") do
 	
@@ -28,8 +28,8 @@ facts("Testing Chains constructor") do
 	context("length of members") do
 
 		# test that all member except i are L long
-		@fact length(chain.evals) => L
-		@fact length(chain.accept) => L
+		@fact length(chain.infos["evals"])  => L
+		@fact length(chain.infos["accept"]) => L
 		for nm in Mopt.ps_names(mprob)
 			@fact length(chain.parameters[nm]) => L
 		end
@@ -61,7 +61,7 @@ facts("testing MChain constructor") do
 	@fact isa(chains.chains,Array) => true
 	@fact length(chains.chains) => n
 	for ch in 1:n
-		@fact length(chains.chains[ch].evals) => L
+		@fact length(chains.chains[ch].infos["evals"]) => L
 	end
 end
 
@@ -76,36 +76,35 @@ facts("testing Chain/MChain methods") do
 
 		i = rand(1:L)
 
-		x = chain[i]
+		x = Mopt.alls(chain,i,true)
 
 		@fact isa(x,DataFrame) => true
 		@fact nrow(x) => 1
-		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
+		@fact ncol(x) => 2 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
 
 		nx = names(x)
-		nm = [:i,:value,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
-		@fact nx == nm => true
+		nm = [:evals,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
+		@fact sort(nx) == sort(nm) => true
 
 	end
 
 	context("testing getindex(chain,i::Range)") do
 
 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
-		L = 9	# length of chain
+		v     = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
+		L     = 9	# length of chain
 		chain = Mopt.Chain(mprob,L)
 
 		i = 3:L
-
-		x = chain[i]
+		x = Mopt.alls(chain,i,true)
 		
 		@fact isa(x,DataFrame) => true
 		@fact nrow(x) => length(i)
-		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
+		@fact ncol(x) => 2 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
 
 		nx = names(x)
-		nm = [:i,:value,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
-		@fact nx == nm => true
+		nm = [:evals,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
+		@fact sort(nx) == sort(nm) => true
 
 	end
 	
@@ -117,7 +116,7 @@ facts("testing Chain/MChain methods") do
 		chain = Mopt.Chain(mprob,L)
 
 		# verify values are zero:
-		@fact all(chain.evals .== 0.0) => true
+		@fact all(chain.infos["evals"] .== 0.0) => true
 		@fact chain.i => 0 
 
 		# set i to 1 to test this:
@@ -128,8 +127,8 @@ facts("testing Chain/MChain methods") do
 
 		# verify new values on chain
 		@fact chain.i => 1 
-		@fact chain.evals[1] => v["value"]
-		@fact chain.accept[1] => true
+		@fact chain.infos["evals"][1] => v["value"]
+		@fact chain.infos["accept"][1] => true
 		for nm in Mopt.ps_names(mprob)
 			@fact chain.parameters[nm][1] => v["params"][nm]
 		end
@@ -147,12 +146,15 @@ facts("testing Chain/MChain methods") do
 		MC = Mopt.MChain(n,mprob,L)
 
 		# verify values are zero:
-		@fact all(MC.chains[1].evals .== 0.0) => true
+		@fact all(MC.chains[1].infos["evals"] .== 0.0) => true
+		@fact all(MC.chains[1].infos["evals"] .== 0.0) => true
 		@fact MC.chains[1].i => 0 
+
+		@fact isempty(Mopt.evals(MC[1])) => true
 
 		# set i to 1 to test this, otherwise BoundsError (accessing x[0])
 		for ix = 1:n
-			MC.chains[ix].i = 1
+			MC[ix].i = 1
 		end
 
 		# update chain with v
@@ -160,14 +162,14 @@ facts("testing Chain/MChain methods") do
 		Mopt.appendEval!(MC,which,v[which],true)
 
 		# verify new values on each chain
-		@fact MC.chains[which].i => 1 
-		@fact MC.chains[which].evals[1] => v[which]["value"]
-		@fact MC.chains[which].accept[1] => true
+		@fact MC[which].i => 1 
+		@fact Mopt.evals(MC[which])[1] => v[which]["value"]
+		@fact MC.chains[which].infos["accept"][1] => true
 		for nm in Mopt.ps_names(mprob)
-			@fact MC.chains[which].parameters[nm][1] => v[which]["params"][nm]
+			@fact Mopt.parameters(MC[which])[nm][1] => v[which]["params"][nm]
 		end
 		for nm in Mopt.ms_names(mprob)
-			@fact MC.chains[which].moments[nm][1] => v[which]["moments"][nm]
+			@fact Mopt.moments(MC[which])[nm][1] => v[which]["moments"][nm]
 		end
 	end
 

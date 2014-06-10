@@ -22,83 +22,68 @@ abstract AbstractChain
 # the default chain type
 # we create a dictionary with arrays
 # for each parameters
-type Chain
-  i::Int             # current index
-  evals     ::DataArray   # DataArray of evaluations (can hold NA)
-  accept    ::DataArray   # DataArray of accept/reject(can hold NA)
-  parameters::Dict   # dictionary of arrays(L,1), 1 for each parameter
-  moments   ::Dict      # dictionary of DataArrays(L,1), 1 for each moment
+type Chain <: AbstractChain
+  i::Int              # current index
+  infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
+  parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
+  moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
 
   function Chain(MProb,L)
-    evals      = @data([0.0 for i = 1:L])
-    accept     = @data([false for i = 1:L])
+    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L])}
     parameters = { x => zeros(L) for x in ps_names(MProb) }
     moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(0,evals,accept,parameters,moments)
+    return new(0,infos,parameters,moments)
   end
 end
 
 
+abstract AbstractChainRow
+
 # TODO
-#setindex!(Chain,idx,val)
+# setindex!(Chain,idx,val)
 # see appendEval! below
 
-#getindex(Chain,idx) => returns a "ChainRow"
-# a bit tricky because we don't know for how many cols there are params, moments etc
-
-# i decided to return a 1-row dataframe.
-function getindex(c::Chain, i::Int)
-    r = DataFrame(i = i, value = c.evals[i], accept = c.accept[i])
-    r = cbind(r,getParamDF(c,i),getMomentsDF(c,i))
-    return r
-end
-
-# can also return a range of the dataframe
-function getindex(c::Chain, i::UnitRange{Int})
-    r = DataFrame(i = i, value = c.evals[i], accept = c.accept[i])
-    r = cbind(r,getParamDF(c,i),getMomentsDF(c,i))
-    return r
-end
-
-# return parameter dict as a DataFrame
-function getParamDF(c::Chain)
-    cols = [c.parameters[k] for k in keys(c.parameters)]
-    cnames = Array(Symbol,length(c.parameters))
-    pkeys = collect(keys(c.parameters))
+# taking a dictionary of vectors, returns
+# the values as a dataframe or as a dictionary
+function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
+  if df
+    cols = [dict[k][I] for k in keys(dict)]
+    cnames = Array(Symbol,length(dict))
+    pkeys = collect(keys(dict))
     for i in 1:length(pkeys)
         cnames[i] = symbol(pkeys[i])
     end
     return DataFrame(cols, cnames)
+  else ## ==== return as collection
+    return({ k => v[I] for (k,v) in dict })
+  end
 end
 
-# return paramDF at row i
-function getParamDF(c::Chain,i)
-    r = getParamDF(c)
-    return r[i,:]
-end
-
-# return moments dict as a DataFrame
-function getMomentsDF(c::Chain)
-    cols = [c.moments[k] for k in keys(c.moments)]
-    cnames = Array(Symbol,length(c.moments))
-    pkeys = collect(keys(c.moments))
-    for i in 1:length(pkeys)
-        cnames[i] = symbol(pkeys[i])
-    end
-    return DataFrame(cols, cnames)
-end
-
-function getMomentsDF(c::Chain,i)
-    r = getMomentsDF(c)
-    return r[i,:]
-end
-
+collectFields(dict::Dict,df::Bool=false)                 = collectFields(dict, 1:length(dict),df)
+collectFields(dict::Dict,i::Int, df::Bool=false)         = collectFields(dict, i:i, df)
+parameters(c::Chain, df::Bool=false)                     = collectFields(c.parameters, 1:c.i, df)
+parameters(c::Chain, I::UnitRange{Int}, df::Bool=false)  = collectFields(c.parameters, I, df)
+parameters(c::Chain, i::Int, df::Bool=false)             = collectFields(c.parameters, i, df)
+moments(c::Chain, df::Bool=false)                        = collectFields(c.moments, 1:c.i, df)
+moments(c::Chain, I::UnitRange{Int}, df::Bool=false)     = collectFields(c.moments, I, df)
+moments(c::Chain, i::Int, df::Bool=false)                = collectFields(c.moments, i, df)
+infos(c::Chain, df::Bool=false)                          = collectFields(c.infos, 1:c.i, df)
+infos(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields(c.infos, I, df)
+infos(c::Chain, i::Int, df::Bool=false)                  = collectFields(c.infos, i, df)
+alls(c::Chain, df::Bool=false)                           = collectFields(merge(c.infos,c.parameters,c.moments), 1:c.i, df)
+alls(c::Chain, I::UnitRange{Int}, df::Bool=false)        = collectFields(merge(c.infos,c.parameters,c.moments), I, df)
+alls(c::Chain, i::Int, df::Bool=false)                   = collectFields(merge(c.infos,c.parameters,c.moments), i, df)
+getindex(c::Chain, i::UnitRange{Int}) = alls(c,i,true)
+getindex(c::Chain, i::Int) = alls(c,i,true)
+evals(c::Chain, df::Bool=false)                          = collectFields({"evals" => c.infos["evals"]}, 1:c.i, df)["evals"]
+evals(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"evals" => c.infos["evals"]}, I, df)["evals"]
+evals(c::Chain, i::Int, df::Bool=false)                  = collectFields({"evals" => c.infos["evals"]}, i, df)["evals"]
 
 # appends values from objective function
 # at CURRENT iteration
 function appendEval!(chain::Chain, vals::Dict, ACC::Bool)
-  chain.evals[chain.i] = vals["value"]
-  chain.accept[chain.i] = ACC
+  chain.infos["evals"][chain.i] = vals["value"]
+  chain.infos["accept"][chain.i] = ACC
   for (k,v) in vals["moments"]
     chain.moments[k][chain.i] = v
   end
@@ -107,18 +92,6 @@ function appendEval!(chain::Chain, vals::Dict, ACC::Bool)
   end
   return nothing
 end
-
-
-function getEvals(ch::Chain)
-    return ch.evals
-end
-
-function getMoments(ch::Chain)
-    return ch.moments
-end
-
-
-
 
 ## MULTIPLE CHAINS
 ## ===============
@@ -134,7 +107,10 @@ type MChain
   end
 end
 
-
+# can also return a range of the dataframe
+function getindex(mc::MChain, i::Int)
+    return mc.chains[i]
+end
 
 # methods for MChain
 function appendEval!(MC::MChain, which::Int, vals::Dict, acc::Bool)
@@ -146,15 +122,5 @@ function updateIter!(MC::MChain)
     for ix in 1:MC.n
         MC.chains[ix].i += 1
     end 
-end
-
-# gets evals array from chain number "which"
-# in multiple chain object ch
-function getEvals(ch::MChain,which::Int)
-    return ch.chains[which].evals
-end
-
-function getMoments(ch::MChain,which::Int)
-    return ch.chains[which].moments
 end
 
