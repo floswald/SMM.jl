@@ -66,6 +66,48 @@ facts("testing MChain constructor") do
 end
 
 facts("testing Chain/MChain methods") do
+
+	context("testing getindex(chain,i)") do
+
+		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
+		L = 9	# length of chain
+		chain = Mopt.Chain(mprob,L)
+
+		i = rand(1:L)
+
+		x = chain[i]
+
+		@fact isa(x,DataFrame) => true
+		@fact nrow(x) => 1
+		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
+
+		nx = names(x)
+		nm = [:i,:value,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
+		@fact nx == nm => true
+
+	end
+
+	context("testing getindex(chain,i::Range)") do
+
+		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
+		L = 9	# length of chain
+		chain = Mopt.Chain(mprob,L)
+
+		i = 3:L
+
+		x = chain[i]
+		
+		@fact isa(x,DataFrame) => true
+		@fact nrow(x) => length(i)
+		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
+
+		nx = names(x)
+		nm = [:i,:value,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
+		@fact nx == nm => true
+
+	end
 	
 	context("test appendEval!(chain)") do
 

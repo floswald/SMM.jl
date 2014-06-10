@@ -19,7 +19,7 @@ include("Algos.jl")
 
 	
 # exports
-export MProb, Chain, Testobj
+export MProb, Chain, Testobj, getindex
 	
 
 

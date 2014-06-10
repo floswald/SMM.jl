@@ -40,6 +40,20 @@ type MAlgoRandom <: MAlgo
   end
 end
 
+# function shockallp(p,shocksd,VV) 
+#   # sh = rmultnorm(1,rep(0,nrow(VV)),VV) * shocksd
+#   MN = MvNormal(VV)
+#   sh = rand(MN) .* shocksd
+
+#   # update value for each param
+#   for (pp in colnames(sh)) {
+#     p[[pp]] = fitMirror( p[[pp]] + sh[,pp] ,
+#                               LB = cf$pdesc[pp,'lb'],
+#                               UB = cf$pdesc[pp,'ub'])  
+#   }
+
+#   return p 
+# end
 
 # computes new candidate vectors for each chain
 # accepts/rejects that vector on each chain, according to some rule
@@ -61,13 +75,16 @@ function computeNextIteration!( algo::MAlgoRandom  )
 		# New Candidates
 		# --------------
 
+		# # compute Var-Cov matrix
+	 #    VV = cov(chains[lower_bound_index:nrow(chains),params_to_sample2]) + 0.0001 * diag(length(params_to_sample2))
+
 		if algo.i > 1
 			for ch in 1:algo["N"]
-		  	# this updating rule can differ by chain!
-
-		  	# TODO this should change only the subset in algo.m.params_to_sample!
-	  		algo.candidate_param[ch] = algo.current_param[ch] + randn()*shock_var
-		    end
+			  	# this updating rule can differ by chain!
+			  	for p in algo.m.params_to_sample
+			  		algo.candidate_param[ch][p] = algo.current_param[ch][p] + randn()*shock_var
+			    end
+			end
 		else
 			# candidate = initial_value, so ok for first iteration
 		end
