@@ -104,38 +104,81 @@ end
 
 
 
+
+# trying to understand parametric types:
+# abstract MyAbstract
+
+# type MySubType <: MyAbstract
+#     field1 :: ASCIIString
+#     function MySubType(x)
+#         new(x)
+#     end
+# end
+
+
+# type Myt{ T<:MyAbstract}
+#     chain :: Array{T,1}
+#     function Myt(n,z::T) 
+#         x = [z for i=1:n]
+#         new(x)
+#     end
+# end
+# Myt{T}(n::Integer,z::T) = Myt{T}(n,z)
+
+# function newType(whichtype,x)
+#     if isa(whichtype,MySubType)
+#         return MySubType(x)
+#     else
+#         println("no other types")
+#     end
+# end
+
+
+# this doesnt work
+# but really we can just use Array{Chain,1}
+
 ## Multiple Default Chains
 ## =======================
 
 # Stores multilpe chains
-type MChain
-  n :: Int # number of chains
-  chains :: Array
+# type MChain{ T <: AbstractChain}
+#   n :: Int # number of chains
+#   chains :: Array{T,1}
 
-  # function MChain(n,ChType::AbstractChain,MProb,L)
-  #   chains = [ ChType(MProb,L) for i in 1:n ]
-  #   return new(n,chains)
-  # end
-  function MChain(n,MProb,L)
-    chains = [ Chain(MProb,L) for i in 1:n ]
-    return new(n,chains)
-  end
-end
+#   function MChain(  n,ch::T,MProb,L)
+#     chains = [ ch for i in 1:n ]
+#     return new(n,chains)
+#   end
+#   # function MChain(n,MProb,L)
+#   #   chains = [ Chain(MProb,L) for i in 1:n ]
+#   #   return new(n,chains)
+#   # end
+# end
+# MChain{T}(n::Integer,ch::T,MProb::MProb,L::Integer) = MChain{T}(n,ch,MProb,L)
+
+
+# function newChain(whichChain,m::MProb,L::Integer)
+#     if isa(whichChain,Chain)
+#         return Chain(m,L)
+#     else
+#         println("no other chain types")
+#     end
+# end
 
 # can also return a range of the dataframe
-function getindex(mc::MChain, i::Int)
-    return mc.chains[i]
+function getindex(mc::Array{AbstractChain}, i::Int)
+    return mc[i]
 end
 
 # methods for MChain
-function appendEval!(MC::MChain, which::Int, vals::Dict, acc::Bool,status::Int)
-    appendEval!(MC.chains[which],vals,acc,status)
-end
+# function appendEval!(MC::Array{AbstractChain,1}, which::Int, vals::Dict, acc::Bool,status::Int)
+#     appendEval!(MC[which],vals,acc,status)
+# end
 
 # update the iteration count on each chain
-function updateIter!(MC::MChain)
-    for ix in 1:MC.n
-        MC.chains[ix].i += 1
+function updateIter!(MC::Array)
+    for ix in 1:length(MC)
+        MC[ix].i += 1
     end 
 end
 

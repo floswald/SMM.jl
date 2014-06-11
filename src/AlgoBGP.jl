@@ -1,29 +1,4 @@
 
-
-
-# here is a list of potential options we may want to set on each algo:
-
-#   shock_var        :: Float64 # variance of shock
-#   np_shock         :: Float64
-#   save_freq        :: Int
-#   N                :: Int   # number of chains
-#   n_untempered     :: Int   # number of chains untemprered
-#   maxiter          :: Int   # maximum number of iterations
-#   run              :: Int   # number of run
-
-#   # cluster setup
-#   mode             :: ASCIIString # {'serial','mpi'}
-
-#   # paths for I/O
-#   path :: ASCIIString # "where/to/save/this"
-
-#   prepared      :: Bool
-#   current_param :: Dict   # current parameter value
-#   chains        :: MChain   # object of type MChain
-# end
-
-
-
 # The BGP MCMC Algorithm: Likelihood-Free Parallel Tempering
 # ==========================================================
 #
@@ -33,27 +8,45 @@
 # Baragatti, Grimaud and Pommeret (BGP)
 # 
 # Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov Chains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
+
+
+# Define a Chain Type for BGP
+type BGPChain <: AbstractChain
+  i::Int              # current index
+  infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
+  parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
+  moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
+  tempering  ::Float64
+  tolerance  ::Float64
+
+  function Chain(MProb,L,temp,tol)
+    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], }
+    parameters = { x => zeros(L) for x in ps_names(MProb) }
+    moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
+    return new(0,infos,parameters,moments,temp,tol)
+  end
+end
+
+
+
 type MAlgoBGP <: MAlgo
   m               :: MProb # an MProb
   opts            :: Dict	# list of options
   i               :: Int 	# iteration
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
-  MChains         :: MChain 	# collection of Chains: if N==1, length(chains) = 1
+  MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
 
   function MAlgoBGP(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100,"maxtol" => 1])
 
+  	# temperatures for each chain
+	temps = linspace(1,opts["maxtemp"],opts["N"])
+  	# tolerances for each chain
+	tols = linspace(0.1,opts["maxtol"],opts["N"])
   	# create chains
-  	chains = MChain(opts["N"],m,opts["maxiter"])
+  	chains = [BGPChain(m,opts["maxiter"],temps[i],tols[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ m.initial_value for i=1:opts["N"] ] 
-  	# temperatures
-  	if !haskey(opts,"temps")
-  		opts["temps"] = linspace(1,opts["maxtemp"],opts["N"])
-  	end
-  	if !haskey(opts,"tols")
-  		opts["tols"] = linspace(0.1,opts["maxtol"],opts["N"])
-  	end
 
     return new(m,opts,0,cpar,cpar,chains)
   end

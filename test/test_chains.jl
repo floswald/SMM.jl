@@ -47,23 +47,23 @@ facts("Testing Chains constructor") do
 
 end
 
-facts("testing MChain constructor") do
+# facts("testing MChain constructor") do
 	
 
-	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-	L = 9
-	chain = Mopt.Chain(mprob,L)
+# 	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+# 	L = 9
+# 	chain = Mopt.Chain(mprob,L)
 
-	n = 14
-	chains = Mopt.MChain(n,mprob,L)
+# 	n = 14
+# 	chains = Mopt.MChain(n,mprob,L)
 
-	@fact isa(chains,Mopt.MChain) => true
-	@fact isa(chains.chains,Array) => true
-	@fact length(chains.chains) => n
-	for ch in 1:n
-		@fact length(chains.chains[ch].infos["evals"]) => L
-	end
-end
+# 	@fact isa(chains,Mopt.MChain) => true
+# 	@fact isa(chains.chains,Array) => true
+# 	@fact length(chains.chains) => n
+# 	for ch in 1:n
+# 		@fact length(chains.chains[ch].infos["evals"]) => L
+# 	end
+# end
 
 facts("testing Chain/MChain methods") do
 
@@ -143,12 +143,12 @@ facts("testing Chain/MChain methods") do
 		L = 9
 		n = 17
 		v = [ Mopt.Testobj(p,moms,["alpha","beta","gamma"]) for i=1:n ]
-		MC = Mopt.MChain(n,mprob,L)
+		MC = [Mopt.Chain(mprob,L) for i=1:n]
 
 		# verify values are zero:
-		@fact all(MC.chains[1].infos["evals"] .== 0.0) => true
-		@fact all(MC.chains[1].infos["evals"] .== 0.0) => true
-		@fact MC.chains[1].i => 0 
+		@fact all(MC[1].infos["evals"] .== 0.0) => true
+		@fact all(MC[1].infos["evals"] .== 0.0) => true
+		@fact MC[1].i => 0 
 
 		@fact isempty(Mopt.evals(MC[1])) => true
 
@@ -159,12 +159,12 @@ facts("testing Chain/MChain methods") do
 
 		# update chain with v
 		which = rand(1:n)
-		Mopt.appendEval!(MC,which,v[which],true,1)
+		Mopt.appendEval!(MC[which],v[which],true,1)
 
 		# verify new values on each chain
 		@fact MC[which].i => 1 
 		@fact Mopt.evals(MC[which])[1] => v[which]["value"]
-		@fact MC.chains[which].infos["accept"][1] => true
+		@fact MC[which].infos["accept"][1] => true
 		for nm in Mopt.ps_names(mprob)
 			@fact Mopt.parameters(MC[which])[nm][1] => v[which]["params"][nm]
 		end
@@ -178,15 +178,15 @@ facts("testing Chain/MChain methods") do
 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
 		L = 9
 		n = 17
-		MC = Mopt.MChain(n,mprob,L)
+		MC = [Mopt.Chain(mprob,L) for i=1:n]
 
 		for ix = 1:n
-			@fact MC.chains[ix].i => 0
+			@fact MC[ix].i => 0
 		end
 
 		Mopt.updateIter!(MC)
 		for ix = 1:n
-			@fact MC.chains[ix].i => 1
+			@fact MC[ix].i => 1
 		end
 
 	end

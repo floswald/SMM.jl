@@ -16,7 +16,7 @@ end
 
 # get chain number "which" from algo
 function getChain(algo::MAlgo, which::Int)
-	algo.MChains.chains[which]
+	algo.chains[which]
 end
 
 function updateIter!(algo::MAlgo)
