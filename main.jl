@@ -9,7 +9,7 @@ cd("$home/git/MOpt.jl")
 include("test/test_MProb.jl")
 include("test/test_chains.jl")
 include("test/test_algo.jl")
-
+	
 # to develop in main: run this
 include("src/mopt.jl")
 
@@ -49,10 +49,16 @@ mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms;moments_subset=submoms)
 mprob
 
 
+
 # step 2: choose an algorithm
 # ----------------------
-algo = Mopt.MAlgoRandom(mprob,opts=["mode"=>"serial","maxiter"=>100])
+opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
 
+MA = Mopt.MAlgoRandom(mprob,opts)
+
+
+# an algo has N chains:
+MA.MChains
 # step 3: run estimation
 # ----------------------
 runMopt(algo)

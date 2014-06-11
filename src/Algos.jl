@@ -55,6 +55,11 @@ end
 #   return p 
 # end
 
+
+function getchain( algo::MAlgoRandom, i::Int)
+	algo.MChains[i]
+end
+
 # computes new candidate vectors for each chain
 # accepts/rejects that vector on each chain, according to some rule
 # *) computes N new parameter vectors
@@ -65,7 +70,7 @@ function computeNextIteration!( algo::MAlgoRandom  )
     # how to go from p(t) to p(t+1) ?
 
     # check if we reached end of chain
-	if algo.i == length(getEvals(algo.MChains,1))
+	if algo.i == algo["maxiter"]
 	    println("reached end of chain. goodbye.")
 	    return true
 	else
@@ -110,8 +115,9 @@ function computeNextIteration!( algo::MAlgoRandom  )
 				# accept all
 				ACC = true
 		  		algo.current_param[ch] = algo.candidate_param[ch] 
+		  		status = 1
 			else
-				xold = getEvals(algo.MChains,ch)[algo.i-1]
+				xold = evals(algo.MChains[ch],algo.i-1)
 				xnew = v[ch]["value"]
 				prob = minimum([1, exp(xold - xnew)])
 				if isna(prob)
@@ -127,13 +133,13 @@ function computeNextIteration!( algo::MAlgoRandom  )
 					else
 						ACC = false
 						v[ch]["params"] = algo.current_param[ch]	# reset param in output of obj to previous value
-						v[ch]["moments"] = getMoments(algo.MChains,ch)[algo.i-1]	# reset moments in output of obj to previous value
+						v[ch]["moments"] = moments(algo.MChains[ch],algo.i-1)	# reset moments in output of obj to previous value
 					end
 					status = 1
 				end
 			end
-		    # append values to chain index ch
-		    appendEval!(algo.MChains,ch,v[ch],ACC)
+		    # append values to MChains at index ch
+		    appendEval!(algo.MChains,ch,v[ch],ACC,status)
 		end
 	end
 end

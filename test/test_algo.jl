@@ -95,16 +95,12 @@ facts("testing MAlgo methods") do
 
 		# each chain must have those values
 		for ix in 1:opts["N"]
-			ch = Mopt.getChain(MA,ix)	# get each chain
+			ch = Mopt.getchain(MA,ix)	# get each chain
 			@fact ch.i => 1
-			@fact ch.evals[1] => v["value"]
-			@fact ch.accept[1] => true # all true in first eval
-			for k in keys(ch.parameters)
-				@fact ch.parameters[k][1] => v["params"][k]
-			end
-			for k in keys(ch.moments)
-				@fact ch.moments[k][1] => v["moments"][k]
-			end
+			@fact Mopt.evals(ch,1)[1] => v["value"]
+			@fact Mopt.accept(ch,1)[1] => true # all true in first eval
+			@fact map(x->x[1],collect(values(Mopt.parameters(ch,1)))) == collect(values(v["params"])) => true
+			@fact map(x->x[1],collect(values(Mopt.moments(ch,1)))) == collect(values(v["moments"])) => true
 		end # all chains
 	end
 end

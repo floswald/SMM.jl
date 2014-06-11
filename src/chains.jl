@@ -29,7 +29,7 @@ type Chain <: AbstractChain
   moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
 
   function Chain(MProb,L)
-    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L])}
+    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L]}
     parameters = { x => zeros(L) for x in ps_names(MProb) }
     moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
     return new(0,infos,parameters,moments)
@@ -46,17 +46,21 @@ abstract AbstractChainRow
 # taking a dictionary of vectors, returns
 # the values as a dataframe or as a dictionary
 function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
-  if df
-    cols = [dict[k][I] for k in keys(dict)]
-    cnames = Array(Symbol,length(dict))
-    pkeys = collect(keys(dict))
+    if length(I) == 0
+        println("no evaluations to show")
+        return nothing
+    end
+    if df
+        cols = [dict[k][I] for k in keys(dict)]
+        cnames = Array(Symbol,length(dict))
+        pkeys = collect(keys(dict))
     for i in 1:length(pkeys)
         cnames[i] = symbol(pkeys[i])
     end
-    return DataFrame(cols, cnames)
-  else ## ==== return as collection
-    return({ k => v[I] for (k,v) in dict })
-  end
+        return DataFrame(cols, cnames)
+    else ## ==== return as collection
+        return({ k => v[I] for (k,v) in dict })
+    end
 end
 
 collectFields(dict::Dict,df::Bool=false)                 = collectFields(dict, 1:length(dict),df)
@@ -78,12 +82,19 @@ getindex(c::Chain, i::Int) = alls(c,i,true)
 evals(c::Chain, df::Bool=false)                          = collectFields({"evals" => c.infos["evals"]}, 1:c.i, df)["evals"]
 evals(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"evals" => c.infos["evals"]}, I, df)["evals"]
 evals(c::Chain, i::Int, df::Bool=false)                  = collectFields({"evals" => c.infos["evals"]}, i, df)["evals"]
+status(c::Chain, df::Bool=false)                          = collectFields({"status" => c.infos["status"]}, 1:c.i, df)["status"]
+status(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"status" => c.infos["status"]}, I, df)["status"]
+status(c::Chain, i::Int, df::Bool=false)                  = collectFields({"status" => c.infos["status"]}, i, df)["status"]
+accept(c::Chain, df::Bool=false)                          = collectFields({"accept" => c.infos["accept"]}, 1:c.i, df)["accept"]
+accept(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"accept" => c.infos["accept"]}, I, df)["accept"]
+accept(c::Chain, i::Int, df::Bool=false)                  = collectFields({"accept" => c.infos["accept"]}, i, df)["accept"]
 
 # appends values from objective function
 # at CURRENT iteration
-function appendEval!(chain::Chain, vals::Dict, ACC::Bool)
+function appendEval!(chain::Chain, vals::Dict, ACC::Bool, status::Int)
   chain.infos["evals"][chain.i] = vals["value"]
   chain.infos["accept"][chain.i] = ACC
+  chain.infos["status"][chain.i] = status
   for (k,v) in vals["moments"]
     chain.moments[k][chain.i] = v
   end
@@ -113,8 +124,8 @@ function getindex(mc::MChain, i::Int)
 end
 
 # methods for MChain
-function appendEval!(MC::MChain, which::Int, vals::Dict, acc::Bool)
-    appendEval!(MC.chains[which],vals,acc)
+function appendEval!(MC::MChain, which::Int, vals::Dict, acc::Bool,status::Int)
+    appendEval!(MC.chains[which],vals,acc,status)
 end
 
 # update the iteration count on each chain
