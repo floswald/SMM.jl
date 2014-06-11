@@ -18,16 +18,16 @@ moms = [
 
 mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
 
-facts("testing MAlgoRandom Constructor") do
+facts("testing MAlgoBGP Constructor") do
 
 	context("checking members") do
 
 		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
 
-		MA = Mopt.MAlgoRandom(mprob,opts)
+		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		@fact isa(MA,Mopt.MAlgo) => true
-		@fact isa(MA,Mopt.MAlgoRandom) => true
+		@fact isa(MA,Mopt.MAlgoBGP) => true
 		@fact isa(MA.m,Mopt.MProb) => true
 
 		@fact MA.i => 0
@@ -42,7 +42,7 @@ facts("testing MAlgoRandom Constructor") do
 	context("checking getters/setters on MAlgo") do
 
 		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
-		MA = Mopt.MAlgoRandom(mprob,opts)
+		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		# getters
 		@fact MA["N"] => opts["N"]
@@ -63,7 +63,7 @@ facts("testing MAlgo methods") do
 	context("testing evaluateObjective(algo)") do
 
 		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
-		MA = Mopt.MAlgoRandom(mprob,opts)
+		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		which_chain = 1
 		x = Mopt.evaluateObjective(MA,which_chain)
@@ -83,7 +83,7 @@ facts("testing MAlgo methods") do
 	context("updateChains!(algo)") do
 
 		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
-		MA = Mopt.MAlgoRandom(mprob,opts)
+		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		@fact MA.MChains.chains[1].i => 0
 		@fact MA.i => 0

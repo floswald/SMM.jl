@@ -2,7 +2,7 @@
 
 # MOpt.jl: Moment Optimization Library for Julia
 
-This package implements several MCMC algorithms to optimize a non-differentiable objective function, which depends on a set of parameter values and a set of data moments. In general, this implements *Simulated Method of Moments*. The library is targeted to run MCMC on an SGE cluster, where each node is a chain.
+This package implements several MCMC algorithms to optimize a non-differentiable objective function. The main application are **likelihood-free estimators**, which requires evaluating the objective at many regions. In general, this implements *Simulated Method of Moments*. The library is targeted to run MCMC on an SGE cluster, where each node is a chain.
 
 For an R implementation which is the basis of this package, see [https://github.com/tlamadon/mopt](https://github.com/tlamadon/mopt)
 

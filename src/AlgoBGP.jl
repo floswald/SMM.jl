@@ -22,7 +22,18 @@
 #   chains        :: MChain   # object of type MChain
 # end
 
-type MAlgoRandom <: MAlgo
+
+
+# The BGP MCMC Algorithm: Likelihood-Free Parallel Tempering
+# ==========================================================
+#
+# http://link.springer.com/article/10.1007%2Fs11222-012-9328-6
+# http://fr.arxiv.org/abs/1108.3423
+#
+# Baragatti, Grimaud and Pommeret (BGP)
+# 
+# Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov Chains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
+type MAlgoBGP <: MAlgo
   m               :: MProb # an MProb
   opts            :: Dict	# list of options
   i               :: Int 	# iteration
@@ -30,7 +41,7 @@ type MAlgoRandom <: MAlgo
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: MChain 	# collection of Chains: if N==1, length(chains) = 1
 
-  function MAlgoRandom(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100])
+  function MAlgoBGP(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100])
 
   	# create chains
   	chains = MChain(opts["N"],m,opts["maxiter"])
@@ -56,7 +67,7 @@ end
 # end
 
 
-function getchain( algo::MAlgoRandom, i::Int)
+function getchain( algo::MAlgoBGP, i::Int)
 	algo.MChains[i]
 end
 
@@ -65,7 +76,7 @@ end
 # *) computes N new parameter vectors
 # *) applies a criterion to accept/reject any new params
 # *) stores the result in chains
-function computeNextIteration!( algo::MAlgoRandom  )
+function computeNextIteration!( algo::MAlgoBGP  )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
