@@ -69,7 +69,7 @@ accept(c::AbstractChain, i::Int, df::Bool=false)                  = collectField
 # appends values from objective function
 # at CURRENT iteration
 function appendEval!(chain::AbstractChain, vals::Dict, ACC::Bool, status::Int)
-  chain.infos["evals"][chain.i] = vals["value"]
+  chain.infos["evals"][chain.i]  = vals["value"]
   chain.infos["accept"][chain.i] = ACC
   chain.infos["status"][chain.i] = status
   for (k,v) in vals["moments"]
@@ -103,6 +103,7 @@ end
 
 
 
+
 ## Multiple Default Chains
 ## =======================
 
@@ -111,6 +112,10 @@ type MChain
   n :: Int # number of chains
   chains :: Array
 
+  # function MChain(n,ChType::AbstractChain,MProb,L)
+  #   chains = [ ChType(MProb,L) for i in 1:n ]
+  #   return new(n,chains)
+  # end
   function MChain(n,MProb,L)
     chains = [ Chain(MProb,L) for i in 1:n ]
     return new(n,chains)
