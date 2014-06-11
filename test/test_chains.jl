@@ -80,10 +80,10 @@ facts("testing Chain/MChain methods") do
 
 		@fact isa(x,DataFrame) => true
 		@fact nrow(x) => 1
-		@fact ncol(x) => 2 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
+		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
 
 		nx = names(x)
-		nm = [:evals,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
+		nm = [:evals,:accept,:status,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
 		@fact sort(nx) == sort(nm) => true
 
 	end
@@ -100,10 +100,10 @@ facts("testing Chain/MChain methods") do
 		
 		@fact isa(x,DataFrame) => true
 		@fact nrow(x) => length(i)
-		@fact ncol(x) => 2 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
+		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
 
 		nx = names(x)
-		nm = [:evals,:accept,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
+		nm = [:evals,:accept,:status,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
 		@fact sort(nx) == sort(nm) => true
 
 	end
@@ -123,7 +123,7 @@ facts("testing Chain/MChain methods") do
 		chain.i = 1
 
 		# update chain with v
-		Mopt.appendEval!(chain,v,true)
+		Mopt.appendEval!(chain,v,true,1)
 
 		# verify new values on chain
 		@fact chain.i => 1 
@@ -159,7 +159,7 @@ facts("testing Chain/MChain methods") do
 
 		# update chain with v
 		which = rand(1:n)
-		Mopt.appendEval!(MC,which,v[which],true)
+		Mopt.appendEval!(MC,which,v[which],true,1)
 
 		# verify new values on each chain
 		@fact MC[which].i => 1 

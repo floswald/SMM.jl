@@ -41,11 +41,19 @@ type MAlgoBGP <: MAlgo
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: MChain 	# collection of Chains: if N==1, length(chains) = 1
 
-  function MAlgoBGP(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100])
+  function MAlgoBGP(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100,"maxtol" => 1])
 
   	# create chains
   	chains = MChain(opts["N"],m,opts["maxiter"])
+  	# current param values
   	cpar = [ m.initial_value for i=1:opts["N"] ] 
+  	# temperatures
+  	if !haskey(opts,"temps")
+  		opts["temps"] = linspace(1,opts["maxtemp"],opts["N"])
+  	end
+  	if !haskey(opts,"tols")
+  		opts["tols"] = linspace(0.1,opts["maxtol"],opts["N"])
+  	end
 
     return new(m,opts,0,cpar,cpar,chains)
   end
@@ -85,14 +93,16 @@ function computeNextIteration!( algo::MAlgoBGP  )
 	    println("reached end of chain. goodbye.")
 	    return true
 	else
-		# else update iteration count on all chains
+		# else update iteration count on all chains3
 		updateIter!(algo.MChains)
 
 		# New Candidates
 		# --------------
 
-		# # compute Var-Cov matrix
-	 #    VV = cov(chains[lower_bound_index:nrow(chains),params_to_sample2]) + 0.0001 * diag(length(params_to_sample2))
+		# compute Var-Cov matrix
+		parr = array(parameters())
+		VV = cov(array())
+	    VV = cov(chains[lower_bound_index:nrow(chains),params_to_sample2]) + 0.0001 * diag(length(params_to_sample2))
 
 		if algo.i > 1
 			for ch in 1:algo["N"]

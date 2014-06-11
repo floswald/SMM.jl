@@ -18,6 +18,70 @@
 # on top of (eval, moment, parameter)
 abstract AbstractChain
 
+# methods for AbstractChain
+# -------------------------
+
+# taking a dictionary of vectors, returns
+# the values as a dataframe or as a dictionary
+function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
+    if length(I) == 0
+        println("no evaluations to show")
+    end
+    if df
+        cols = [dict[k][I] for k in keys(dict)]
+        cnames = Array(Symbol,length(dict))
+        pkeys = collect(keys(dict))
+    for i in 1:length(pkeys)
+        cnames[i] = symbol(pkeys[i])
+    end
+        return DataFrame(cols, cnames)
+    else ## ==== return as collection
+        return({ k => v[I] for (k,v) in dict })
+    end
+end
+
+collectFields(dict::Dict,df::Bool=false)                 = collectFields(dict, 1:length(dict),df)
+collectFields(dict::Dict,i::Int, df::Bool=false)         = collectFields(dict, i:i, df)
+parameters(c::AbstractChain, df::Bool=false)                     = collectFields(c.parameters, 1:c.i, df)
+parameters(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)  = collectFields(c.parameters, I, df)
+parameters(c::AbstractChain, i::Int, df::Bool=false)             = collectFields(c.parameters, i, df)
+moments(c::AbstractChain, df::Bool=false)                        = collectFields(c.moments, 1:c.i, df)
+moments(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)     = collectFields(c.moments, I, df)
+moments(c::AbstractChain, i::Int, df::Bool=false)                = collectFields(c.moments, i, df)
+infos(c::AbstractChain, df::Bool=false)                          = collectFields(c.infos, 1:c.i, df)
+infos(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)       = collectFields(c.infos, I, df)
+infos(c::AbstractChain, i::Int, df::Bool=false)                  = collectFields(c.infos, i, df)
+alls(c::AbstractChain, df::Bool=false)                           = collectFields(merge(c.infos,c.parameters,c.moments), 1:c.i, df)
+alls(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)        = collectFields(merge(c.infos,c.parameters,c.moments), I, df)
+alls(c::AbstractChain, i::Int, df::Bool=false)                   = collectFields(merge(c.infos,c.parameters,c.moments), i, df)
+getindex(c::AbstractChain, i::UnitRange{Int}) = alls(c,i,true)
+getindex(c::AbstractChain, i::Int) = alls(c,i,true)
+evals(c::AbstractChain, df::Bool=false)                          = collectFields({"evals" => c.infos["evals"]}, 1:c.i, df)["evals"]
+evals(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"evals" => c.infos["evals"]}, I, df)["evals"]
+evals(c::AbstractChain, i::Int, df::Bool=false)                  = collectFields({"evals" => c.infos["evals"]}, i, df)["evals"]
+status(c::AbstractChain, df::Bool=false)                          = collectFields({"status" => c.infos["status"]}, 1:c.i, df)["status"]
+status(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"status" => c.infos["status"]}, I, df)["status"]
+status(c::AbstractChain, i::Int, df::Bool=false)                  = collectFields({"status" => c.infos["status"]}, i, df)["status"]
+accept(c::AbstractChain, df::Bool=false)                          = collectFields({"accept" => c.infos["accept"]}, 1:c.i, df)["accept"]
+accept(c::AbstractChain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"accept" => c.infos["accept"]}, I, df)["accept"]
+accept(c::AbstractChain, i::Int, df::Bool=false)                  = collectFields({"accept" => c.infos["accept"]}, i, df)["accept"]
+
+# appends values from objective function
+# at CURRENT iteration
+function appendEval!(chain::AbstractChain, vals::Dict, ACC::Bool, status::Int)
+  chain.infos["evals"][chain.i] = vals["value"]
+  chain.infos["accept"][chain.i] = ACC
+  chain.infos["status"][chain.i] = status
+  for (k,v) in vals["moments"]
+    chain.moments[k][chain.i] = v
+  end
+  for (k,v) in vals["params"]
+    chain.parameters[k][chain.i] = v
+  end
+  return nothing
+end
+
+
 
 # the default chain type
 # we create a dictionary with arrays
@@ -37,75 +101,10 @@ type Chain <: AbstractChain
 end
 
 
-abstract AbstractChainRow
 
-# TODO
-# setindex!(Chain,idx,val)
-# see appendEval! below
 
-# taking a dictionary of vectors, returns
-# the values as a dataframe or as a dictionary
-function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
-    if length(I) == 0
-        println("no evaluations to show")
-        return nothing
-    end
-    if df
-        cols = [dict[k][I] for k in keys(dict)]
-        cnames = Array(Symbol,length(dict))
-        pkeys = collect(keys(dict))
-    for i in 1:length(pkeys)
-        cnames[i] = symbol(pkeys[i])
-    end
-        return DataFrame(cols, cnames)
-    else ## ==== return as collection
-        return({ k => v[I] for (k,v) in dict })
-    end
-end
-
-collectFields(dict::Dict,df::Bool=false)                 = collectFields(dict, 1:length(dict),df)
-collectFields(dict::Dict,i::Int, df::Bool=false)         = collectFields(dict, i:i, df)
-parameters(c::Chain, df::Bool=false)                     = collectFields(c.parameters, 1:c.i, df)
-parameters(c::Chain, I::UnitRange{Int}, df::Bool=false)  = collectFields(c.parameters, I, df)
-parameters(c::Chain, i::Int, df::Bool=false)             = collectFields(c.parameters, i, df)
-moments(c::Chain, df::Bool=false)                        = collectFields(c.moments, 1:c.i, df)
-moments(c::Chain, I::UnitRange{Int}, df::Bool=false)     = collectFields(c.moments, I, df)
-moments(c::Chain, i::Int, df::Bool=false)                = collectFields(c.moments, i, df)
-infos(c::Chain, df::Bool=false)                          = collectFields(c.infos, 1:c.i, df)
-infos(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields(c.infos, I, df)
-infos(c::Chain, i::Int, df::Bool=false)                  = collectFields(c.infos, i, df)
-alls(c::Chain, df::Bool=false)                           = collectFields(merge(c.infos,c.parameters,c.moments), 1:c.i, df)
-alls(c::Chain, I::UnitRange{Int}, df::Bool=false)        = collectFields(merge(c.infos,c.parameters,c.moments), I, df)
-alls(c::Chain, i::Int, df::Bool=false)                   = collectFields(merge(c.infos,c.parameters,c.moments), i, df)
-getindex(c::Chain, i::UnitRange{Int}) = alls(c,i,true)
-getindex(c::Chain, i::Int) = alls(c,i,true)
-evals(c::Chain, df::Bool=false)                          = collectFields({"evals" => c.infos["evals"]}, 1:c.i, df)["evals"]
-evals(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"evals" => c.infos["evals"]}, I, df)["evals"]
-evals(c::Chain, i::Int, df::Bool=false)                  = collectFields({"evals" => c.infos["evals"]}, i, df)["evals"]
-status(c::Chain, df::Bool=false)                          = collectFields({"status" => c.infos["status"]}, 1:c.i, df)["status"]
-status(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"status" => c.infos["status"]}, I, df)["status"]
-status(c::Chain, i::Int, df::Bool=false)                  = collectFields({"status" => c.infos["status"]}, i, df)["status"]
-accept(c::Chain, df::Bool=false)                          = collectFields({"accept" => c.infos["accept"]}, 1:c.i, df)["accept"]
-accept(c::Chain, I::UnitRange{Int}, df::Bool=false)       = collectFields({"accept" => c.infos["accept"]}, I, df)["accept"]
-accept(c::Chain, i::Int, df::Bool=false)                  = collectFields({"accept" => c.infos["accept"]}, i, df)["accept"]
-
-# appends values from objective function
-# at CURRENT iteration
-function appendEval!(chain::Chain, vals::Dict, ACC::Bool, status::Int)
-  chain.infos["evals"][chain.i] = vals["value"]
-  chain.infos["accept"][chain.i] = ACC
-  chain.infos["status"][chain.i] = status
-  for (k,v) in vals["moments"]
-    chain.moments[k][chain.i] = v
-  end
-  for (k,v) in vals["params"]
-    chain.parameters[k][chain.i] = v
-  end
-  return nothing
-end
-
-## MULTIPLE CHAINS
-## ===============
+## Multiple Default Chains
+## =======================
 
 # Stores multilpe chains
 type MChain
