@@ -8,6 +8,7 @@ cd("$home/git/MOpt.jl")
 # to develop with tests: run this
 include("test/test_MProb.jl")
 include("test/test_chains.jl")
+include("test/test_BGPchain.jl")
 include("test/test_algo.jl")
 	
 # to develop in main: run this

@@ -1,4 +1,4 @@
-module TestMChain
+module TestChain
 
 using FactCheck, DataFrames
 

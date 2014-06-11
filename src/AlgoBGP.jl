@@ -19,7 +19,7 @@ type BGPChain <: AbstractChain
   tempering  ::Float64
   tolerance  ::Float64
 
-  function Chain(MProb,L,temp,tol)
+  function BGPChain(MProb,L,temp,tol)
     infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], }
     parameters = { x => zeros(L) for x in ps_names(MProb) }
     moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
