@@ -195,6 +195,48 @@ facts("testing Chain/MChain methods") do
 end
 
 
+facts("testing collectFields and fillinFields functions") do
+	
+	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+	chain = Mopt.Chain(mprob,10)
+
+	context("collectFields") do
+
+		df= Mopt.collectFields(chain.parameters,1,true)
+		@fact isa(df,DataFrame) => true
+		@fact names(df) == [:a,:b] => true
+		@fact df[:a] => [0.0]
+		@fact df[:b] => [0.0]
+
+	end
+
+	context("fillinFields into dict of arrays") do
+
+		df= Mopt.collectFields(chain.parameters,1,true)
+		df = map(x -> x.+ rand(),eachcol(df))
+
+		Mopt.fillinFields!(chain.parameters,df,1) 	# fill in that row at index 1
+
+		# check
+		@fact Mopt.parameters(chain,1,true) == df => true
+	end
+
+	context("fillinFields into dict of Number") do
+
+		df= Mopt.collectFields(chain.parameters,1,true)
+		df = map(x -> x.+ rand(),eachcol(df))
+
+		# get a "candidate_param"
+		cand = p
+
+		Mopt.fillinFields!(cand,df) 	
+
+		# check
+		@fact df[:a][1] => cand["a"]
+		@fact df[:b][1] => cand["b"]
+	end
+
+end
 
 
 

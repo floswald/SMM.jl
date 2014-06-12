@@ -26,7 +26,7 @@ function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
 
 end
 
-
+ ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
 
 # # call this function to set up
 # # the cluster. 

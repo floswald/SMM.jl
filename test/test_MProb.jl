@@ -72,7 +72,7 @@ end
 
 facts("testing MProb methods") do
 
-	pb   = [ "a" => [0,1] , "b" => [0,1] ]
+	pb   = (ASCIIString=>Array{Float64,1})[ "a" => [0,1] , "b" => [0,1] ]
 	moms = [
 		"alpha" => [ 0.8 , 0.02 ],
 		"beta"  => [ 0.8 , 0.02 ],

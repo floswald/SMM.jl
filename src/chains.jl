@@ -23,16 +23,23 @@ abstract AbstractChain
 
 # taking a dictionary of vectors, returns
 # the values as a dataframe or as a dictionary
+# using Debug
+# @debug function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
 function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
-    if length(I) == 0
-        println("no evaluations to show")
-    end
+    # if length(I) == 0
+    #     println("no evaluations to show")
+    # end
+    n = length(dict)
+    dk = collect(keys(dict))
     if df
-        cols = [dict[k][I] for k in keys(dict)]
+        cols = Any[dict[k][I] for k in dk]  # notice: Any is crucial here to get type-stable var
+        # cols = Array(Any,n)
+        # for i in 1:n
+        #     cols[i] = dict[dk[i]]
+        # end
         cnames = Array(Symbol,length(dict))
-        pkeys = collect(keys(dict))
-        for i in 1:length(pkeys)
-            cnames[i] = symbol(pkeys[i])
+        for i in 1:n
+            cnames[i] = symbol(dk[i])
         end
         return DataFrame(cols, cnames)
     else ## ==== return as collection
@@ -41,18 +48,33 @@ function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
 end
 
 # taking a dataframe row
-# fills in the values into keys of a dict
-function fillinFields!(dict::Dict,df::DataFrame,I::UnitRange{Int})
+# fills in the values into keys of a dict at row I of 
+# arrays in dict
+function fillinFields!(dict::Dict,df::DataFrame,I::Int)
 
     if nrow(df)!=1
         error("can fill in only a single dataframe row")
     end
     dk = collect(keys(dict))
     for ik in dk
-        dict[ik][I] = df[symbol(ik)]
+        dict[ik][I] = df[symbol(ik)][1]
     end
 
 end
+
+# same but for dict with only on entry per key
+function fillinFields!(dict::Dict,df::DataFrame)
+
+    if nrow(df)!=1
+        error("can fill in only a single dataframe row")
+    end
+    dk = collect(keys(dict))
+    for ik in dk
+        dict[ik] = df[symbol(ik)][1]
+    end
+
+end
+
 
 # methods for a single chain
 # ==========================
@@ -106,15 +128,16 @@ end
 # no method for parameters(BGPChain)
 #
 # return an rbind of params from all chains
-function parameters(MC::Array)
+function Allparameters(MC)
     # TODO how to check that MC is an array of AbstractChains?
     # if super(typeof(MC[1]))!=AbstractChain 
     #     error("must give array of AbstractChain") 
     # end
-    r = parameters(MC[1],true)
+    r0 = parameters(MC[1],true) # collects all params up to current iteration i
+    r = cbind(DataFrame(id=[1 for i=1:nrow(r0)],iter=1:nrow(r0)),r0)
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,parameters(MC[ix],true))
+            r = rbind(r,cbind(DataFrame(id=[ix for i=1:nrow(r0)],iter=1:nrow(r0)),parameters(MC[ix],true)))
         end
     end
     return r
@@ -219,4 +242,31 @@ function updateIter!(MC::Array)
         MC[ix].i += 1
     end 
 end
+
+
+
+
+# using DataFrames
+
+# function collectFields(dict::Dict)
+#     di_keys = collect(keys(dict))
+#     n = length(dict)
+#     cols = {dict[k] for k in di_keys}
+#     # cols = Array(Any,n)
+#     # for i in 1:n
+#     #     cols[i] = dict[di_keys[i]]
+#     # end
+#     cnames = Array(Symbol,length(dict))
+#     for i in 1:length(di_keys)
+#         cnames[i] = symbol(di_keys[i])
+#     end
+#     # return DataFrame(cols, DataFrames.Index(cnames))
+#     return DataFrame(cols, cnames)
+# end
+
+# di = {ASCIIString,Array{Real,1})["a"=>[1,3],"b"=>[0.0,1.0]]
+# collectFields(di)
+
+# di2 = ["a"=>[1,3],"b"=>[0,1]]
+# collectFields(di2)
 

@@ -37,7 +37,6 @@ type MAlgoBGP <: MAlgo
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
-  MVNormShock     :: MvNormal
 
   function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
 
@@ -96,7 +95,8 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# --------------
 
 		if algo.i > 1
-			getNewCandidates!(algo)
+			MVN = getParamKernel(algo)	# returns a MvNormal object
+			getNewCandidates!(algo,MVN)
 		end
 
 		# evaluate objective on all chains
@@ -149,45 +149,83 @@ function computeNextIteration!( algo::MAlgoBGP  )
 end
 
 
-function getNewCandidates!(algo::MAlgoBGP)
+# get past parameter values to compute new candidates
+# we draw new candidates for each chain from a joint normal
+# that depends on parameter vectors on ALL chains
+# pardf = Dataframe with stacked parameter df for each chain
+function getParamKernel(algo::MAlgoBGP)
 
-	# get past parameter values to compute new candidates
-	# we draw new candidates for each chain from a joint normal
-	# that depends on parameter vectors on ALL chains
-	# pardf = Dataframe with stacked parameter df for each chain
-	pardf = parameters(algo.MChains)
-	# select the last 30 observations from each chain
-	lower_bound_index = maximum(1,nrow(pardf)-30*length(algo.MChains))
-	par2sample_sym     = Array{Symbol,1}
-	par2sample_name = collect(keys(algo.m.params_to_sample))
+
+	pardf = Allparameters(algo.MChains)
+	# |-------|----|------|----------|-----------|
+	# | Row # | id | iter | a        | b         |
+	# | 1     | 1  | 1    | 0.901685 | 0.983013  |
+	# | 2     | 1  | 2    | 0.282522 | 0.763859  |
+	# | 3     | 1  | 3    | 0.817773 | 0.268273  |
+	# ...
+
+
+
+	# select the last algo["past_iterations"] iterations from each chain
+	lower_bound_index = maximum([1,algo.MChains[1].i-algo["past_iterations"]])
+
+	# get parameter_to_sample names as symbols 
+	par2sample_name   = collect(keys(algo.m.params_to_sample))
+	par2sample_sym    = Array(Symbol,length(par2sample_name))
 	for i in 1:length(par2sample_name)
 		par2sample_sym[i] = symbol(par2sample_name[i])
 	end
 
-	# compute Var-Cov matrix of parameters
+	# compute Var-Cov matrix of parameters_to_sample
 	# plus some small random noise
-	VV = cov(pardf[lower_bound_index, par2sample_sym]) + 0.0001 .* Diagonal([1 for i=1:length(par2sample_sym)])
+	VV = cov(array(pardf[pardf[:iter].<=lower_bound_index, par2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(par2sample_sym)])
 
 	# setup a MvNormal
 	MVN = MvNormal(VV)
+	return MVN
+end
+
+
+function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 
 	# update chain by chain
 	for ch in 1:algo["N"]
 
-		# get last param on that chain
+		# get last param on that particular chain
 		# as dataframe row
 		oldpar = parameters(algo.MChains[ch],algo.i-1,true)
 
-		# shock parameters on chain ch
+		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
 
-		newpar = oldpar[par2sample_sym] .+ shock
+		# add shock to each column of newpar
+		newpar = copy(oldpar[par2sample_sym])
+		for c in 1:ncol(newpar)
+			newpar[1,c] += shock[c]
+		end
+
+		# do bounds checking on newpar
+		checkbounds!(newpar,algo.m.params_to_sample)
 
 		# set as dict on algo.current_param
 		fillinFields!(algo.MChains[ch].candidate_param,newpar)
 
 	end
 
+end
+
+function checkbounds!(df::DataFrame,di::Dict)
+	if nrow(df) > 1
+		error("can only process a single row")
+	end
+	dfbounds = collectFields(di,1:length(di),true)
+	for c in names(df)
+		if df[1,c] > dfbounds[2,c]
+			df[1,c] = dfbounds[2,c]
+		elseif df[1,c] < dfbounds[1,c]
+			df[1,c] = dfbounds[1,c]
+		end
+	end
 end
 
 

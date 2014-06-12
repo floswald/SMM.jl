@@ -22,9 +22,9 @@ facts("Testing BGPChain constructor") do
 	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
 	L = 9
 	temp = 100.0
-	tol = 12.0
+	shock = 12.0
 	id = 180
-	chain = Mopt.BGPChain(id,mprob,L,temp,tol)
+	chain = Mopt.BGPChain(id,mprob,L,temp,shock)
 
 	@fact chain.i => 0 
 	@fact chain.id => id
@@ -41,7 +41,7 @@ facts("Testing BGPChain constructor") do
 			@fact length(chain.moments[nm]) => L
 		end
 		@fact chain.tempering => temp
-		@fact chain.tolerance => tol
+		@fact chain.shock_sd => shock
 	end
 
 	context("names of param and moments dicts") do
@@ -55,134 +55,6 @@ end
 
 
 
-# facts("testing Chain/MChain methods") do
-
-# 	context("testing getindex(chain,i)") do
-
-# 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-# 		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
-# 		L = 9	# length of chain
-# 		chain = Mopt.Chain(mprob,L)
-
-# 		i = rand(1:L)
-
-# 		x = Mopt.alls(chain,i,true)
-
-# 		@fact isa(x,DataFrame) => true
-# 		@fact nrow(x) => 1
-# 		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
-
-# 		nx = names(x)
-# 		nm = [:evals,:accept,:status,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
-# 		@fact sort(nx) == sort(nm) => true
-
-# 	end
-
-# 	context("testing getindex(chain,i::Range)") do
-
-# 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-# 		v     = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
-# 		L     = 9	# length of chain
-# 		chain = Mopt.Chain(mprob,L)
-
-# 		i = 3:L
-# 		x = Mopt.alls(chain,i,true)
-		
-# 		@fact isa(x,DataFrame) => true
-# 		@fact nrow(x) => length(i)
-# 		@fact ncol(x) => 3 + length(Mopt.ps_names(mprob)) + length(Mopt.ms_names(mprob))
-
-# 		nx = names(x)
-# 		nm = [:evals,:accept,:status,map(x-> symbol(x), collect(Mopt.ps_names(mprob))),map(x-> symbol(x), collect(Mopt.ms_names(mprob)))]
-# 		@fact sort(nx) == sort(nm) => true
-
-# 	end
-	
-# 	context("test appendEval!(chain)") do
-
-# 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-# 		v = Mopt.Testobj(p,moms,["alpha","beta","gamma"])
-# 		L = 9
-# 		chain = Mopt.Chain(mprob,L)
-
-# 		# verify values are zero:
-# 		@fact all(chain.infos["evals"] .== 0.0) => true
-# 		@fact chain.i => 0 
-
-# 		# set i to 1 to test this:
-# 		chain.i = 1
-
-# 		# update chain with v
-# 		Mopt.appendEval!(chain,v,true,1)
-
-# 		# verify new values on chain
-# 		@fact chain.i => 1 
-# 		@fact chain.infos["evals"][1] => v["value"]
-# 		@fact chain.infos["accept"][1] => true
-# 		for nm in Mopt.ps_names(mprob)
-# 			@fact chain.parameters[nm][1] => v["params"][nm]
-# 		end
-# 		for nm in Mopt.ms_names(mprob)
-# 			@fact chain.moments[nm][1] => v["moments"][nm]
-# 		end
-# 	end
-
-# 	context("test appendEval!(chains)") do
-
-# 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-# 		L = 9
-# 		n = 17
-# 		v = [ Mopt.Testobj(p,moms,["alpha","beta","gamma"]) for i=1:n ]
-# 		MC = [Mopt.Chain(mprob,L) for i=1:n]
-
-# 		# verify values are zero:
-# 		@fact all(MC[1].infos["evals"] .== 0.0) => true
-# 		@fact all(MC[1].infos["evals"] .== 0.0) => true
-# 		@fact MC[1].i => 0 
-
-# 		@fact isempty(Mopt.evals(MC[1])) => true
-
-# 		# set i to 1 to test this, otherwise BoundsError (accessing x[0])
-# 		for ix = 1:n
-# 			MC[ix].i = 1
-# 		end
-
-# 		# update chain with v
-# 		which = rand(1:n)
-# 		Mopt.appendEval!(MC[which],v[which],true,1)
-
-# 		# verify new values on each chain
-# 		@fact MC[which].i => 1 
-# 		@fact Mopt.evals(MC[which])[1] => v[which]["value"]
-# 		@fact MC[which].infos["accept"][1] => true
-# 		for nm in Mopt.ps_names(mprob)
-# 			@fact Mopt.parameters(MC[which])[nm][1] => v[which]["params"][nm]
-# 		end
-# 		for nm in Mopt.ms_names(mprob)
-# 			@fact Mopt.moments(MC[which])[nm][1] => v[which]["moments"][nm]
-# 		end
-# 	end
-
-# 	context("testing updateIter(MChain") do
-
-# 		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-# 		L = 9
-# 		n = 17
-# 		MC = [Mopt.Chain(mprob,L) for i=1:n]
-
-# 		for ix = 1:n
-# 			@fact MC[ix].i => 0
-# 		end
-
-# 		Mopt.updateIter!(MC)
-# 		for ix = 1:n
-# 			@fact MC[ix].i => 1
-# 		end
-
-# 	end
-
-
-# end
 
 
 

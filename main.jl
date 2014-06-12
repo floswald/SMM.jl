@@ -9,7 +9,7 @@ cd("$home/git/MOpt.jl")
 include("test/test_MProb.jl")
 include("test/test_chains.jl")
 include("test/test_BGPchain.jl")
-include("test/test_algo.jl")
+include("test/test_algoBGP.jl")
 	
 # to develop in main: run this
 include("src/mopt.jl")
@@ -27,7 +27,7 @@ include("src/mopt.jl")
 # get a parameter vector
 p = ["a" => 3.1 , "b" => 4.9]
 # define params to use with bounds
-pb= [ "a" => [0,1] , "b" => [0,1] ]
+pb= [ "a" => [0,1.0] , "b" => [0.0,1] ]	
 
 # get some moments
 # first entry is moment estimate, second is standard deviation

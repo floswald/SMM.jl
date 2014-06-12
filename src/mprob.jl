@@ -6,7 +6,8 @@ type MProb
 
   # setup
   initial_value    :: Dict  # initial parameter value as a dict
-  params_to_sample :: Dict  # a dictionary of upper and lower bound for params we estimate (others are fixed)
+  # params_to_sample :: Dict{ASCIIString,Array{Float64,1}}  # a dictionary of upper and lower bound for params we estimate (others are fixed)
+  params_to_sample :: Dict
   objfunc          :: Function # objective function
   moments          :: Dict  # a dictionary of moments to track
   moments_subset   :: Array{ASCIIString}  # an array of moment names to subset objective funciton
