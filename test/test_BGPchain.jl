@@ -23,9 +23,11 @@ facts("Testing BGPChain constructor") do
 	L = 9
 	temp = 100.0
 	tol = 12.0
-	chain = Mopt.BGPChain(mprob,L,temp,tol)
+	id = 180
+	chain = Mopt.BGPChain(id,mprob,L,temp,tol)
 
 	@fact chain.i => 0 
+	@fact chain.id => id
 
 	context("length of members") do
 

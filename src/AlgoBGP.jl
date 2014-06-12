@@ -12,6 +12,7 @@
 
 # Define a Chain Type for BGP
 type BGPChain <: AbstractChain
+  id::Int             # chain id
   i::Int              # current index
   infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
   parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
@@ -19,11 +20,11 @@ type BGPChain <: AbstractChain
   tempering  ::Float64
   tolerance  ::Float64
 
-  function BGPChain(MProb,L,temp,tol)
+  function BGPChain(id,MProb,L,temp,tol)
     infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], }
     parameters = { x => zeros(L) for x in ps_names(MProb) }
     moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(0,infos,parameters,moments,temp,tol)
+    return new(id,0,infos,parameters,moments,temp,tol)
   end
 end
 
@@ -44,7 +45,7 @@ type MAlgoBGP <: MAlgo
   	# tolerances for each chain
 	tols = linspace(0.1,opts["maxtol"],opts["N"])
   	# create chains
-  	chains = [BGPChain(m,opts["maxiter"],temps[i],tols[i]) for i=1:opts["N"] ]
+  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],tols[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ m.initial_value for i=1:opts["N"] ] 
 
@@ -93,20 +94,20 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# --------------
 
 		# compute Var-Cov matrix
-		parr = array(parameters())
-		VV = cov(array())
-	    VV = cov(chains[lower_bound_index:nrow(chains),params_to_sample2]) + 0.0001 * diag(length(params_to_sample2))
+		parr = array(parameters(algo.MChains))
+		# VV = cov(array())
+	 #    VV = cov(chains[lower_bound_index:nrow(chains),params_to_sample2]) + 0.0001 * diag(length(params_to_sample2))
 
-		if algo.i > 1
-			for ch in 1:algo["N"]
-			  	# this updating rule can differ by chain!
-			  	for p in algo.m.params_to_sample
-			  		algo.candidate_param[ch][p] = algo.current_param[ch][p] + randn()*shock_var
-			    end
-			end
-		else
-			# candidate = initial_value, so ok for first iteration
-		end
+		# if algo.i > 1
+		# 	for ch in 1:algo["N"]
+		# 	  	# this updating rule can differ by chain!
+		# 	  	for p in algo.m.params_to_sample
+		# 	  		algo.candidate_param[ch][p] = algo.current_param[ch][p] + randn()*shock_var
+		# 	    end
+		# 	end
+		# else
+		# 	# candidate = initial_value, so ok for first iteration
+		# end
 
 
 		# evaluate objective on all chains
@@ -153,7 +154,7 @@ function computeNextIteration!( algo::MAlgoBGP  )
 				end
 			end
 		    # append values to MChains at index ch
-		    appendEval!(algo.MChains,ch,v[ch],ACC,status)
+		    appendEval!(algo.MChains[ch],v[ch],ACC,status)
 		end
 	end
 end

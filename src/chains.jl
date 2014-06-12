@@ -40,6 +40,9 @@ function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
     end
 end
 
+# methods for a single chain
+# ==========================
+
 collectFields(dict::Dict,df::Bool=false)                 = collectFields(dict, 1:length(dict),df)
 collectFields(dict::Dict,i::Int, df::Bool=false)         = collectFields(dict, i:i, df)
 parameters(c::AbstractChain, df::Bool=false)                     = collectFields(c.parameters, 1:c.i, df)
@@ -81,6 +84,27 @@ function appendEval!(chain::AbstractChain, vals::Dict, ACC::Bool, status::Int)
   return nothing
 end
 
+# methods for an array of chains
+# ==============================
+
+# TODO ideally dispatch on MC::Array{AbstractChain}
+# but that doesn't work. errors with
+# no method for parameters(BGPChain)
+#
+# return an rbind of params from all chains
+function parameters(MC::Array)
+    # TODO how to check that MC is an array of AbstractChains?
+    # if super(typeof(MC[1]))!=AbstractChain 
+    #     error("must give array of AbstractChain") 
+    # end
+    r = parameters(MC[1],true)
+    if length(MC)>1
+        for ix=2:length(MC)
+            r = rbind(r,parameters(MC[ix],true))
+        end
+    end
+    return r
+end
 
 
 # the default chain type

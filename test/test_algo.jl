@@ -22,7 +22,7 @@ facts("testing MAlgoBGP Constructor") do
 
 	context("checking members") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
+		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"maxtol"=>1] 
 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
@@ -31,7 +31,7 @@ facts("testing MAlgoBGP Constructor") do
 		@fact isa(MA.m,Mopt.MProb) => true
 
 		@fact MA.i => 0
-		@fact MA.MChains.n => opts["N"]
+		@fact length(MA.MChains) => opts["N"]
 
 		for ix = 1:opts["N"]
 			@fact MA.current_param[ix] => p 
@@ -41,7 +41,7 @@ facts("testing MAlgoBGP Constructor") do
 
 	context("checking getters/setters on MAlgo") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
+		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"maxtol"=>1] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		# getters
@@ -62,7 +62,7 @@ facts("testing MAlgo methods") do
 	
 	context("testing evaluateObjective(algo)") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
+		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"maxtol"=>1] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		which_chain = 1
@@ -82,10 +82,10 @@ facts("testing MAlgo methods") do
 
 	context("updateChains!(algo)") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>"."] 
+		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"maxtol"=>1] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
-		@fact MA.MChains.chains[1].i => 0
+		@fact MA.MChains[1].i => 0
 		@fact MA.i => 0
 
 		Mopt.updateChains!(MA)
