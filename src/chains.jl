@@ -31,13 +31,27 @@ function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
         cols = [dict[k][I] for k in keys(dict)]
         cnames = Array(Symbol,length(dict))
         pkeys = collect(keys(dict))
-    for i in 1:length(pkeys)
-        cnames[i] = symbol(pkeys[i])
-    end
+        for i in 1:length(pkeys)
+            cnames[i] = symbol(pkeys[i])
+        end
         return DataFrame(cols, cnames)
     else ## ==== return as collection
         return({ k => v[I] for (k,v) in dict })
     end
+end
+
+# taking a dataframe row
+# fills in the values into keys of a dict
+function fillinFields!(dict::Dict,df::DataFrame,I::UnitRange{Int})
+
+    if nrow(df)!=1
+        error("can fill in only a single dataframe row")
+    end
+    dk = collect(keys(dict))
+    for ik in dk
+        dict[ik][I] = df[symbol(ik)]
+    end
+
 end
 
 # methods for a single chain

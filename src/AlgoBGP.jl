@@ -18,7 +18,7 @@ type BGPChain <: AbstractChain
   parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
   moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
   tempering  ::Float64
-  tolerance  ::Float64
+  shock_sd   ::Float64
 
   function BGPChain(id,MProb,L,temp,tol)
     infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], }
@@ -37,15 +37,16 @@ type MAlgoBGP <: MAlgo
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
+  MVNormShock     :: MvNormal
 
-  function MAlgoBGP(m::MProb,opts=["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100,"maxtol" => 1])
+  function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
 
   	# temperatures for each chain
 	temps = linspace(1,opts["maxtemp"],opts["N"])
-  	# tolerances for each chain
-	tols = linspace(0.1,opts["maxtol"],opts["N"])
+  	# shock standard deviations for each chain
+	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
   	# create chains
-  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],tols[i]) for i=1:opts["N"] ]
+  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ m.initial_value for i=1:opts["N"] ] 
 
@@ -87,28 +88,16 @@ function computeNextIteration!( algo::MAlgoBGP  )
 	    println("reached end of chain. goodbye.")
 	    return true
 	else
-		# else update iteration count on all chains3
+		# else update iteration count on all chains
 		updateIter!(algo.MChains)
+
 
 		# New Candidates
 		# --------------
 
-		# compute Var-Cov matrix
-		parr = array(parameters(algo.MChains))
-		# VV = cov(array())
-	 #    VV = cov(chains[lower_bound_index:nrow(chains),params_to_sample2]) + 0.0001 * diag(length(params_to_sample2))
-
-		# if algo.i > 1
-		# 	for ch in 1:algo["N"]
-		# 	  	# this updating rule can differ by chain!
-		# 	  	for p in algo.m.params_to_sample
-		# 	  		algo.candidate_param[ch][p] = algo.current_param[ch][p] + randn()*shock_var
-		# 	    end
-		# 	end
-		# else
-		# 	# candidate = initial_value, so ok for first iteration
-		# end
-
+		if algo.i > 1
+			getNewCandidates!(algo)
+		end
 
 		# evaluate objective on all chains
 		# --------------------------------
@@ -160,6 +149,46 @@ function computeNextIteration!( algo::MAlgoBGP  )
 end
 
 
+function getNewCandidates!(algo::MAlgoBGP)
+
+	# get past parameter values to compute new candidates
+	# we draw new candidates for each chain from a joint normal
+	# that depends on parameter vectors on ALL chains
+	# pardf = Dataframe with stacked parameter df for each chain
+	pardf = parameters(algo.MChains)
+	# select the last 30 observations from each chain
+	lower_bound_index = maximum(1,nrow(pardf)-30*length(algo.MChains))
+	par2sample_sym     = Array{Symbol,1}
+	par2sample_name = collect(keys(algo.m.params_to_sample))
+	for i in 1:length(par2sample_name)
+		par2sample_sym[i] = symbol(par2sample_name[i])
+	end
+
+	# compute Var-Cov matrix of parameters
+	# plus some small random noise
+	VV = cov(pardf[lower_bound_index, par2sample_sym]) + 0.0001 .* Diagonal([1 for i=1:length(par2sample_sym)])
+
+	# setup a MvNormal
+	MVN = MvNormal(VV)
+
+	# update chain by chain
+	for ch in 1:algo["N"]
+
+		# get last param on that chain
+		# as dataframe row
+		oldpar = parameters(algo.MChains[ch],algo.i-1,true)
+
+		# shock parameters on chain ch
+		shock = rand(MVN) * algo.MChains[ch].shock_sd
+
+		newpar = oldpar[par2sample_sym] .+ shock
+
+		# set as dict on algo.current_param
+		fillinFields!(algo.MChains[ch].candidate_param,newpar)
+
+	end
+
+end
 
 
 
