@@ -8,6 +8,7 @@ type MProb
   initial_value    :: Dict  # initial parameter value as a dict
   # params_to_sample :: Dict{ASCIIString,Array{Float64,1}}  # a dictionary of upper and lower bound for params we estimate (others are fixed)
   params_to_sample :: Dict
+  p2sample_sym     :: Array{Symbol,1} # column names of params to sample for dataframes
   objfunc          :: Function # objective function
   moments          :: Dict  # a dictionary of moments to track
   moments_subset   :: Array{ASCIIString}  # an array of moment names to subset objective funciton
@@ -31,7 +32,13 @@ type MProb
     # assert that params_to_sample has valid bounds: a vector with 2 increasing entries
     @assert all(map(x -> x[2]-x[1],values(params_to_sample)) .> 0)
 
-    return new(initial_value,params_to_sample,objfunc,moments,moments_subset)
+    par2sample_name   = collect(keys(params_to_sample))
+    par2sample_sym    = Array(Symbol,length(par2sample_name))
+    for i in 1:length(par2sample_name)
+      par2sample_sym[i] = symbol(par2sample_name[i])
+    end
+
+    return new(initial_value,params_to_sample,par2sample_sym,objfunc,moments,moments_subset)
 
   end # constructor
 end #type

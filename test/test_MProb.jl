@@ -82,7 +82,11 @@ facts("testing MProb methods") do
 	@fact collect(Mopt.ps_names(mprob)) == collect(keys(pb)) => true
 	@fact collect(Mopt.ms_names(mprob)) == collect(keys(moms)) => true
 
+	@fact eltype(mprob.p2sample_sym)==Symbol => true
+
 end
+
+
 
 
 

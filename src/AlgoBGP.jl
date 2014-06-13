@@ -169,16 +169,10 @@ function getParamKernel(algo::MAlgoBGP)
 	# select the last algo["past_iterations"] iterations from each chain
 	lower_bound_index = maximum([1,algo.MChains[1].i-algo["past_iterations"]])
 
-	# get parameter_to_sample names as symbols 
-	par2sample_name   = collect(keys(algo.m.params_to_sample))
-	par2sample_sym    = Array(Symbol,length(par2sample_name))
-	for i in 1:length(par2sample_name)
-		par2sample_sym[i] = symbol(par2sample_name[i])
-	end
 
 	# compute Var-Cov matrix of parameters_to_sample
 	# plus some small random noise
-	VV = cov(array(pardf[pardf[:iter].<=lower_bound_index, par2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(par2sample_sym)])
+	VV = cov(array(pardf[pardf[:iter].<=lower_bound_index, algo.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(algo.m.p2sample_sym)])
 
 	# setup a MvNormal
 	MVN = MvNormal(VV)
@@ -191,24 +185,10 @@ function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 	# update chain by chain
 	for ch in 1:algo["N"]
 
-		# get last param on that particular chain
-		# as dataframe row
-		oldpar = parameters(algo.MChains[ch],algo.i-1,true)
-
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
 
-		# add shock to each column of newpar
-		newpar = copy(oldpar[par2sample_sym])
-		for c in 1:ncol(newpar)
-			newpar[1,c] += shock[c]
-		end
-
-		# do bounds checking on newpar
-		checkbounds!(newpar,algo.m.params_to_sample)
-
-		# set as dict on algo.current_param
-		fillinFields!(algo.MChains[ch].candidate_param,newpar)
+		updateCandidateParam!(algo,ch,shock)
 
 	end
 
@@ -229,6 +209,24 @@ function checkbounds!(df::DataFrame,di::Dict)
 end
 
 
+function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
+
+	# get last param on that particular chain
+	# as dataframe row
+	oldpar = parameters(algo.MChains[ch],algo.MChains[ch].i-1,true)
+
+	# add shock to each column of newpar
+	newpar = copy(oldpar[algo.m.p2sample_sym])
+	for c in 1:ncol(newpar)
+		newpar[1,c] += shock[c]
+	end
+
+	# do bounds checking on newpar
+	checkbounds!(newpar,algo.m.params_to_sample)
+
+	# set as dict on algo.current_param
+	fillinFields!(algo.candidate_param[ch],newpar)
+end
 
 
 

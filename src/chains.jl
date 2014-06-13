@@ -75,6 +75,14 @@ function fillinFields!(dict::Dict,df::DataFrame)
 
 end
 
+# dataframe to dict function
+function df2dict(df::DataFrame)
+  nm = names(df)
+  snm = map(x->string(x),nm)
+  out ={i => df[symbol(i)] for i in snm}
+  return out
+end
+
 
 # methods for a single chain
 # ==========================
