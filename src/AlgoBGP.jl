@@ -18,6 +18,10 @@ type BGPChain <: AbstractChain
   parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
   moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
   jumptol    ::Float64 # tolerance of chain i for "closeness" to chain j
+
+  # TODO need either of those not both
+  # the paper uses tempering to set up the kernel,
+  # tibo uses shock_sd to amplify the shocks. expect small difference.
   tempering  ::Float64 # tempering in update probability
   shock_sd   ::Float64 # sd of shock to 
 
@@ -87,12 +91,6 @@ function getchain( algo::MAlgoBGP, i::Int)
 	algo.MChains[i]
 end
 
-function runMopt( algo::MAlgoBGP )
-
-	for i in 1:algo["maxiter"]
-		computeNextIteration!( algo )
-	end
-end
 
 
 # computes new candidate vectors for each chain
@@ -261,12 +259,17 @@ end
 
 function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 
+	# VV = getParamCovariance(algo)
+
 	# update chain by chain
 	for ch in 1:algo["N"]
 
 		# TODO 
-		# i think getParamKernel should be in here
+		# getParamKernel could be in here
 		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
+		# setup a MvNormal
+		# VV2 = VV*algo.MChains[ch].tempering
+		# MVN = MvNormal(VV2)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd

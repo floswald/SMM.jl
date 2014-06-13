@@ -47,6 +47,27 @@ function evaluateObjective(algo::MAlgo,which::Int)
 
 end
 
+function runMopt( algo::MAlgo )
+
+	# tasks
+	# =====
+
+	# load data from file if set in algo.opts
+
+	# setup cluster if required
+
+	# do iteration
+	for i in 1:algo["maxiter"]
+		updateChains!( algo )
+
+		# save at certain frequency
+
+		# reporting
+
+	end
+
+	# save
+end
 
 
 
