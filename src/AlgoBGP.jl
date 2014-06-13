@@ -17,14 +17,15 @@ type BGPChain <: AbstractChain
   infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
   parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
   moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
-  tempering  ::Float64
-  shock_sd   ::Float64
+  jumptol    ::Float64 # tolerance of chain i for "closeness" to chain j
+  tempering  ::Float64 # tempering in update probability
+  shock_sd   ::Float64 # sd of shock to 
 
-  function BGPChain(id,MProb,L,temp,tol)
-    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], }
+  function BGPChain(id,MProb,L,temp,shock,tol)
+    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
     parameters = { x => zeros(L) for x in ps_names(MProb) }
     moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(id,0,infos,parameters,moments,temp,tol)
+    return new(id,0,infos,parameters,moments,tol,temp,shock)
   end
 end
 
@@ -37,6 +38,7 @@ type MAlgoBGP <: MAlgo
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
+  Jump_register   :: Array{(Int,Int),1}
 
   function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
 
@@ -44,12 +46,24 @@ type MAlgoBGP <: MAlgo
 	temps = linspace(1,opts["maxtemp"],opts["N"])
   	# shock standard deviations for each chain
 	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
+  	# standard deviations for each chain
+	jumptol = linspace(opts["min_jumptol"],opts["max_jumptol"],opts["N"])
   	# create chains
-  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i]) for i=1:opts["N"] ]
+  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],jumptol[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ m.initial_value for i=1:opts["N"] ] 
+  	# jump register
+  	Jreg = (Int,Int)[]
+  	for i in 1:opts["N"]
+	  	for j in i:opts["N"]
+	  		if i!=j
+	  			push!(Jreg,(i,j))
+	  		end
+	  	end
+	end
 
-    return new(m,opts,0,cpar,cpar,chains)
+
+    return new(m,opts,0,cpar,cpar,chains,Jreg)
   end
 end
 
@@ -72,6 +86,14 @@ end
 function getchain( algo::MAlgoBGP, i::Int)
 	algo.MChains[i]
 end
+
+function runMopt( algo::MAlgoBGP )
+
+	for i in 1:algo["maxiter"]
+		computeNextIteration!( algo )
+	end
+end
+
 
 # computes new candidate vectors for each chain
 # accepts/rejects that vector on each chain, according to some rule
@@ -111,8 +133,9 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# we append v to the chain
 		# so if candidate is rejected, go back into v[chain_id]["param"] and reset to previous param
 
-		# accept/reject
-		# =============
+
+		# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
+		# ============================
 
 		for ch in 1:algo["N"]
 			if algo.i == 1
@@ -142,10 +165,66 @@ function computeNextIteration!( algo::MAlgoBGP  )
 					status = 1
 				end
 			end
+
+
 		    # append values to MChains at index ch
 		    appendEval!(algo.MChains[ch],v[ch],ACC,status)
 		end
+
+		# Part 2a) EXCHANGE MOVES without rings
+		# ======================
+		# 1) N exchange moves are proposed
+		# 2) N pairs are chosen uniformly among all possible pairs with replacment 
+		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_i - val_j < tol
+
+		jump_pairs = sample(algo.Jump_register,algo["N"],replace=false)
+		for pair in jump_pairs
+			distance = abs(evals(algo.MChains[pair[1]],algo.MChains[pair[1]].i) - evals(algo.MChains[pair[2]],algo.MChains[pair[2]].i))
+			if distance[1] < algo.MChains[pair[1]].jumptol
+				swapRows!(algo,pair,algo.i)
+			end
+		end
+
+
+		# Part 2b) EXCHANGE MOVES with rings
+		# ======================
+		# 1) N exchange moves are proposed
+		# 2) a ring with at least two associated chains is chosen randomly from all rings
+		#    a ring is a partition of tolerance space, i.e. R1 = [0,1], R2 = [1,1.5] etc
+		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_i - val_j < tol
+		# for ch2 in 1:algo["N"]
+		# 	if ch==ch2
+		# 		#nothing
+		# 	else
+
+		# 	end
+		# end
+
+		# TODO need a function exchangeRowd!(algo,from,to)
+
 	end
+	@assert algo.i == algo.MChains[1].i
+end
+
+function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
+
+	tmp1 = copy(alls(algo.MChains[pair[1]],i,true))
+	# |-------|--------|--------|--------------|-------|----------|----------|-----------|----------|
+	# | Row # | accept | status | exhanged_with| evals | beta     | a        | b         | alpha    |
+	# | 1     | true   | 1      | 0            | 1.1   | 0.893083 | 0.163338 | 0.0192453 | 0.677312 |
+	tmp1[:exchanged_with] = pair[1]
+
+	tmp2 = copy(alls(algo.MChains[pair[2]],i,true))
+	tmp2[:exchanged_with] = pair[2]
+
+	# plug back into respective chains at correct index i
+	fillinFields!(algo.MChains[pair[1]].parameters,tmp2,i)
+	fillinFields!(algo.MChains[pair[1]].moments,tmp2,i)
+	fillinFields!(algo.MChains[pair[1]].infos,tmp2,i)
+
+	fillinFields!(algo.MChains[pair[2]].parameters,tmp1,i)
+	fillinFields!(algo.MChains[pair[2]].moments,tmp1,i)
+	fillinFields!(algo.MChains[pair[2]].infos,tmp1,i)
 end
 
 
@@ -184,6 +263,10 @@ function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 
 	# update chain by chain
 	for ch in 1:algo["N"]
+
+		# TODO 
+		# i think getParamKernel should be in here
+		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd

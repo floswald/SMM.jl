@@ -38,6 +38,7 @@ end
 
 # evalute objective function
 # with param vector number i
+# always evaluates the field "candidate_param"
 function evaluateObjective(algo::MAlgo,which::Int)
 
 	# eval chain i with param p

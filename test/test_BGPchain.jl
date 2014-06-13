@@ -23,8 +23,9 @@ facts("Testing BGPChain constructor") do
 	L = 9
 	temp = 100.0
 	shock = 12.0
+	jumptol = 1.1
 	id = 180
-	chain = Mopt.BGPChain(id,mprob,L,temp,shock)
+	chain = Mopt.BGPChain(id,mprob,L,temp,shock,jumptol)
 
 	@fact chain.i => 0 
 	@fact chain.id => id
@@ -42,6 +43,7 @@ facts("Testing BGPChain constructor") do
 		end
 		@fact chain.tempering => temp
 		@fact chain.shock_sd => shock
+		@fact chain.jumptol => jumptol
 	end
 
 	context("names of param and moments dicts") do

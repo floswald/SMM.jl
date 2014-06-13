@@ -63,6 +63,7 @@ function fillinFields!(dict::Dict,df::DataFrame,I::Int)
 end
 
 # same but for dict with only on entry per key
+# looks for keys(dict) in rownames of dataframe
 function fillinFields!(dict::Dict,df::DataFrame)
 
     if nrow(df)!=1

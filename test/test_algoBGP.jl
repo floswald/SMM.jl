@@ -22,7 +22,7 @@ facts("testing MAlgoBGP Constructor") do
 
 	context("checking members") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
@@ -41,7 +41,7 @@ facts("testing MAlgoBGP Constructor") do
 
 	context("checking getters/setters on MAlgo") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		# getters
@@ -72,7 +72,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	context("test getParamKernel") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		# fill chains with random values
@@ -115,7 +115,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# I'm interested in how algo.candidate_param changes on chain ch
 
 		# setup an Algo
-		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		# fill chains with random values up to iteration ix
@@ -171,7 +171,50 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		end
 
+
 	end
+
+	context("testing swapRows!") do
+
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
+		MA = Mopt.MAlgoBGP(mprob,opts)
+
+		# fill chains with random values up to iteration ix
+		ix = 5
+		for iter =1:ix
+			# update all chains to index 1
+			Mopt.updateIter!(MA.MChains)
+
+			# set a parameter vector on all chains using appendEval!
+			for ich in 1:MA["N"]
+				myp = ["a" => rand() , "b" => rand()]
+				mym = ["alpha" => rand(),"beta"  => rand(),"gamma" =>  rand()]
+				ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
+				Mopt.appendEval!(MA.MChains[ich],ret,true,1)
+			end
+		end
+
+		# get a pair (i,j) of chains
+		pair = Mopt.sample(MA.Jump_register,1)[1]
+
+		# get params and moms
+		p1 = Mopt.parameters(MA.MChains[pair[1]],ix)
+		p2 = Mopt.parameters(MA.MChains[pair[2]],ix)
+		m1 = Mopt.moments(MA.MChains[pair[1]],ix)
+		m2 = Mopt.moments(MA.MChains[pair[2]],ix)
+
+
+		# exchange
+		Mopt.swapRows!(MA,pair,ix)
+
+		# check parameters
+		@fact Mopt.parameters(MA.MChains[pair[1]],ix) == p2 => true
+		@fact Mopt.parameters(MA.MChains[pair[2]],ix) == p1 => true
+		@fact Mopt.moments(MA.MChains[pair[1]],ix) == m2 => true
+		@fact Mopt.moments(MA.MChains[pair[2]],ix) == m1 => true
+
+	end
+
 end
 
 
@@ -179,7 +222,7 @@ facts("testing MAlgo methods") do
 	
 	context("testing evaluateObjective(algo)") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		which_chain = 1
@@ -199,7 +242,7 @@ facts("testing MAlgo methods") do
 
 	context("updateChains!(algo)") do
 
-		opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		@fact MA.MChains[1].i => 0
