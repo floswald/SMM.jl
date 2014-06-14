@@ -14,10 +14,16 @@
 type BGPChain <: AbstractChain
   id::Int             # chain id
   i::Int              # current index
-  infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
-  parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
-  moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
+  # infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
+  # parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
+  # moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
+  infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
+  parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
+  moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
   jumptol    ::Float64 # tolerance of chain i for "closeness" to chain j
+
+  params_nms ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
+  moments_nms::Array{Symbol,1}	# names of moments
 
   # TODO need either of those not both
   # the paper uses tempering to set up the kernel,
@@ -26,10 +32,17 @@ type BGPChain <: AbstractChain
   shock_sd   ::Float64 # sd of shock to 
 
   function BGPChain(id,MProb,L,temp,shock,tol)
-    infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
-    parameters = { x => zeros(L) for x in ps_names(MProb) }
-    moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(id,0,infos,parameters,moments,tol,temp,shock)
+    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L))
+    parameters = convert(DataFrame,zeros(L,length(ps_names(MProb))+2))
+    moments    = convert(DataFrame,zeros(L,length(ms_names(MProb))+2))
+    par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
+    mom_nms = Symbol[ symbol(x) for x in ms_names(MProb) ]
+    names!(parameters,[:chain_id,:iter, par_nms])
+    names!(moments   ,[:chain_id,:iter, mom_nms])
+    # infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
+    # parameters = { x => zeros(L) for x in ps_names(MProb) }
+    # moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
+    return new(id,0,infos,parameters,moments,tol,par_nms,mom_nms,temp,shock)
   end
 end
 
@@ -66,30 +79,10 @@ type MAlgoBGP <: MAlgo
 	  	end
 	end
 
-
     return new(m,opts,0,cpar,cpar,chains,Jreg)
   end
 end
 
-# function shockallp(p,shocksd,VV) 
-#   # sh = rmultnorm(1,rep(0,nrow(VV)),VV) * shocksd
-#   MN = MvNormal(VV)
-#   sh = rand(MN) .* shocksd
-
-#   # update value for each param
-#   for (pp in colnames(sh)) {
-#     p[[pp]] = fitMirror( p[[pp]] + sh[,pp] ,
-#                               LB = cf$pdesc[pp,'lb'],
-#                               UB = cf$pdesc[pp,'ub'])  
-#   }
-
-#   return p 
-# end
-
-
-function getchain( algo::MAlgoBGP, i::Int)
-	algo.MChains[i]
-end
 
 
 
@@ -102,14 +95,21 @@ function computeNextIteration!( algo::MAlgoBGP  )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
+    println("in")
+
     # check if we reached end of chain
 	if algo.i == algo["maxiter"]
 	    println("reached end of chain. goodbye.")
 	    return true
 	else
 		# else update iteration count on all chains
-		updateIter!(algo.MChains)
+		updateIterChain!(algo.MChains)
 
+
+	
+		println("algo.i=$(algo.i)")
+		println("algo.MChains[1].i=$(algo.MChains[1].i)")
+		@assert algo.i == algo.MChains[1].i
 
 		# New Candidates
 		# --------------
@@ -142,8 +142,8 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		  		algo.current_param[ch] = algo.candidate_param[ch] 
 		  		status = 1
 			else
-				xold = evals(algo.MChains[ch],algo.i-1)
-				xnew = v[ch]["value"]
+				xold = evals(algo.MChains[ch],algo.i-1)[1]
+				xnew = v[ch]["value"][1]
 				prob = minimum([1, exp(xold - xnew)])
 				if isna(prob)
 					prob = 0
@@ -198,31 +198,32 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# 	end
 		# end
 
-		# TODO need a function exchangeRowd!(algo,from,to)
 
 	end
-	@assert algo.i == algo.MChains[1].i
+    println("out")
 end
+
 
 function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 
-	tmp1 = copy(alls(algo.MChains[pair[1]],i,true))
-	# |-------|--------|--------|--------------|-------|----------|----------|-----------|----------|
-	# | Row # | accept | status | exhanged_with| evals | beta     | a        | b         | alpha    |
-	# | 1     | true   | 1      | 0            | 1.1   | 0.893083 | 0.163338 | 0.0192453 | 0.677312 |
-	tmp1[:exchanged_with] = pair[1]
+	# pars and moms from 1
+	p1 = parameters(algo.MChains[pair[1]],i)
+	m1 = moments(algo.MChains[pair[1]],i)
 
-	tmp2 = copy(alls(algo.MChains[pair[2]],i,true))
-	tmp2[:exchanged_with] = pair[2]
+	# same for 2
+	p2 = parameters(algo.MChains[pair[2]],i)
+	m2 = moments(algo.MChains[pair[2]],i)
 
-	# plug back into respective chains at correct index i
-	fillinFields!(algo.MChains[pair[1]].parameters,tmp2,i)
-	fillinFields!(algo.MChains[pair[1]].moments,tmp2,i)
-	fillinFields!(algo.MChains[pair[1]].infos,tmp2,i)
+	# make a note in infos
+	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
+	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
 
-	fillinFields!(algo.MChains[pair[2]].parameters,tmp1,i)
-	fillinFields!(algo.MChains[pair[2]].moments,tmp1,i)
-	fillinFields!(algo.MChains[pair[2]].infos,tmp1,i)
+	# swap
+	algo.MChains[pair[1]].parameters[i,:] = p2
+	algo.MChains[pair[2]].parameters[i,:] = p1
+	algo.MChains[pair[1]].moments[i,:] = m2
+	algo.MChains[pair[2]].moments[i,:] = m1
+
 end
 
 
@@ -232,8 +233,11 @@ end
 # pardf = Dataframe with stacked parameter df for each chain
 function getParamKernel(algo::MAlgoBGP)
 
+	# select the last algo["past_iterations"] iterations from each chain
+	lower_bound_index = maximum([1,algo.MChains[1].i-algo["past_iterations"]])
 
-	pardf = Allparameters(algo.MChains)
+	# get all params from all chains 
+	pardf = parameters(algo.MChains,lower_bound_index:algo.MChains[1].i)
 	# |-------|----|------|----------|-----------|
 	# | Row # | id | iter | a        | b         |
 	# | 1     | 1  | 1    | 0.901685 | 0.983013  |
@@ -241,15 +245,9 @@ function getParamKernel(algo::MAlgoBGP)
 	# | 3     | 1  | 3    | 0.817773 | 0.268273  |
 	# ...
 
-
-
-	# select the last algo["past_iterations"] iterations from each chain
-	lower_bound_index = maximum([1,algo.MChains[1].i-algo["past_iterations"]])
-
-
 	# compute Var-Cov matrix of parameters_to_sample
 	# plus some small random noise
-	VV = cov(array(pardf[pardf[:iter].<=lower_bound_index, algo.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(algo.m.p2sample_sym)])
+	VV = cov(array(pardf[:, algo.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(algo.m.p2sample_sym)])
 
 	# setup a MvNormal
 	MVN = MvNormal(VV)
@@ -264,7 +262,7 @@ function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 	# update chain by chain
 	for ch in 1:algo["N"]
 
-		# TODO 
+		# TODO
 		# getParamKernel could be in here
 		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
 		# setup a MvNormal
@@ -280,26 +278,12 @@ function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 
 end
 
-function checkbounds!(df::DataFrame,di::Dict)
-	if nrow(df) > 1
-		error("can only process a single row")
-	end
-	dfbounds = collectFields(di,1:length(di),true)
-	for c in names(df)
-		if df[1,c] > dfbounds[2,c]
-			df[1,c] = dfbounds[2,c]
-		elseif df[1,c] < dfbounds[1,c]
-			df[1,c] = dfbounds[1,c]
-		end
-	end
-end
-
 
 function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 
 	# get last param on that particular chain
 	# as dataframe row
-	oldpar = parameters(algo.MChains[ch],algo.MChains[ch].i-1,true)
+	oldpar = parameters(algo.MChains[ch],algo.MChains[ch].i-1)
 
 	# add shock to each column of newpar
 	newpar = copy(oldpar[algo.m.p2sample_sym])

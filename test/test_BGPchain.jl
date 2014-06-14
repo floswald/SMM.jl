@@ -46,12 +46,6 @@ facts("Testing BGPChain constructor") do
 		@fact chain.jumptol => jumptol
 	end
 
-	context("names of param and moments dicts") do
-
-		@fact collect(keys(chain.parameters)) == collect(keys(mprob.initial_value)) => true
-		@fact collect(keys(chain.moments)) == collect(keys(mprob.moments)) => true
-
-	end
 
 end
 

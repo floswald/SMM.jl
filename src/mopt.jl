@@ -3,7 +3,7 @@ module Mopt
 
 
 # imports
-using  DataFrames, Distributions
+using  DataFrames, Distributions, Debug
 import Base.show
 
 

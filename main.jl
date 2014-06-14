@@ -16,6 +16,18 @@ include("src/mopt.jl")
 
 
 
+p    = ["a" => 3.1 , "b" => 4.9]
+pb   = [ "a" => [0,1] , "b" => [0,1] ]
+moms = [
+	"alpha" => [ 0.8 , 0.02 ],
+	"beta"  => [ 0.8 , 0.02 ],
+	"gamma" => [ 0.8 , 0.02 ]
+]
+
+mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
+MA = Mopt.MAlgoBGP(mprob,opts)
+Mopt.runMopt(MA)
 
 
 # workflow

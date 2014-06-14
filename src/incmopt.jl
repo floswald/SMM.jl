@@ -26,58 +26,86 @@ function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
 
 end
 
- ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
-
-# # call this function to set up
-# # the cluster. 
-# # maps choice of "mode" into an action
-# function MoptPrepare!(m::Moptim)
-
-# 	if m.prepared
-# 		println("you're good to go")
-# 		return nothing
-# 	else
-
-# 		# setup cluster
-# 		@everywhere include(m.include_on_workers)
-
-# 		# set m.N = # of workers
-
-# 		# send data to workers
-
-# 		# set m.prepared = true
-# 	end
-
-# end
+ # ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
 
 
-# function evaluateObjective(m::Moptim)
+# taking a dictionary of vectors, returns
+# the values as a dataframe or as a dictionary
+# using Debug
+# @debug function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
+function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
+    # if length(I) == 0
+    #     println("no evaluations to show")
+    # end
+    n = length(dict)
+    dk = collect(keys(dict))
+    if df
+        cols = Any[dict[k][I] for k in dk]  # notice: Any is crucial here to get type-stable var
+        # cols = Array(Any,n)
+        # for i in 1:n
+        #     cols[i] = dict[dk[i]]
+        # end
+        cnames = Array(Symbol,length(dict))
+        for i in 1:n
+            cnames[i] = symbol(dk[i])
+        end
+        return DataFrame(cols, cnames)
+    else ## ==== return as collection
+        return({ k => v[I] for (k,v) in dict })
+    end
+end
 
-# 	if m.mode =="serial"
-# 		v = map(x -> evaluateChainID(x,m), 1:m.N )
-# 	else
-# 		v = pmap(x -> evaluateChainID(x,m), 1:m.N )
+# taking a dataframe row
+# fills in the values into keys of a dict at row I of 
+# arrays in dict
+function fillinFields!(dict::Dict,df::DataFrame,I::Int)
 
-# 	end
-# 	return v
+    if nrow(df)!=1
+        error("can fill in only a single dataframe row")
+    end
+    dk = collect(keys(dict))
+    for ik in dk
+        dict[ik][I] = df[symbol(ik)][1]
+    end
 
-# end
+end
 
-# function evaluateChainID(m::Moptim,i::Int)
+# same but for dict with only on entry per key
+# looks for keys(dict) in rownames of dataframe
+function fillinFields!(dict::Dict,df::DataFrame)
 
-# 	# eval chain i with param[i]
-# 	x = eval(Expr(:call,m.objfunc,m.current_param[i],m.moments,m.moments_to_use))
-# 	return x
+    if nrow(df)!=1
+        error("can fill in only a single dataframe row")
+    end
+    dk = collect(keys(dict))
+    for ik in dk
+        dict[ik] = df[symbol(ik)][1]
+    end
 
-# end
+end
 
-# function collectChains(m::Moptim)
+# dataframe to dict function
+function df2dict(df::DataFrame)
+  nm = names(df)
+  snm = map(x->string(x),nm)
+  out ={i => df[symbol(i)] for i in snm}
+  return out
+end
 
 
-
-# end
-
-
+function checkbounds!(df::DataFrame,di::Dict)
+	if nrow(df) > 1
+		error("can only process a single row")
+	end
+	dfbounds = collectFields(di,1:length(di),true)
+	for c in names(df)
+		if df[1,c] > dfbounds[2,c]
+			df[1,c] = dfbounds[2,c]
+		elseif df[1,c] < dfbounds[1,c]
+			df[1,c] = dfbounds[1,c]
+		end
+	end
+end
 
 
 

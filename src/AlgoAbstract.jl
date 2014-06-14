@@ -19,22 +19,7 @@ function getChain(algo::MAlgo, which::Int)
 	algo.chains[which]
 end
 
-function updateIter!(algo::MAlgo)
-	algo.i =+ 1
-	return nothing
-end
 
-
-# updates all chains in an algo
-# wrapper to evaluateChainID
-# calls map(evaluateChainID) or pmap(evaluateChainID) depending on opts
-function updateChains!(algo::MAlgo)
-	
-	updateIter!(algo)  # add 1 to iteration count on algo
-	computeNextIteration!( algo )  # compute next iteration on all chains
-
-end
-    
 
 # evalute objective function
 # with param vector number i
@@ -58,7 +43,10 @@ function runMopt( algo::MAlgo )
 
 	# do iteration
 	for i in 1:algo["maxiter"]
-		updateChains!( algo )
+
+		algo.i = i
+
+		computeNextIteration!( algo )
 
 		# save at certain frequency
 

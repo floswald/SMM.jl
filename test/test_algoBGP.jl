@@ -78,7 +78,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# fill chains with random values
 		for iter =1:(MA["maxiter"]-1)
 			# update all chains to index 1
-			Mopt.updateIter!(MA.MChains)
+			Mopt.updateIterChain!(MA.MChains)
 
 			# set a parameter vector on all chains using appendEval!
 			myp = ["a" => rand() , "b" => rand()]
@@ -90,15 +90,15 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		end
 
 		# get all parameters
-		pars = Mopt.Allparameters(MA.MChains)
+		lower_bound_index = maximum([1,MA.MChains[1].i-MA["past_iterations"]])
+		pars = Mopt.parameters(MA.MChains,lower_bound_index:MA.MChains[1].i)
 
 		# get the last MA["past_iterations"] iterations from each chain
 		# get parameter_to_sample names as symbols 
 		
-		sub = pars[pars[:iter] .<= maximum([1,MA.MChains[1].i-MA["past_iterations"]]),MA.m.p2sample_sym]
 
 		# get covariance matrix of those
-		VV = cov(Mopt.array(sub)) + 0.0001 * Diagonal([1 for i=1:length(p)])
+		VV = cov(Mopt.array(pars[:,MA.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(p)])
 
 		# get kernel and check VV
 		myVV = Mopt.getParamKernel(MA)
@@ -122,7 +122,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		ix = 5
 		for iter =1:ix
 			# update all chains to index 1
-			Mopt.updateIter!(MA.MChains)
+			Mopt.updateIterChain!(MA.MChains)
 
 			# set a parameter vector on all chains using appendEval!
 			for ich in 1:MA["N"]
@@ -149,7 +149,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		for ich in 1:MA["N"]
 			shock[ich] = rand(MVN) * MA.MChains[ich].shock_sd 
 
-			oldp = Mopt.parameters(MA.MChains[ich],ix-1,true)	# get a dataframe of row ix-1
+			oldp = Mopt.parameters(MA.MChains[ich],ix-1)	# get a dataframe of row ix-1
 			newp[ich] = copy(oldp[MA.m.p2sample_sym])	# get just those you wish to sample
 
 			# add shock
@@ -176,14 +176,14 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	context("testing swapRows!") do
 
-		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
 		MA = Mopt.MAlgoBGP(mprob,opts)
 
 		# fill chains with random values up to iteration ix
 		ix = 5
 		for iter =1:ix
 			# update all chains to index 1
-			Mopt.updateIter!(MA.MChains)
+			Mopt.updateIterChain!(MA.MChains)
 
 			# set a parameter vector on all chains using appendEval!
 			for ich in 1:MA["N"]
@@ -240,29 +240,7 @@ facts("testing MAlgo methods") do
 	end
 
 
-	context("updateChains!(algo)") do
-
-		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
-		MA = Mopt.MAlgoBGP(mprob,opts)
-
-		@fact MA.MChains[1].i => 0
-		@fact MA.i => 0
-
-		Mopt.updateChains!(MA)
-
-		# compute objective function once
-		v = Mopt.Testobj(p,moms,["alpha", "beta","gamma"])
-
-		# each chain must have those values
-		for ix in 1:opts["N"]
-			ch = Mopt.getchain(MA,ix)	# get each chain
-			@fact ch.i => 1
-			@fact Mopt.evals(ch,1)[1] => v["value"]
-			@fact Mopt.accept(ch,1)[1] => true # all true in first eval
-			@fact map(x->x[1],collect(values(Mopt.parameters(ch,1)))) == collect(values(v["params"])) => true
-			@fact map(x->x[1],collect(values(Mopt.moments(ch,1)))) == collect(values(v["moments"])) => true
-		end # all chains
-	end
+	
 end
 
 
