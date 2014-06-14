@@ -25,7 +25,7 @@ moms = [
 ]
 
 mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
+opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0,"rings" => linspace(0.01,1000,10)] 
 MA = Mopt.MAlgoBGP(mprob,opts)
 Mopt.runMopt(MA)
 

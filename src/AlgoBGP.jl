@@ -14,9 +14,6 @@
 type BGPChain <: AbstractChain
   id::Int             # chain id
   i::Int              # current index
-  # infos      ::Dict   # dictionary of arrays(L,1) with eval, ACC and others
-  # parameters ::Dict   # dictionary of arrays(L,1), 1 for each parameter
-  # moments    ::Dict   # dictionary of DataArrays(L,1), 1 for each moment
   infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
   parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
   moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
@@ -115,7 +112,8 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# --------------
 
 		if algo.i > 1
-			MVN = getParamKernel(algo)	# returns a MvNormal object
+			# MVN = getParamKernel(algo)	# returns a MvNormal object
+			MVN = getParamCovariance(algo)	# returns a Cov matrix
 			getNewCandidates!(algo,MVN)
 		end
 
@@ -133,47 +131,62 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 
 		# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
-		# ============================
+		# -----------------------------------------------------------
 
-		for ch in 1:algo["N"]
-			if algo.i == 1
-				# accept all
-				ACC = true
-		  		algo.current_param[ch] = algo.candidate_param[ch] 
-		  		status = 1
-			else
-				xold = evals(algo.MChains[ch],algo.i-1)[1]
-				xnew = v[ch]["value"][1]
-				prob = minimum([1, exp(xold - xnew)])
-				if isna(prob)
-					prob = 0
-					status = -1
-				elseif !isfinite(xold)
-					prob = 1
-					status = -2
-				else 
-					if prob > rand()
-						ACC = true
-				  		algo.current_param[ch] = algo.candidate_param[ch] 
-					else
-						ACC = false
-						v[ch]["params"] = algo.current_param[ch]	# reset param in output of obj to previous value
-						v[ch]["moments"] = moments(algo.MChains[ch],algo.i-1)	# reset moments in output of obj to previous value
-					end
-					status = 1
+		localMovesMCMC!(algo,v)
+
+		# Part 2) EXCHANGE MOVES 
+		# ----------------------
+		
+		exchangeMoves!(algo)
+		
+	end
+    println("out")
+end
+
+function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
+	for ch in 1:algo["N"]
+		if algo.i == 1
+			# accept all
+			ACC = true
+	  		algo.current_param[ch] = algo.candidate_param[ch] 
+	  		status = 1
+		else
+			xold = evals(algo.MChains[ch],algo.i-1)[1]
+			xnew = v[ch]["value"][1]
+			prob = minimum([1, exp(algo.MChains[ch].tempering * (xold - xnew))])
+			if isna(prob)
+				prob = 0
+				status = -1
+			elseif !isfinite(xold)
+				prob = 1
+				status = -2
+			else 
+				if prob > rand()
+					ACC = true
+			  		algo.current_param[ch] = algo.candidate_param[ch] 
+				else
+					ACC = false
+					v[ch]["params"] = algo.current_param[ch]	# reset param in output of obj to previous value
+					v[ch]["moments"] = df2dict(moments(algo.MChains[ch],algo.i-1))	# reset moments in output of obj to previous value
 				end
+				status = 1
 			end
-
-
-		    # append values to MChains at index ch
-		    appendEval!(algo.MChains[ch],v[ch],ACC,status)
 		end
+	    # append values to MChains at index ch
+	    appendEval!(algo.MChains[ch],v[ch],ACC,status)
+	end
+end
+
+function exchangeMoves!(algo::MAlgoBGP)
+
+	if !haskey(algo.opts,"rings")
 
 		# Part 2a) EXCHANGE MOVES without rings
 		# ======================
 		# 1) N exchange moves are proposed
 		# 2) N pairs are chosen uniformly among all possible pairs with replacment 
-		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_i - val_j < tol
+		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
 
 		jump_pairs = sample(algo.Jump_register,algo["N"],replace=false)
 		for pair in jump_pairs
@@ -183,24 +196,61 @@ function computeNextIteration!( algo::MAlgoBGP  )
 			end
 		end
 
-
+	else
 		# Part 2b) EXCHANGE MOVES with rings
-		# ======================
+		# ==================================
 		# 1) N exchange moves are proposed
-		# 2) a ring with at least two associated chains is chosen randomly from all rings
-		#    a ring is a partition of tolerance space, i.e. R1 = [0,1], R2 = [1,1.5] etc
-		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_i - val_j < tol
-		# for ch2 in 1:algo["N"]
-		# 	if ch==ch2
-		# 		#nothing
-		# 	else
+		# 2) a ring E_j is a partition of objective function space, i.e. 
+		#    chain j \in E_1 iff V_j \in [0,E_1]
+		#    chain j \in E_2 iff V_j \in [E_1,E_2]
+		#    ...                             
+		# 3) randomly choose N rings, with replacement. A ring with less than 2 chains is not admissible.                               
+		# 5) from within that ring, form jump_pairs 
+		# 6) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
 
-		# 	end
-		# end
+		chain_in_rings = infos(algo.MChains,algo.i)[[:chain_id,:evals]]
+		chain_in_rings = cbind(chain_in_rings,DataFrame(ring=findInterval(chain_in_rings[:evals],algo["rings"])))
 
+		# drop rings with less than 2 chains
+		hi = hist(chain_in_rings[:ring])
+		chain_in_rings = chain_in_rings[findin(chain_in_rings[:evals],unique(sort(chain_in_rings[:evals]))[hi[2].>1]),:]
+		if nrow(chain_in_rings) > 0
 
+		# 	# choose N rings with replacement
+			rings = DataFrame(ringid=sample(chain_in_rings[:ring],algo["N"],replace=true), pair1 = [0 for i=1:algo["N"]], pair2 = [0 for i=1:algo["N"]])
+
+			# for each entry of rings, randomly choose a pair of chains
+			for ir = 1:nrow(rings)
+
+				pairs = sample(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id],2,replace=false)
+				# add to rings
+				rings[ir,:pair1] = pairs[1]
+				rings[ir,:pair2] = pairs[2]
+
+			end
+
+			# for each ring, if val(j) < tol_i, swap i with j
+			for irow in eachrow(rings)
+				distance = abs(evals(algo.MChains[irow[:pair2]],algo.MChains[irow[:pair2]].i)[1]) < algo.MChains[irow[:pair1]].jumptol
+				if distance
+					swapRows!(algo,(irow[:pair1],irow[:pair2]),algo.i)
+				end
+			end
+		end
 	end
-    println("out")
+end
+
+
+function findInterval(x,vec::Array)
+
+	out = zeros(Int,length(x))
+	sort!(vec)
+	i = 0
+
+	for j in 1:length(x)
+		out[j] = findfirst(vec .> x[j]) - 1
+	end
+	return out
 end
 
 
@@ -231,7 +281,8 @@ end
 # we draw new candidates for each chain from a joint normal
 # that depends on parameter vectors on ALL chains
 # pardf = Dataframe with stacked parameter df for each chain
-function getParamKernel(algo::MAlgoBGP)
+# function getParamKernel(algo::MAlgoBGP)
+function getParamCovariance(algo::MAlgoBGP)
 
 	# select the last algo["past_iterations"] iterations from each chain
 	lower_bound_index = maximum([1,algo.MChains[1].i-algo["past_iterations"]])
@@ -248,16 +299,16 @@ function getParamKernel(algo::MAlgoBGP)
 	# compute Var-Cov matrix of parameters_to_sample
 	# plus some small random noise
 	VV = cov(array(pardf[:, algo.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(algo.m.p2sample_sym)])
+	return VV
 
 	# setup a MvNormal
-	MVN = MvNormal(VV)
-	return MVN
+	# MVN = MvNormal(VV)
+	# return MVN
 end
 
 
-function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
-
-	# VV = getParamCovariance(algo)
+# function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
+function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 
 	# update chain by chain
 	for ch in 1:algo["N"]
@@ -266,11 +317,11 @@ function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 		# getParamKernel could be in here
 		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
 		# setup a MvNormal
-		# VV2 = VV*algo.MChains[ch].tempering
-		# MVN = MvNormal(VV2)
+		VV2 = VV.*algo.MChains[ch].tempering
+		MVN = MvNormal(VV2)
 
 		# shock parameters on chain index ch
-		shock = rand(MVN) * algo.MChains[ch].shock_sd
+		shock = rand(MVN) #* algo.MChains[ch].shock_sd
 
 		updateCandidateParam!(algo,ch,shock)
 

@@ -57,6 +57,9 @@ function parameters(MC::Array,i::UnitRange{Int})
     return r
 end
 
+function parameters(MC::Array,i::Int)
+    parameters(MC,i:i)
+end
 function parameters(MC::Array)
     parameters(MC,1:MC[1].i)
 end
@@ -78,6 +81,10 @@ function moments(MC::Array)
     moments(MC,1:MC[1].i)
 end
 
+function infos(MC::Array,i::Int)
+    infos(MC,i:i)
+end
+
 function infos(MC::Array,i::UnitRange{Int})
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
@@ -94,6 +101,7 @@ end
 function infos(MC::Array)
     infos(MC,1:MC[1].i)
 end
+
 
 
 

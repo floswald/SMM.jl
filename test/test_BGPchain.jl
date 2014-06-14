@@ -33,13 +33,13 @@ facts("Testing BGPChain constructor") do
 	context("length of members") do
 
 		# test that all member except i are L long
-		@fact length(chain.infos["evals"])  => L
-		@fact length(chain.infos["accept"]) => L
+		@fact length(chain.infos[:evals])  => L
+		@fact length(chain.infos[:accept]) => L
 		for nm in Mopt.ps_names(mprob)
-			@fact length(chain.parameters[nm]) => L
+			@fact nrow(chain.parameters) => L
 		end
 		for nm in Mopt.ms_names(mprob)
-			@fact length(chain.moments[nm]) => L
+			@fact nrow(chain.moments) => L
 		end
 		@fact chain.tempering => temp
 		@fact chain.shock_sd => shock
