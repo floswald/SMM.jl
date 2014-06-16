@@ -23,8 +23,9 @@ alls(c::AbstractChain,i::Int)                   = cbind(infos(c, i:i),parameters
 
 # appends values from objective function
 # at CURRENT iteration
-function appendEval!(chain::AbstractChain, vals::Dict, ACC::Bool, status::Int)
+function appendEval!(chain::AbstractChain, vals::Dict, ACC::Bool, status::Int, prob::Float64)
     chain.infos[chain.i,:evals] = vals["value"]
+    chain.infos[chain.i,:prob] = prob
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = status
     for im in chain.moments_nms
@@ -104,6 +105,10 @@ end
 
 
 
+function alls(MC::Array) 
+    cbind(infos(MC),parameters(MC)[MC[1].params_nms],moments(MC)[MC[1].moments_nms])
+end
+
 
 
 # the default chain type
@@ -118,7 +123,7 @@ type Chain <: AbstractChain
   moments_nms::Array{Symbol,1}  # DataFrame names of moments
 
   function Chain(MProb,L)
-    infos      = DataFrame(iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L))
+    infos      = DataFrame(iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L))
     par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
     mom_nms = Symbol[ symbol(x) for x in ms_names(MProb) ]
     parameters = convert(DataFrame,zeros(L,length(par_nms)+1))

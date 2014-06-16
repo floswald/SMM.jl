@@ -37,8 +37,9 @@ type MProb
     for i in 1:length(par2sample_name)
       par2sample_sym[i] = symbol(par2sample_name[i])
     end
+    p0 = deepcopy(initial_value)
 
-    return new(initial_value,params_to_sample,par2sample_sym,objfunc,moments,moments_subset)
+    return new(p0,params_to_sample,par2sample_sym,objfunc,moments,moments_subset)
 
   end # constructor
 end #type

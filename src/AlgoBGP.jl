@@ -29,9 +29,9 @@ type BGPChain <: AbstractChain
   shock_sd   ::Float64 # sd of shock to 
 
   function BGPChain(id,MProb,L,temp,shock,tol)
-    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L))
-    parameters = convert(DataFrame,zeros(L,length(ps_names(MProb))+2))
-    moments    = convert(DataFrame,zeros(L,length(ms_names(MProb))+2))
+    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L))
+    parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
+    moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
     par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
     mom_nms = Symbol[ symbol(x) for x in ms_names(MProb) ]
     names!(parameters,[:chain_id,:iter, par_nms])
@@ -65,7 +65,9 @@ type MAlgoBGP <: MAlgo
   	# create chains
   	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],jumptol[i]) for i=1:opts["N"] ]
   	# current param values
-  	cpar = [ m.initial_value for i=1:opts["N"] ] 
+  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
+  	# candidate param values
+  	cpar0 = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
   	# jump register
   	Jreg = (Int,Int)[]
   	for i in 1:opts["N"]
@@ -76,10 +78,16 @@ type MAlgoBGP <: MAlgo
 	  	end
 	end
 
-    return new(m,opts,0,cpar,cpar,chains,Jreg)
+    return new(m,opts,0,cpar,cpar0,chains,Jreg)
   end
 end
 
+
+function resetCurrentParam2initial(algo::MAlgoBGP)
+	for j in 1:length(algo.current_param)
+		algo.current_param[j] = algo.m.initial_value
+	end
+end
 
 
 
@@ -149,36 +157,38 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		if algo.i == 1
 			# accept all
 			ACC = true
-	  		algo.current_param[ch] = algo.candidate_param[ch] 
+	  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch])
 	  		status = 1
+	  		prob = 1.0
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
 			xnew = v[ch]["value"][1]
-			prob = minimum([1, exp(algo.MChains[ch].tempering * (xold - xnew))])
+			prob = minimum([1.0, exp(xold - xnew)])
 			if isna(prob)
-				prob = 0
+				prob = 0.0
 				status = -1
 			elseif !isfinite(xold)
-				prob = 1
+				prob = 1.0
 				status = -2
 			else 
 				if prob > rand()
 					ACC = true
-			  		algo.current_param[ch] = algo.candidate_param[ch] 
+			  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
 				else
 					ACC = false
-					v[ch]["params"] = algo.current_param[ch]	# reset param in output of obj to previous value
+					v[ch]["params"] = deepcopy(algo.current_param[ch])	# reset param in output of obj to previous value
 					v[ch]["moments"] = df2dict(moments(algo.MChains[ch],algo.i-1))	# reset moments in output of obj to previous value
 				end
 				status = 1
 			end
 		end
 	    # append values to MChains at index ch
-	    appendEval!(algo.MChains[ch],v[ch],ACC,status)
+	    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
 	end
 end
 
-function exchangeMoves!(algo::MAlgoBGP)
+using Debug
+@debug function exchangeMoves!(algo::MAlgoBGP)
 
 	if !haskey(algo.opts,"rings")
 
@@ -213,7 +223,9 @@ function exchangeMoves!(algo::MAlgoBGP)
 
 		# drop rings with less than 2 chains
 		hi = hist(chain_in_rings[:ring])
-		chain_in_rings = chain_in_rings[findin(chain_in_rings[:evals],unique(sort(chain_in_rings[:evals]))[hi[2].>1]),:]
+		keeps = findin(chain_in_rings[:ring],unique(sort(chain_in_rings[:ring]))[hi[2].>1])
+		chain_in_rings = chain_in_rings[keeps,:]
+
 		if nrow(chain_in_rings) > 0
 
 		# 	# choose N rings with replacement
@@ -221,6 +233,9 @@ function exchangeMoves!(algo::MAlgoBGP)
 
 			# for each entry of rings, randomly choose a pair of chains
 			for ir = 1:nrow(rings)
+
+					@bp length(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id]) ==1
+
 
 				pairs = sample(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id],2,replace=false)
 				# add to rings

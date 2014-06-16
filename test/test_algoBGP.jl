@@ -85,7 +85,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 			mym = ["alpha" => rand(),"beta"  => rand(),"gamma" =>  rand()]
 			ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
 			for ich in 1:MA["N"]
-				Mopt.appendEval!(MA.MChains[ich],ret,true,1)
+				Mopt.appendEval!(MA.MChains[ich],ret,true,1,rand())
 			end
 		end
 
@@ -166,7 +166,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 				myp = ["a" => rand() , "b" => rand()]
 				mym = ["alpha" => rand(),"beta"  => rand(),"gamma" =>  rand()]
 				ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
-				Mopt.appendEval!(MA.MChains[ich],ret,true,1)
+				Mopt.appendEval!(MA.MChains[ich],ret,true,1,rand())
 			end
 		end
 
@@ -228,7 +228,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 				myp = ["a" => rand() , "b" => rand()]
 				mym = ["alpha" => rand(),"beta"  => rand(),"gamma" =>  rand()]
 				ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
-				Mopt.appendEval!(MA.MChains[ich],ret,true,1)
+				Mopt.appendEval!(MA.MChains[ich],ret,true,1,rand())
 			end
 		end
 
@@ -257,23 +257,108 @@ end
 
 facts("testing localMovesMCMC") do
 
-	opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
-	MA = Mopt.MAlgoBGP(mprob,opts)
+	context("testing initila period") do
 
-	# get a return value
-	which_chain = 1
-	v = map( x -> evaluateObjective(algo,x), 1:algo["N"])
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
+		MA = Mopt.MAlgoBGP(mprob,opts)
 
-	# set iteration on chains = 1
-	Mopt.updateIterChain!(MA.MChains)
-	Mopt.localMovesMCMC!(MA,v)
+		# get a return value
+		v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
 
-	# all accepted: 
-	@fact all(Mopt.infos(MA.MChains,1)[:accept]) => true
-	@fact all(Mopt.infos(MA.MChains,1)[:status] .== 1) => true
-	# all params equal to initial value
-	@fact array(Mopt.parameters(MA.MChains,1)[MA.params_nms]) => true
+		# set iteration on chains and algo = 1
+		MA.i = 1
+		Mopt.updateIterChain!(MA.MChains)
+		Mopt.localMovesMCMC!(MA,v)
 
+		# all accepted: 
+		@fact all(Mopt.infos(MA.MChains,1)[:accept]) => true
+		@fact all(Mopt.infos(MA.MChains,1)[:status] .== 1) => true
+		# all params equal to initial value
+		@fact array(Mopt.parameters(MA.MChains[1],1)[MA.MChains[1].params_nms])[:] == collect(values(p))[:] => true
+
+		# next iteration
+		MA.i = 2
+		Mopt.updateIterChain!(MA.MChains)
+		Mopt.localMovesMCMC!(MA,v)
+
+		# param equal to previous param is accepted with prob = 1
+		@fact all(Mopt.infos(MA.MChains,MA.i)[:prob] .== 1) => true
+		@fact all(Mopt.infos(MA.MChains,MA.i)[:status] .== 1) => true
+	end
+
+	context("testing whether params get accept/rejected") do
+
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
+		MA = Mopt.MAlgoBGP(mprob,opts)
+		v=0
+
+		# get a return value
+		v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
+
+		# first iteration
+		MA.i = 1
+		Mopt.updateIterChain!(MA.MChains)
+		Mopt.localMovesMCMC!(MA,v)
+
+		# second iteration
+		MA.i = 2
+		Mopt.updateIterChain!(MA.MChains)
+		# set values close to initial
+		for i in 1:length(v) 
+			v[i]["value"] = v[i]["value"] - log(0.5)
+			for (k,va) in MA.candidate_param[i]
+				MA.candidate_param[i][k] = va + rand()
+			end
+		end
+		Mopt.localMovesMCMC!(MA,v)
+
+		# acceptance prob is exactly 0.5
+		@fact all(abs(Mopt.infos(MA.MChains,MA.i)[:prob] .- 0.5) .< 0.000000001) => true
+		@fact all(Mopt.infos(MA.MChains,MA.i)[:evals] .== v[1]["value"]) => true
+
+		# check that where not accepted, params and moments are previous ones
+		for ch in 1:MA["N"]
+			if Mopt.infos(MA.MChains[ch],MA.i)[:accept][1]
+
+				# println("chain number = $ch")
+				# println("accept = $(Mopt.infos(MA.MChains[ch],MA.i)[:accept][1])")
+				# println("stored parameters = $(array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:])")
+				# println("candidate parameters = $(collect(values(MA.candidate_param[ch])))")
+				# println("current parameters = $(collect(values(MA.current_param[ch])))")
+				
+				# if accepted, parameters == current_param
+				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.current_param[ch])) => true
+				# if accepted, parameters == candidate_param
+				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.candidate_param[ch])) => true
+			else
+				# if not, parameters == current println("chain number = $ch")
+				println("chain number = $ch")
+				println("accept = $(Mopt.infos(MA.MChains[ch],MA.i)[:accept][1])")
+				println("stored parameters = $(array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:])")
+				println("candidate parameters = $(collect(values(MA.candidate_param[ch])))")
+				println("current parameters = $(collect(values(MA.current_param[ch])))")
+				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.current_param[ch])) =>true 
+
+				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] != collect(values(MA.candidate_param[ch])) => true
+			end
+		end
+
+	end
+
+	# # next iteration
+	# MA.i = 4
+	# Mopt.updateIterChain!(MA.MChains)
+	# # set values super high: won't be accepted
+	# for i in 1:length(v) 
+	# 	v[i]["value"] = 1e10
+	# end
+	# Mopt.localMovesMCMC!(MA,v)
+	
+	# # param equal to previous param is accepted with prob = 1
+	# @fact all(Mopt.infos(MA.MChains,MA.i)[:accept] .== false) => true
+	# @fact all(Mopt.infos(MA.MChains,MA.i)[:prob] .== 0) => true
+	# @fact all(Mopt.infos(MA.MChains,MA.i)[:evals] .== 1e10) => true
+	# @fact MA.current_param == MA.candidate_param => true
 
 end
 
