@@ -29,7 +29,7 @@ type BGPChain <: AbstractChain
   shock_sd   ::Float64 # sd of shock to 
 
   function BGPChain(id,MProb,L,temp,shock,tol)
-    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L))
+    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),ring=zeros(Int,L),prob=zeros(Float64,L))
     parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
     moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
     par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
@@ -176,6 +176,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
 				else
 					ACC = false
+					v[ch]["value"] = xold # reset value in output of obj to previous value
 					v[ch]["params"] = deepcopy(algo.current_param[ch])	# reset param in output of obj to previous value
 					v[ch]["moments"] = df2dict(moments(algo.MChains[ch],algo.i-1))	# reset moments in output of obj to previous value
 				end
@@ -201,9 +202,11 @@ using Debug
 		jump_pairs = sample(algo.Jump_register,algo["N"],replace=false)
 		for pair in jump_pairs
 			distance = abs(evals(algo.MChains[pair[1]],algo.MChains[pair[1]].i) - evals(algo.MChains[pair[2]],algo.MChains[pair[2]].i))
+			# println("distance of pair $(pair) = $distance")
 			if distance[1] < algo.MChains[pair[1]].jumptol
 				swapRows!(algo,pair,algo.i)
 			end
+			
 		end
 
 	else
@@ -234,7 +237,7 @@ using Debug
 			# for each entry of rings, randomly choose a pair of chains
 			for ir = 1:nrow(rings)
 
-					@bp length(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id]) ==1
+					# @bp length(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id]) ==1
 
 
 				pairs = sample(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id],2,replace=false)
@@ -248,7 +251,7 @@ using Debug
 			for irow in eachrow(rings)
 				distance = abs(evals(algo.MChains[irow[:pair2]],algo.MChains[irow[:pair2]].i)[1]) < algo.MChains[irow[:pair1]].jumptol
 				if distance
-					swapRows!(algo,(irow[:pair1],irow[:pair2]),algo.i)
+					swapRows!(algo,(irow[:pair1],irow[:pair2]),algo.i,irow[:ringid])
 				end
 			end
 		end
@@ -269,7 +272,7 @@ function findInterval(x,vec::Array)
 end
 
 
-function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
+function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int,x...)
 
 	# pars and moms from 1
 	p1 = parameters(algo.MChains[pair[1]],i)
@@ -282,6 +285,10 @@ function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 	# make a note in infos
 	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
 	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
+	if length(x) >0
+		algo.MChains[pair[1]].infos[i,:ring] = x[1][i]
+		algo.MChains[pair[2]].infos[i,:ring] = x[1][i]
+	end
 
 	# swap
 	algo.MChains[pair[1]].parameters[i,:] = p2
@@ -336,7 +343,7 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		MVN = MvNormal(VV2)
 
 		# shock parameters on chain index ch
-		shock = rand(MVN) #* algo.MChains[ch].shock_sd
+		shock = rand(MVN) * algo.MChains[ch].shock_sd
 
 		updateCandidateParam!(algo,ch,shock)
 

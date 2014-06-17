@@ -10,6 +10,9 @@ include("test/test_MProb.jl")
 include("test/test_chains.jl")
 include("test/test_BGPchain.jl")
 include("test/test_algoBGP.jl")
+
+# runnign examples:
+include("src/examples.jl")
 	
 # to develop in main: run this
 include("src/mopt.jl")
@@ -25,8 +28,20 @@ moms = [
 ]
 
 mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0,"rings" => linspace(0.01,1000,10)] 
+opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>100.0] 
 MA = Mopt.MAlgoBGP(mprob,opts)
+		# v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
+
+
+		# # set values close to initial
+		# for i in 1:length(v) 
+		# 	v[i]["value"] = v[i]["value"] + randn()*0.01
+		# 	for (k,va) in MA.candidate_param[i]
+		# 		MA.candidate_param[i][k] = va + randn()*0.01
+		# 	end
+		# end
+		# # append values to chains
+		# for ch in 1:MA["N"] appendEval!(MA.MChains[ch],v[ch],false,1,1.0) end
 Mopt.runMopt(MA)
 
 

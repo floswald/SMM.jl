@@ -212,6 +212,10 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	end
 
+end
+
+facts("testing swaprows etc") do
+
 	context("testing swapRows!") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
@@ -253,6 +257,58 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	end
 
+	context("testing swapRows!() with rings") do
+
+		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>20.0,"rings" => linspace(0.01,1000,10)] 
+		MA = Mopt.MAlgoBGP(mprob,opts)
+
+		# fill chains with random values up to iteration ix
+		ix = 5
+		for iter =1:ix
+			# update all chains to index 1
+			Mopt.updateIterChain!(MA.MChains)
+
+			# set a parameter vector on all chains using appendEval!
+			for ich in 1:MA["N"]
+				myp = ["a" => rand() , "b" => rand()]
+				mym = ["alpha" => rand(),"beta"  => rand(),"gamma" =>  rand()]
+				ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
+				Mopt.appendEval!(MA.MChains[ich],ret,true,1,rand())
+			end
+		end
+
+		# get a pair (i,j) of chains
+		pair = Mopt.sample(MA.Jump_register,1)[1]
+
+		# get params and moms
+		p1 = Mopt.parameters(MA.MChains[pair[1]],ix)
+		p2 = Mopt.parameters(MA.MChains[pair[2]],ix)
+		m1 = Mopt.moments(MA.MChains[pair[1]],ix)
+		m2 = Mopt.moments(MA.MChains[pair[2]],ix)
+
+		# suppose both are from ring rid=14
+		rid = [14 for i in 1:MA["N"]]
+
+
+		# exchange
+		Mopt.swapRows!(MA,pair,ix,rid)
+
+		# println("pair = $pair")
+		# println(Mopt.infos(MA.MChains,ix))
+		# println("rid[pair[1]] = $(rid[pair[1]])")
+		# println("rid[pair[2]] = $(rid[pair[2]])")
+
+		# check parameters
+		@fact Mopt.parameters(MA.MChains[pair[1]],ix) == p2 => true
+		@fact Mopt.parameters(MA.MChains[pair[2]],ix) == p1 => true
+		@fact Mopt.moments(MA.MChains[pair[1]],ix) == m2 => true
+		@fact Mopt.moments(MA.MChains[pair[2]],ix) == m1 => true
+		@fact Mopt.infos(MA.MChains[pair[1]],ix)[:exchanged_with][1] == pair[2] => true
+		@fact Mopt.infos(MA.MChains[pair[2]],ix)[:exchanged_with][1] == pair[1] => true
+		@fact Mopt.infos(MA.MChains[pair[2]],ix)[:ring][1] == rid[ix] => true
+		@fact Mopt.infos(MA.MChains[pair[1]],ix)[:ring][1] == rid[ix] => true
+
+	end
 end
 
 facts("testing localMovesMCMC") do
@@ -332,16 +388,142 @@ facts("testing localMovesMCMC") do
 				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.candidate_param[ch])) => true
 			else
 				# if not, parameters == current println("chain number = $ch")
-				println("chain number = $ch")
-				println("accept = $(Mopt.infos(MA.MChains[ch],MA.i)[:accept][1])")
-				println("stored parameters = $(array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:])")
-				println("candidate parameters = $(collect(values(MA.candidate_param[ch])))")
-				println("current parameters = $(collect(values(MA.current_param[ch])))")
+				# println("chain number = $ch")
+				# println("accept = $(Mopt.infos(MA.MChains[ch],MA.i)[:accept][1])")
+				# println("stored parameters = $(array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:])")
+				# println("candidate parameters = $(collect(values(MA.candidate_param[ch])))")
+				# println("current parameters = $(collect(values(MA.current_param[ch])))")
 				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.current_param[ch])) =>true 
 
 				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] != collect(values(MA.candidate_param[ch])) => true
 			end
 		end
+
+	end
+
+
+	context("testing exchangeMoves: all chains exchange") do
+		# no "rings" option set: go into part 2a)
+		# exchange or not depends on the values on each chain
+		# setting the values far apart, means no chain is exchanged
+
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>100.0] 
+
+		MA = Mopt.MAlgoBGP(mprob,opts)
+		MA.i = 1
+		Mopt.updateIterChain!(MA.MChains)
+		v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
+
+
+		# set values close to initial
+		for i in 1:length(v) 
+			v[i]["value"] = v[i]["value"] + randn()*0.01
+			for (k,va) in MA.candidate_param[i]
+				MA.candidate_param[i][k] = va + randn()*0.01
+			end
+		end
+		# append values to chains
+		for ch in 1:MA["N"] Mopt.appendEval!(MA.MChains[ch],v[ch],false,1,1.0) end
+
+		Mopt.exchangeMoves!(MA)
+
+		# all chains should be exchanged?
+		# println(Mopt.infos(MA.MChains,MA.i))
+		@fact !all(array(Mopt.infos(MA.MChains,MA.i)[:exchanged_with]) .== 0) => true 
+
+	end
+
+
+	context("testing exchangeMoves: 0 chains exchange") do
+		# no "rings" option set: go into part 2a)
+		# exchange or not depends on the values on each chain
+		# setting the values far apart, means no chain is exchanged
+
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>0.0,"max_jumptol"=>0.1] 
+
+		MA = Mopt.MAlgoBGP(mprob,opts)
+		MA.i = 1
+		Mopt.updateIterChain!(MA.MChains)
+		v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
+
+
+		# set values close to initial
+		for i in 1:length(v) 
+			v[i]["value"] = v[i]["value"] + randn()*100
+			for (k,va) in MA.candidate_param[i]
+				MA.candidate_param[i][k] = va + randn()*0.01
+			end
+		end
+		# append values to chains
+		for ch in 1:MA["N"] Mopt.appendEval!(MA.MChains[ch],v[ch],false,1,1.0) end
+
+		Mopt.exchangeMoves!(MA)
+
+		# all chains should be exchanged?
+		# println(Mopt.infos(MA.MChains,MA.i)[:exchanged_with])
+		@fact all(array(Mopt.infos(MA.MChains,MA.i)[:exchanged_with]) .== 0) => true 
+
+	end
+
+	context("testing exchangeMoves part B: all chains exchange") do
+		# "rings" option set: go into part 2b)
+		# exchange or not depends on the values on each chain
+
+		# opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>100.0] 
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>20.0,"rings" => linspace(0.01,1000,2)] 
+
+		MA = Mopt.MAlgoBGP(mprob,opts)
+		MA.i = 1
+		Mopt.updateIterChain!(MA.MChains)
+		v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
+
+
+		# set values close to initial
+		for i in 1:length(v) 
+			v[i]["value"] = v[i]["value"] + randn()*0.01
+			for (k,va) in MA.candidate_param[i]
+				MA.candidate_param[i][k] = va + randn()*0.01
+			end
+		end
+		# append values to chains
+		for ch in 1:MA["N"] Mopt.appendEval!(MA.MChains[ch],v[ch],false,1,1.0) end
+
+		Mopt.exchangeMoves!(MA)
+
+		# all chains should be exchanged?
+		# println(Mopt.infos(MA.MChains,MA.i)[:exchanged_with])
+		@fact all(array(Mopt.infos(MA.MChains,MA.i)[:exchanged_with]) .== 0) => true 
+
+	end
+
+	context("testing exchangeMoves part B: 0 chains exchange") do
+		# "rings" option set: go into part 2b)
+		# exchange or not depends on the values on each chain
+
+		# opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>100.0] 
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>20.0,"rings" => linspace(0.01,1000,2)] 
+
+		MA = Mopt.MAlgoBGP(mprob,opts)
+		MA.i = 1
+		Mopt.updateIterChain!(MA.MChains)
+		v = map( x -> Mopt.evaluateObjective(MA,x), 1:MA["N"])
+
+
+		# set values close to initial
+		for i in 1:length(v) 
+			v[i]["value"] = v[i]["value"] + randn()*0.01
+			for (k,va) in MA.candidate_param[i]
+				MA.candidate_param[i][k] = va + randn()*0.01
+			end
+		end
+		# append values to chains
+		for ch in 1:MA["N"] Mopt.appendEval!(MA.MChains[ch],v[ch],false,1,1.0) end
+
+		Mopt.exchangeMoves!(MA)
+
+		# all chains should be exchanged?
+		# println(Mopt.infos(MA.MChains,MA.i)[:exchanged_with])
+		@fact all(array(Mopt.infos(MA.MChains,MA.i)[:exchanged_with]) .== 0) => true 
 
 	end
 
