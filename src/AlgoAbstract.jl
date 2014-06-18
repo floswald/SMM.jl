@@ -2,6 +2,7 @@
 
 
 
+
 # define an abstract type and set/get for it
 abstract MAlgo
 

@@ -469,7 +469,6 @@ facts("testing localMovesMCMC") do
 		# "rings" option set: go into part 2b)
 		# exchange or not depends on the values on each chain
 
-		# opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>100.0] 
 		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>15.0,"past_iterations"=>30,"min_jumptol"=>10.0,"max_jumptol"=>20.0,"rings" => linspace(0.01,1000,2)] 
 
 		MA = Mopt.MAlgoBGP(mprob,opts)

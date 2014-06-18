@@ -145,8 +145,9 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 		# Part 2) EXCHANGE MOVES 
 		# ----------------------
-		
-		exchangeMoves!(algo)
+		if algo["N"] >1
+			exchangeMoves!(algo)
+		end
 		
 	end
     println("out")

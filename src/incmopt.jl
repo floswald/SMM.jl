@@ -93,20 +93,46 @@ function df2dict(df::DataFrame)
 end
 
 
+# function checkbounds!(df::DataFrame,di::Dict)
+# 	if nrow(df) > 1
+# 		error("can only process a single row")
+# 	end
+# 	dfbounds = collectFields(di,1:length(di),true)
+# 	for c in names(df)
+# 		if df[1,c] > dfbounds[2,c]
+# 			df[1,c] = dfbounds[2,c]
+# 		elseif df[1,c] < dfbounds[1,c]
+# 			df[1,c] = dfbounds[1,c]
+# 		end
+# 	end
+# end
+
 function checkbounds!(df::DataFrame,di::Dict)
-	if nrow(df) > 1
-		error("can only process a single row")
-	end
-	dfbounds = collectFields(di,1:length(di),true)
-	for c in names(df)
-		if df[1,c] > dfbounds[2,c]
-			df[1,c] = dfbounds[2,c]
-		elseif df[1,c] < dfbounds[1,c]
-			df[1,c] = dfbounds[1,c]
-		end
-	end
+    if nrow(df) > 1
+        error("can only process a single row")
+    end
+    dfbounds = collectFields(di,1:length(di),true)
+    for c in names(df)
+        test1 = true 
+        test2 = true
+
+        while( test1 | test2)
+            # if above upper bound
+            if df[1,c] > dfbounds[2,c]
+                df[1,c] = 2*dfbounds[2,c] - df[1,c]
+            else
+                test1 = false
+            end
+            if df[1,c] < dfbounds[1,c]
+                df[1,c] = 2*dfbounds[1,c] - df[1,c]
+            else
+                test2 = false
+            end
+        end
+    end
+    return df
 end
 
 
-
+            
 
