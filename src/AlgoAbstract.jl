@@ -47,6 +47,10 @@ function runMopt( algo::MAlgo )
 
 		algo.i = i
 
+		if mod(algo.i,100) == 0
+			println("algo.i=$(algo.i)")
+		end
+
 		computeNextIteration!( algo )
 
 		# save at certain frequency

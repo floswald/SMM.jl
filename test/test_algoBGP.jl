@@ -368,6 +368,7 @@ facts("testing localMovesMCMC") do
 		MA.i = 2
 		Mopt.updateIterChain!(MA.MChains)
 		# set values close to initial
+		temps = linspace(1.0,MA["maxtemp"],MA["N"])
 		v0 = deepcopy(v)
 		for i in 1:length(v) 
 			v[i]["value"] = v[i]["value"] - log(0.5)
@@ -378,7 +379,7 @@ facts("testing localMovesMCMC") do
 		Mopt.localMovesMCMC!(MA,v)
 
 		# acceptance prob is exactly 0.5
-		@fact all(abs(Mopt.infos(MA.MChains,MA.i)[:prob] .- 0.5) .< 0.000000001) => true
+		@fact all(abs(Mopt.infos(MA.MChains,MA.i)[:prob] .- exp(temps.*log(0.5))) .< 0.000000001) => true
 		vv = Mopt.infos(MA.MChains,MA.i)
 		@fact all(abs(vv[vv[:accept] .== true,:evals]  .- v0[1]["value"] .+ log(0.5)) .<0.000001) => true
 		@fact all(abs(vv[vv[:accept] .== false,:evals]  .- v0[1]["value"]) .< 0.000000001 ) => true

@@ -17,8 +17,9 @@ include("src/mopt.jl")
 
 
 # runnign examples:
+banan=false
 include("src/examples.jl")
-
+	
 # p    = ["a" => 3.1 , "b" => 4.9]
 # pb   = [ "a" => [0,1] , "b" => [0,1] ]
 # moms = [

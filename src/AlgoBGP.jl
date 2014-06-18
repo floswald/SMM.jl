@@ -57,7 +57,7 @@ type MAlgoBGP <: MAlgo
   function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
 
   	# temperatures for each chain
-	temps = linspace(1,opts["maxtemp"],opts["N"])
+	temps = linspace(1.0,opts["maxtemp"],opts["N"])
   	# shock standard deviations for each chain
 	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
   	# standard deviations for each chain
@@ -100,7 +100,6 @@ function computeNextIteration!( algo::MAlgoBGP  )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-    println("in")
 
     # check if we reached end of chain
 	if algo.i == algo["maxiter"]
@@ -112,8 +111,6 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 
 	
-		println("algo.i=$(algo.i)")
-		println("algo.MChains[1].i=$(algo.MChains[1].i)")
 		@assert algo.i == algo.MChains[1].i
 
 		# New Candidates
@@ -150,9 +147,11 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		end
 		
 	end
-    println("out")
 end
 
+
+# notice: higher tempering draws candiates further spread out,
+# but accepts lower function values with lower proability
 function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 	for ch in 1:algo["N"]
 		if algo.i == 1
@@ -164,7 +163,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
 			xnew = v[ch]["value"][1]
-			prob = minimum([1.0, exp(xold - xnew)])
+			prob = minimum([1.0, exp(algo.MChains[ch].tempering *(xold - xnew))])
 			if isna(prob)
 				prob = 0.0
 				status = -1
