@@ -29,11 +29,11 @@ type BGPChain <: AbstractChain
   shock_sd   ::Float64 # sd of shock to 
 
   function BGPChain(id,MProb,L,temp,shock,tol)
-    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),ring=zeros(Int,L),prob=zeros(Float64,L))
+    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),ring=zeros(Int,L),prob=zeros(Float64,L),ratio_old_new=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
     parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
     moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
-    par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
-    mom_nms = Symbol[ symbol(x) for x in ms_names(MProb) ]
+    par_nms = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
+    mom_nms = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
     names!(parameters,[:chain_id,:iter, par_nms])
     names!(moments   ,[:chain_id,:iter, mom_nms])
     # infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
@@ -60,7 +60,7 @@ type MAlgoBGP <: MAlgo
 	temps = linspace(1.0,opts["maxtemp"],opts["N"])
   	# shock standard deviations for each chain
 	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
-  	# standard deviations for each chain
+  	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
 	jumptol = linspace(opts["min_jumptol"],opts["max_jumptol"],opts["N"])
   	# create chains
   	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],jumptol[i]) for i=1:opts["N"] ]
@@ -145,9 +145,13 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		if algo["N"] >1
 			exchangeMoves!(algo)
 		end
-		
+
+		# Part 3) update sampling variances
 	end
 end
+
+
+
 
 
 # notice: higher tempering draws candiates further spread out,
@@ -160,6 +164,11 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 	  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch])
 	  		status = 1
 	  		prob = 1.0
+			xnew = v[ch]["value"][1]
+			xold = v[ch]["value"][1]
+			algo.MChains[ch].infos[algo.i,:accept_rate] = 0.1
+		    # append values to MChains at index ch
+		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
 			xnew = v[ch]["value"][1]
@@ -167,9 +176,11 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			if isna(prob)
 				prob = 0.0
 				status = -1
+				ACC = false
 			elseif !isfinite(xold)
 				prob = 1.0
 				status = -2
+				ACC = false
 			else 
 				if prob > rand()
 					ACC = true
@@ -181,10 +192,19 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 					v[ch]["moments"] = df2dict(moments(algo.MChains[ch],algo.i-1))	# reset moments in output of obj to previous value
 				end
 				status = 1
-			end
+			end 
+			# append values to MChains at index ch
+		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
+		    # update sampling variances
+		    algo.MChains[ch].infos[algo.i,:accept_rate] = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
+		    algo.MChains[ch].shock_sd = algo.MChains[ch].shock_sd * (1+ 0.01*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
+		    algo.MChains[ch].infos[algo.i,:shock_sd] = algo.MChains[ch].shock_sd
+		    algo.MChains[ch].infos[algo.i,:ratio_old_new] = xold / xnew
 		end
-	    # append values to MChains at index ch
-	    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
+	end
+
+	if mod(algo.i,100) == 0
+		println(infos(algo.MChains,algo.i))
 	end
 end
 
@@ -363,13 +383,13 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 	oldpar = parameters(algo.MChains[ch],algo.MChains[ch].i-1)
 
 	# add shock to each column of newpar
-	newpar = copy(oldpar[algo.m.p2sample_sym])
+	newpar = copy(oldpar[algo.m.p2sample_sym])	# algo.m.p2sample_sym are in alphabetical order
 	for c in 1:ncol(newpar)
 		newpar[1,c] += shock[c]
 	end
 
 	# do bounds checking on newpar
-	checkbounds!(newpar,algo.m.params_to_sample)
+	fitMirror!(newpar,algo.m.params_to_sample_df)
 
 	# set as dict on algo.current_param
 	fillinFields!(algo.candidate_param[ch],newpar)

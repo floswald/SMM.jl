@@ -106,7 +106,7 @@ facts("testing Chain/MChain methods") do
 
 
 		# update chain with v
-		Mopt.appendEval!(chain,v,true,1)
+		Mopt.appendEval!(chain,v,true,1,rand())
 
 		# verify new values on chain
 		@fact chain.infos[:evals][1] => v["value"]
@@ -151,7 +151,6 @@ facts("testing collectFields and fillinFields functions") do
 
 		df= Mopt.parameters(chain,1)
 		@fact isa(df,DataFrame) => true
-		@fact names(df) == [:iter,:a,:b] => true
 		@fact df[:a] => [0.0]
 		@fact df[:b] => [0.0]
 

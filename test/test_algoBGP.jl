@@ -9,7 +9,7 @@ include("../src/mopt.jl")
 
 
 p    = ["a" => 3.1 , "b" => 4.9]
-pb   = [ "a" => [0,1] , "b" => [0,1] ]
+pb   = [ "a" => [-1,1] , "b" => [0,1] ]
 moms = [
 	"alpha" => [ 0.8 , 0.02 ],
 	"beta"  => [ 0.8 , 0.02 ],
@@ -60,13 +60,32 @@ end
 
 facts("testing getNewCandidates(MAlgoBGP)") do
 
+	context("test fitMirror(x,ub,lb)") do
 
-	context("test checkbounds!(df,dict)") do
+		x = 12.1
+		ub = 12.0
+		lb = -1.1
+		z = Mopt.fitMirror(x,lb,ub)
+		@fact (z < ub) & (z>lb) => true
+
+		x = rand()
+		z = Mopt.fitMirror(x,lb,ub)
+		@fact z-x<eps() => true
+
+		x = -1.11
+		z = Mopt.fitMirror(x,lb,ub)
+		@fact (z < ub) & (z>lb) => true
+
+	end
+
+	context("test fitMirror!(df,dict)") do
 
 		df = DataFrame(a=1.2,b=-1.5)
-		Mopt.checkbounds!(df,pb)
-		@fact df[1,:a] < pb["a"][2] => true
-		@fact df[1,:b] > pb["b"][1] => true
+		Mopt.fitMirror!(df,mprob.params_to_sample_df)
+		@fact df[1][1] > pb["a"][1] => true
+		@fact df[1][1] < pb["a"][2] => true
+		@fact df[2][1] > pb["b"][1] => true
+		@fact df[2][1] < pb["b"][2] => true
 
 	end
 
@@ -172,7 +191,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		# get a "kernel"/Covariance matrix
 		# pos def matrix:
-		myVV = rand(length(MA.m.params_to_sample),length(MA.m.params_to_sample))
+		myVV = rand(length(MA.m.params_to_sample_df),length(MA.m.params_to_sample_df))
 		myVV = myVV * myVV'
 
 		# manually create next parameter guess on
@@ -191,12 +210,12 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 			newp[ich] = copy(oldp[MA.m.p2sample_sym])	# get just those you wish to sample
 
 			# add shock
-			for i in 1:ncol(newp[ich])
-				newp[ich][1,i] += shock[ich][i]
+			for i in 1:length(newp[ich])
+				newp[ich][i] = newp[ich][i] .+ shock[ich][i]
 			end			
 
 			# adjust for bounds
-			Mopt.checkbounds!(newp[ich],MA.m.params_to_sample)
+			Mopt.fitMirror!(newp[ich],MA.m.params_to_sample_df)
 		end
 
 
@@ -338,7 +357,9 @@ facts("testing localMovesMCMC") do
 		@fact all(Mopt.infos(MA.MChains,1)[:accept]) => true
 		@fact all(Mopt.infos(MA.MChains,1)[:status] .== 1) => true
 		# all params equal to initial value
-		@fact array(Mopt.parameters(MA.MChains[1],1)[MA.MChains[1].params_nms])[:] == collect(values(p))[:] => true
+		for nm in 1:length(MA.MChains[1].params_nms)
+			@fact Mopt.parameters(MA.MChains[1],1)[MA.MChains[1].params_nms[nm]][1] == p[string(MA.MChains[1].params_nms[nm])] => true
+		end
 
 		# next iteration
 		MA.i = 2
@@ -395,9 +416,12 @@ facts("testing localMovesMCMC") do
 				# println("current parameters = $(collect(values(MA.current_param[ch])))")
 				
 				# if accepted, parameters == current_param
-				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.current_param[ch])) => true
-				# if accepted, parameters == candidate_param
-				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.candidate_param[ch])) => true
+				for nm in 1:length(MA.MChains[1].params_nms)
+					@fact Mopt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] == MA.current_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
+				end
+				for nm in 1:length(MA.MChains[1].params_nms)
+					@fact Mopt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] == MA.candidate_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
+				end
 			else
 				# if not, parameters == current println("chain number = $ch")
 				# println("chain number = $ch")
@@ -405,9 +429,14 @@ facts("testing localMovesMCMC") do
 				# println("stored parameters = $(array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:])")
 				# println("candidate parameters = $(collect(values(MA.candidate_param[ch])))")
 				# println("current parameters = $(collect(values(MA.current_param[ch])))")
-				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] == collect(values(MA.current_param[ch])) =>true 
 
-				@fact array(Mopt.parameters(MA.MChains[ch],MA.i)[:,MA.MChains[ch].params_nms])[:] != collect(values(MA.candidate_param[ch])) => true
+				for nm in 1:length(MA.MChains[1].params_nms)
+					@fact Mopt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] == MA.current_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
+				end
+				for nm in 1:length(MA.MChains[1].params_nms)
+					@fact Mopt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] != MA.candidate_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
+				end
+
 			end
 		end
 

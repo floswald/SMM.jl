@@ -38,17 +38,14 @@ function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
     #     println("no evaluations to show")
     # end
     n = length(dict)
-    dk = collect(keys(dict))
+    dk = sort(collect(keys(dict)))
     if df
         cols = Any[dict[k][I] for k in dk]  # notice: Any is crucial here to get type-stable var
         # cols = Array(Any,n)
         # for i in 1:n
         #     cols[i] = dict[dk[i]]
         # end
-        cnames = Array(Symbol,length(dict))
-        for i in 1:n
-            cnames[i] = symbol(dk[i])
-        end
+        cnames = Symbol[x for x in dk]
         return DataFrame(cols, cnames)
     else ## ==== return as collection
         return({ k => v[I] for (k,v) in dict })
@@ -107,31 +104,50 @@ end
 # 	end
 # end
 
-function checkbounds!(df::DataFrame,di::Dict)
-    if nrow(df) > 1
-        error("can only process a single row")
+function fitMirror(x,lb,ub)
+    if (x > ub)
+        x2 = ub - mod( x - ub, ub - lb)
+    elseif (x < lb)
+        x2 = lb + mod( lb - x, ub - lb)
+    else
+        x2 = x
     end
-    dfbounds = collectFields(di,1:length(di),true)
-    for c in names(df)
-        test1 = true 
-        test2 = true
-
-        while( test1 | test2)
-            # if above upper bound
-            if df[1,c] > dfbounds[2,c]
-                df[1,c] = 2*dfbounds[2,c] - df[1,c]
-            else
-                test1 = false
-            end
-            if df[1,c] < dfbounds[1,c]
-                df[1,c] = 2*dfbounds[1,c] - df[1,c]
-            else
-                test2 = false
-            end
-        end
-    end
-    return df
+    return x2 
 end
+
+function fitMirror!(x::DataFrame,b::DataFrame)
+    for i in 1:length(x)
+        x[i] = fitMirror(convert(Float64,x[i][1]),convert(Float64,b[i,:lb][1]),convert(Float64,b[i,:ub][1]))
+    end
+end
+
+
+
+# function checkbounds!(df::DataFrame,di::Dict)
+#     if nrow(df) > 1
+#         error("can only process a single row")
+#     end
+#     dfbounds = collectFields(di,1:length(di),true)
+#     for c in names(df)
+#         test1 = true 
+#         test2 = true
+
+#         while( test1 | test2)
+#             # if above upper bound
+#             if df[1,c] > dfbounds[2,c]
+#                 df[1,c] = 2*dfbounds[2,c] - df[1,c]
+#             else
+#                 test1 = false
+#             end
+#             if df[1,c] < dfbounds[1,c]
+#                 df[1,c] = 2*dfbounds[1,c] - df[1,c]
+#             else
+#                 test2 = false
+#             end
+#         end
+#     end
+#     return df
+# end
 
 
             
