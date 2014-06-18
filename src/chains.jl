@@ -103,6 +103,23 @@ function infos(MC::Array)
     infos(MC,1:MC[1].i)
 end
 
+function evals(MC::Array,i::UnitRange{Int})
+    if !isa(MC[1],AbstractChain)
+        error("must give array of AbstractChain") 
+    end
+    r = infos(MC[1],i) 
+    if length(MC)>1
+        for ix=2:length(MC)
+            r = rbind(r,evals(MC[ix],i))
+        end
+    end
+    return r
+end
+
+function evals(MC::Array)
+    evals(MC,1:MC[1].i)
+end
+
 
 
 function alls(MC::Array) 

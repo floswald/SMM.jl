@@ -275,13 +275,15 @@ end
 
 function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int,x...)
 
-	# pars and moms from 1
+	# pars, moms and value from 1
 	p1 = parameters(algo.MChains[pair[1]],i)
 	m1 = moments(algo.MChains[pair[1]],i)
+	v1 = evals(algo.MChains[pair[1]],i)
 
 	# same for 2
 	p2 = parameters(algo.MChains[pair[2]],i)
 	m2 = moments(algo.MChains[pair[2]],i)
+	v2 = evals(algo.MChains[pair[2]],i)
 
 	# make a note in infos
 	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
@@ -296,6 +298,8 @@ function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int,x...)
 	algo.MChains[pair[2]].parameters[i,:] = p1
 	algo.MChains[pair[1]].moments[i,:] = m2
 	algo.MChains[pair[2]].moments[i,:] = m1
+	algo.MChains[pair[1]].infos[i,:evals] = v2[1]
+	algo.MChains[pair[2]].infos[i,:evals] = v1[1]
 
 end
 

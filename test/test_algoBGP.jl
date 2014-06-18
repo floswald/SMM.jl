@@ -63,10 +63,10 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	context("test checkbounds!(df,dict)") do
 
-		df = DataFrame(a=8,b=-10)
+		df = DataFrame(a=1.2,b=-1.5)
 		Mopt.checkbounds!(df,pb)
-		@fact df[1,:a] => pb["a"][2]
-		@fact df[1,:b] => pb["b"][1]
+		@fact df[1,:a] < pb["a"][2] => true
+		@fact df[1,:b] > pb["b"][1] => true
 
 	end
 
@@ -244,6 +244,8 @@ facts("testing swaprows etc") do
 		p2 = Mopt.parameters(MA.MChains[pair[2]],ix)
 		m1 = Mopt.moments(MA.MChains[pair[1]],ix)
 		m2 = Mopt.moments(MA.MChains[pair[2]],ix)
+		v1 = Mopt.evals(MA.MChains[pair[1]],ix)
+		v2 = Mopt.evals(MA.MChains[pair[2]],ix)
 
 
 		# exchange
@@ -254,6 +256,8 @@ facts("testing swaprows etc") do
 		@fact Mopt.parameters(MA.MChains[pair[2]],ix) == p1 => true
 		@fact Mopt.moments(MA.MChains[pair[1]],ix) == m2 => true
 		@fact Mopt.moments(MA.MChains[pair[2]],ix) == m1 => true
+		@fact Mopt.evals(MA.MChains[pair[1]],ix) == v2 => true
+		@fact Mopt.evals(MA.MChains[pair[2]],ix) == v1 => true
 
 	end
 
@@ -285,6 +289,8 @@ facts("testing swaprows etc") do
 		p2 = Mopt.parameters(MA.MChains[pair[2]],ix)
 		m1 = Mopt.moments(MA.MChains[pair[1]],ix)
 		m2 = Mopt.moments(MA.MChains[pair[2]],ix)
+		v1 = Mopt.evals(MA.MChains[pair[1]],ix)
+		v2 = Mopt.evals(MA.MChains[pair[2]],ix)
 
 		# suppose both are from ring rid=14
 		rid = [14 for i in 1:MA["N"]]
@@ -307,6 +313,8 @@ facts("testing swaprows etc") do
 		@fact Mopt.infos(MA.MChains[pair[2]],ix)[:exchanged_with][1] == pair[1] => true
 		@fact Mopt.infos(MA.MChains[pair[2]],ix)[:ring][1] == rid[ix] => true
 		@fact Mopt.infos(MA.MChains[pair[1]],ix)[:ring][1] == rid[ix] => true
+		@fact Mopt.evals(MA.MChains[pair[1]],ix) == v2 => true
+		@fact Mopt.evals(MA.MChains[pair[2]],ix) == v1 => true
 
 	end
 end
@@ -360,6 +368,7 @@ facts("testing localMovesMCMC") do
 		MA.i = 2
 		Mopt.updateIterChain!(MA.MChains)
 		# set values close to initial
+		v0 = deepcopy(v)
 		for i in 1:length(v) 
 			v[i]["value"] = v[i]["value"] - log(0.5)
 			for (k,va) in MA.candidate_param[i]
@@ -370,7 +379,9 @@ facts("testing localMovesMCMC") do
 
 		# acceptance prob is exactly 0.5
 		@fact all(abs(Mopt.infos(MA.MChains,MA.i)[:prob] .- 0.5) .< 0.000000001) => true
-		@fact all(Mopt.infos(MA.MChains,MA.i)[:evals] .== v[1]["value"]) => true
+		vv = Mopt.infos(MA.MChains,MA.i)
+		@fact all(abs(vv[vv[:accept] .== true,:evals]  .- v0[1]["value"] .+ log(0.5)) .<0.000001) => true
+		@fact all(abs(vv[vv[:accept] .== false,:evals]  .- v0[1]["value"]) .< 0.000000001 ) => true
 
 		# check that where not accepted, params and moments are previous ones
 		for ch in 1:MA["N"]
