@@ -21,7 +21,7 @@ if banan
 
 	# global min is (1,1)
 	p    = ["a" => 0.8 , "b" => 1.1]
-	pb   = [ "a" => [0.8,1.1] , "b" => [0.8,1.1] ]
+	pb   = [ "a" => [-1.0,2.1] , "b" => [-1.0,2.1] ]
 	moms = [
 		"m1" => [ 1.0 , 0.02 ],
 		"m2"  => [ 1.0 , 0.02 ]
@@ -30,7 +30,7 @@ if banan
 
 
 	mprob = Mopt.MProb(p,pb,banana,moms)
-	opts =["N"=>6,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.05,"max_disttol"=>0.1,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1] 
+	opts =["N"=>6,"mode"=>"serial","maxiter"=> 500,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1,"max_shock_sd"=>3,"past_iterations"=>30,"min_accept_tol"=>500,"max_accept_tol"=>500,"min_disttol"=>100,"max_disttol"=>200,"min_jump_prob"=>0.05,"max_jump_prob"=>0.2] 
 	MA = Mopt.MAlgoBGP(mprob,opts)
 
 	Mopt.runMopt(MA)
@@ -88,7 +88,7 @@ else
 
 	mprob = Mopt.MProb(p,pb,objfunc_norm2,moms)
 
-	opts =["N"=>6,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>200,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>0.13,"past_iterations"=>30,"min_disttol"=>0.2,"max_disttol"=>0.3,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1] 
+	opts =["N"=>6,"mode"=>"serial","maxiter"=> 500,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1,"past_iterations"=>30,"min_accept_tol"=>0.25,"max_accept_tol"=>0.25,"min_disttol"=>0.1,"max_disttol"=>0.1,"min_jump_prob"=>0.05,"max_jump_prob"=>0.2] 
 
 	MA = Mopt.MAlgoBGP(mprob,opts)
 
