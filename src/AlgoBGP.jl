@@ -17,6 +17,7 @@ type BGPChain <: AbstractChain
   infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
   parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
   moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
+  accept_tol ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
   dist_tol   ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
   jump_prob  ::Float64 # probability of swapping with "close" chain
 
@@ -29,7 +30,7 @@ type BGPChain <: AbstractChain
   tempering  ::Float64 # tempering in update probability
   shock_sd   ::Float64 # sd of shock to 
 
-  function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob)
+  function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
     infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),ratio_old_new=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
     parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
     moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
@@ -40,7 +41,7 @@ type BGPChain <: AbstractChain
     # infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
     # parameters = { x => zeros(L) for x in ps_names(MProb) }
     # moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(id,0,infos,parameters,moments,dist_tol,jump_prob,par_nms,mom_nms,temp,shock)
+    return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,temp,shock)
   end
 end
 
@@ -58,6 +59,8 @@ type MAlgoBGP <: MAlgo
 
   	# temperatures for each chain
 	temps = linspace(1.0,opts["maxtemp"],opts["N"])
+  	# acceptance tolerance within each chain. condition: abs(old - new)/abs(old) > tol
+	acctol = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
   	# shock standard deviations for each chain
 	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
   	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
@@ -65,7 +68,7 @@ type MAlgoBGP <: MAlgo
   	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
 	jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
   	# create chains
-  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
   	# candidate param values
@@ -168,6 +171,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
 			xnew = v[ch]["value"][1]
 			prob = minimum([1.0, exp(algo.MChains[ch].tempering *(xold - xnew))])
+			prob = prob * (xnew < algo.MChains[ch].accept_tol)
 			if isna(prob)
 				prob = 0.0
 				status = -1
@@ -192,7 +196,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
 		    # update sampling variances
 		    algo.MChains[ch].infos[algo.i,:accept_rate] = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
-		    algo.MChains[ch].shock_sd = algo.MChains[ch].shock_sd * (1+ 0.01*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
+		    algo.MChains[ch].shock_sd = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
 		    algo.MChains[ch].infos[algo.i,:shock_sd] = algo.MChains[ch].shock_sd
 		    algo.MChains[ch].infos[algo.i,:ratio_old_new] = xold / xnew
 		end
@@ -382,7 +386,8 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		# getParamKernel could be in here
 		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
 		# setup a MvNormal
-		VV2 = VV.*algo.MChains[ch].tempering
+		# VV2 = VV.*algo.MChains[ch].tempering
+		VV2 = VV
 		MVN = MvNormal(VV2)
 
 		# shock parameters on chain index ch
