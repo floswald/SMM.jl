@@ -17,7 +17,8 @@ type BGPChain <: AbstractChain
   infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
   parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
   moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
-  jumptol    ::Float64 # tolerance of chain i for "closeness" to chain j
+  dist_tol   ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
+  jump_prob  ::Float64 # probability of swapping with "close" chain
 
   params_nms ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
   moments_nms::Array{Symbol,1}	# names of moments
@@ -28,8 +29,8 @@ type BGPChain <: AbstractChain
   tempering  ::Float64 # tempering in update probability
   shock_sd   ::Float64 # sd of shock to 
 
-  function BGPChain(id,MProb,L,temp,shock,tol)
-    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),ring=zeros(Int,L),prob=zeros(Float64,L),ratio_old_new=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
+  function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob)
+    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),ratio_old_new=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
     parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
     moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
     par_nms = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
@@ -39,7 +40,7 @@ type BGPChain <: AbstractChain
     # infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
     # parameters = { x => zeros(L) for x in ps_names(MProb) }
     # moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(id,0,infos,parameters,moments,tol,par_nms,mom_nms,temp,shock)
+    return new(id,0,infos,parameters,moments,dist_tol,jump_prob,par_nms,mom_nms,temp,shock)
   end
 end
 
@@ -52,7 +53,6 @@ type MAlgoBGP <: MAlgo
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
   candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
-  Jump_register   :: Array{(Int,Int),1}
 
   function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
 
@@ -61,24 +61,19 @@ type MAlgoBGP <: MAlgo
   	# shock standard deviations for each chain
 	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
   	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
-	jumptol = linspace(opts["min_jumptol"],opts["max_jumptol"],opts["N"])
+	disttol = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
+  	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
+	jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
   	# create chains
-  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],jumptol[i]) for i=1:opts["N"] ]
+  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
   	# candidate param values
   	cpar0 = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
   	# jump register
-  	Jreg = (Int,Int)[]
-  	for i in 1:opts["N"]
-	  	for j in i:opts["N"]
-	  		if i!=j
-	  			push!(Jreg,(i,j))
-	  		end
-	  	end
-	end
+  	
 
-    return new(m,opts,0,cpar,cpar0,chains,Jreg)
+    return new(m,opts,0,cpar,cpar0,chains)
   end
 end
 
@@ -140,11 +135,11 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 		localMovesMCMC!(algo,v)
 
-		# Part 2) EXCHANGE MOVES 
-		# ----------------------
-		if algo["N"] >1
-			exchangeMoves!(algo)
-		end
+		# # Part 2) EXCHANGE MOVES 
+		# # ----------------------
+		# if algo["N"] >1
+		# 	exchangeMoves!(algo)
+		# end
 
 		# Part 3) update sampling variances
 	end
@@ -201,82 +196,110 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		    algo.MChains[ch].infos[algo.i,:shock_sd] = algo.MChains[ch].shock_sd
 		    algo.MChains[ch].infos[algo.i,:ratio_old_new] = xold / xnew
 		end
+		if algo.i>1 && algo["N"] > 1 
+			exchangeMoves!(algo,ch,xold)
+		end
 	end
-
 	if mod(algo.i,100) == 0
 		println(infos(algo.MChains,algo.i))
 	end
 end
 
-using Debug
-@debug function exchangeMoves!(algo::MAlgoBGP)
+function exchangeMoves!(algo::MAlgoBGP,ch::Int,oldval)
 
-	if !haskey(algo.opts,"rings")
-
-		# Part 2a) EXCHANGE MOVES without rings
-		# ======================
-		# 1) N exchange moves are proposed
-		# 2) N pairs are chosen uniformly among all possible pairs with replacment 
-		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
-
-		jump_pairs = sample(algo.Jump_register,algo["N"],replace=false)
-		for pair in jump_pairs
-			distance = abs(evals(algo.MChains[pair[1]],algo.MChains[pair[1]].i) - evals(algo.MChains[pair[2]],algo.MChains[pair[2]].i))
-			# println("distance of pair $(pair) = $distance")
-			if distance[1] < algo.MChains[pair[1]].jumptol
-				swapRows!(algo,pair,algo.i)
-			end
-			
+	# 1) find all chains with value +/- 10% of chain ch
+	for ch2 in 1:algo["N"]
+		dist = Float64[]
+		idx = Int64[]
+		if ch != ch2
+			tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)
+			push!(dist,tmp)
+			push!(idx,ch2)
 		end
-
-	else
-		# Part 2b) EXCHANGE MOVES with rings
-		# ==================================
-		# 1) N exchange moves are proposed
-		# 2) a ring E_j is a partition of objective function space, i.e. 
-		#    chain j \in E_1 iff V_j \in [0,E_1]
-		#    chain j \in E_2 iff V_j \in [E_1,E_2]
-		#    ...                             
-		# 3) randomly choose N rings, with replacement. A ring with less than 2 chains is not admissible.                               
-		# 5) from within that ring, form jump_pairs 
-		# 6) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
-
-		chain_in_rings = infos(algo.MChains,algo.i)[[:chain_id,:evals]]
-		chain_in_rings = cbind(chain_in_rings,DataFrame(ring=findInterval(chain_in_rings[:evals],algo["rings"])))
-
-		# drop rings with less than 2 chains
-		hi = hist(chain_in_rings[:ring])
-		keeps = findin(chain_in_rings[:ring],unique(sort(chain_in_rings[:ring]))[hi[2].>1])
-		chain_in_rings = chain_in_rings[keeps,:]
-
-		if nrow(chain_in_rings) > 0
-
-		# 	# choose N rings with replacement
-			rings = DataFrame(ringid=sample(chain_in_rings[:ring],algo["N"],replace=true), pair1 = [0 for i=1:algo["N"]], pair2 = [0 for i=1:algo["N"]])
-
-			# for each entry of rings, randomly choose a pair of chains
-			for ir = 1:nrow(rings)
-
-					# @bp length(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id]) ==1
-
-
-				pairs = sample(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id],2,replace=false)
-				# add to rings
-				rings[ir,:pair1] = pairs[1]
-				rings[ir,:pair2] = pairs[2]
-
-			end
-
-			# for each ring, if val(j) < tol_i, swap i with j
-			for irow in eachrow(rings)
-				distance = abs(evals(algo.MChains[irow[:pair2]],algo.MChains[irow[:pair2]].i)[1]) < algo.MChains[irow[:pair1]].jumptol
-				if distance
-					swapRows!(algo,(irow[:pair1],irow[:pair2]),algo.i,irow[:ringid])
-				end
+		close = idx[dist .< algo.MChains[ch].dist_tol]
+		if length(close) >0
+			# 2) with 5% probability exchange with a randomly chosen chain from close
+			if rand() < algo.MChains[ch].jump_prob
+				swapRows!(algo,(ch,sample(close)),algo.i)
 			end
 		end
 	end
+
 end
+
+
+
+
+# 	if !algo["rings"]
+
+# 		# Part 2a) EXCHANGE MOVES without rings
+# 		# ======================
+# 		# 1) N exchange moves are proposed
+# 		# 2) N pairs are chosen uniformly among all possible pairs with replacment 
+# 		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
+
+# 		jump_pairs = sample(algo.Jump_register,algo["N"],replace=false)
+# 		for pair in jump_pairs
+# 			distance = abs(evals(algo.MChains[pair[1]],algo.MChains[pair[1]].i) - evals(algo.MChains[pair[2]],algo.MChains[pair[2]].i))
+# 			# println("distance of pair $(pair) = $distance")
+# 			if distance[1] < algo.MChains[pair[1]].jumptol
+# 				swapRows!(algo,pair,algo.i)
+# 			end
+			
+# 		end
+
+# 	else
+# 		# Part 2b) EXCHANGE MOVES with rings
+# 		# ==================================
+# 		# 1) N exchange moves are proposed
+# 		# 2) a ring E_j is a partition of objective function space, i.e. 
+# 		#    chain j \in E_1 iff V_j \in [0,E_1]
+# 		#    chain j \in E_2 iff V_j \in [E_1,E_2]
+# 		#    ...                             
+# 		# 3) randomly choose N rings, with replacement. A ring with less than 2 chains is not admissible.                               
+# 		# 5) from within that ring, form jump_pairs 
+# 		# 6) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
+
+# 		chain_in_rings = infos(algo.MChains,algo.i)[[:chain_id,:evals]]
+# 		chain_in_rings = cbind(chain_in_rings,DataFrame(ring=findInterval(chain_in_rings[:evals],algo["rings"])))
+
+# 		# drop rings with less than 2 chains
+# 		hi = hist(chain_in_rings[:ring])
+# 		keeps = findin(chain_in_rings[:ring],unique(sort(chain_in_rings[:ring]))[hi[2].>1])
+# 		chain_in_rings = chain_in_rings[keeps,:]
+
+# 		if nrow(chain_in_rings) > 0
+
+# 			# draw pairs to exchange with 5% probability
+# 			chain_in_rings = cbind(chain_in_rings,DataFrame(exchange=sample([true,false],WeightVec([0.05,0.95]),nrow(chain_in_rings))))
+# 			chain_in_rings = chain_in_rings[chain_in_rings[:exchange] .== true,:]
+
+# 		# 	# choose N rings with replacement
+# 			rings = DataFrame(ringid=sample(chain_in_rings[:ring],algo["N"],replace=true), pair1 = [0 for i=1:algo["N"]], pair2 = [0 for i=1:algo["N"]])
+
+# 			# for each entry of rings, randomly choose a pair of chains
+# 			for ir = 1:nrow(rings)
+
+# 					# @bp length(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id]) ==1
+
+
+# 				pairs = sample(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id],2,replace=false)
+# 				# add to rings
+# 				rings[ir,:pair1] = pairs[1]
+# 				rings[ir,:pair2] = pairs[2]
+
+# 			end
+
+# 			# for each ring, if val(j) < tol_i, swap i with j
+# 			for irow in eachrow(rings)
+# 				distance = abs(evals(algo.MChains[irow[:pair2]],algo.MChains[irow[:pair2]].i)[1]) < algo.MChains[irow[:pair1]].jumptol
+# 				if distance
+# 					swapRows!(algo,(irow[:pair1],irow[:pair2]),algo.i,irow[:ringid])
+# 				end
+# 			end
+# 		end
+# 	end
+# end
 
 
 function findInterval(x,vec::Array)
@@ -292,7 +315,7 @@ function findInterval(x,vec::Array)
 end
 
 
-function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int,x...)
+function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 
 	# pars, moms and value from 1
 	p1 = parameters(algo.MChains[pair[1]],i)
@@ -307,10 +330,6 @@ function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int,x...)
 	# make a note in infos
 	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
 	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
-	if length(x) >0
-		algo.MChains[pair[1]].infos[i,:ring] = x[1][i]
-		algo.MChains[pair[2]].infos[i,:ring] = x[1][i]
-	end
 
 	# swap
 	algo.MChains[pair[1]].parameters[i,:] = p2
