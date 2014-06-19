@@ -1,5 +1,6 @@
 
 
+
 using PyPlot
 
 if banan 
@@ -88,7 +89,21 @@ else
 
 	mprob = Mopt.MProb(p,pb,objfunc_norm2,moms)
 
-	opts =["N"=>6,"mode"=>"serial","maxiter"=> 500,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1,"past_iterations"=>30,"min_accept_tol"=>0.25,"max_accept_tol"=>0.25,"min_disttol"=>0.1,"max_disttol"=>0.1,"min_jump_prob"=>0.05,"max_jump_prob"=>0.2] 
+	opts =[
+		"N"=>6,
+		"mode"=>"serial",
+		"maxiter"=> 500,
+		"path"=>".",
+		"maxtemp"=>100,
+		"min_shock_sd"=>0.1,
+		"max_shock_sd"=>1,
+		"past_iterations"=>30,
+		"min_accept_tol"=>0.25,
+		"max_accept_tol"=>0.25,
+		"min_disttol"=>0.1,
+		"max_disttol"=>0.1,
+		"min_jump_prob"=>0.05,
+		"max_jump_prob"=>0.2] 
 
 	MA = Mopt.MAlgoBGP(mprob,opts)
 

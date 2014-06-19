@@ -63,5 +63,64 @@ function runMopt( algo::MAlgo )
 	# save
 end
 
+function hist(x,nb=30) 
+  n, bins = PyPlot.hist(x, nb)
+  bar(n[1:end-1], bins, width = n[2] - n[1])
+end
+
+function plot(algo::MAlgo, what)
+
+	if (what == "acc")
+		# dd = Mopt.infos(algo.MChains)
+		subplot(211)
+		for sdf in Mopt.groupby(dd, :chain_id)
+  		plot(sdf[:iter],sdf[:accept_rate])
+  		I = sdf[:exchanged_with].>0
+  		plot( sdf[I,:iter], sdf[I,:accept_rate],"o")
+		end
+		subplot(212)
+		for sdf in Mopt.groupby(dd, :chain_id)
+  		plot(sdf[:shock_sd])
+  		I = sdf[:exchanged_with].>0
+  		plot( sdf[I,:iter], sdf[I,:shock_sd],"o")
+		end
+	end
+
+	if (what == "params_time")
+		npars = length(algo.m.p2sample_sym)
+		nrows = floor(sqrt(npars))
+		ncols = ceil(npars/nrows)
+		pid = 0
+		for par in algo.m.p2sample_sym
+			pid += 1
+			subplot(nrows,ncols,pid)
+			for ic in 1:algo["N"]
+				# println(sdf[:iter])
+  			# plot(sdf[:iter],sdf[par])
+  			plot(algo.MChains[ic].parameters[:iter],algo.MChains[ic].parameters[par])
+  		end
+		end
+	end
+	if (what == "params_dist")
+		dd = Mopt.parameters(algo.MChains)
+		npars = length(algo.m.p2sample_sym)
+		nrows = floor(sqrt(npars))
+		ncols = ceil(npars/nrows)
+		pid = 0
+		for par in algo.m.p2sample_sym
+			pid += 1
+			subplot(nrows,ncols,pid)
+			# println(sdf[:iter])
+			# plot(sdf[:iter],sdf[par])
+			hist(dd[par])
+			title(string(par))
+			xlabel("parameter value")
+  		end
+	end
+
+end
+
+
+
 
 

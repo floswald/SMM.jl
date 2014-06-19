@@ -186,8 +186,8 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
 				else
 					ACC = false
-					v[ch]["value"] = xold # reset value in output of obj to previous value
-					v[ch]["params"] = deepcopy(algo.current_param[ch])	# reset param in output of obj to previous value
+					v[ch]["value"]   = xold # reset value in output of obj to previous value
+					v[ch]["params"]  = deepcopy(algo.current_param[ch])	# reset param in output of obj to previous value
 					v[ch]["moments"] = df2dict(moments(algo.MChains[ch],algo.i-1))	# reset moments in output of obj to previous value
 				end
 				status = 1
@@ -195,9 +195,9 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			# append values to MChains at index ch
 		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
 		    # update sampling variances
-		    algo.MChains[ch].infos[algo.i,:accept_rate] = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
+		    algo.MChains[ch].infos[algo.i,:accept_rate]   = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
 		    algo.MChains[ch].shock_sd = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
-		    algo.MChains[ch].infos[algo.i,:shock_sd] = algo.MChains[ch].shock_sd
+		    algo.MChains[ch].infos[algo.i,:shock_sd]      = algo.MChains[ch].shock_sd
 		    algo.MChains[ch].infos[algo.i,:ratio_old_new] = xold / xnew
 		end
 		if algo.i>1 && algo["N"] > 1 
@@ -390,6 +390,10 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		VV2 = VV
 		MVN = MvNormal(VV2)
 
+    # constraint the shock_sd: 95% conf interval should not exceed overall param interval width
+    shock_ub  = minimum(  (algo.m.params_to_sample_df[:ub] - algo.m.params_to_sample_df[:lb]) ./ (1.96 * 2 *diag(VV2) ))
+    algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
+
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
 
@@ -418,6 +422,9 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 	# set as dict on algo.current_param
 	fillinFields!(algo.candidate_param[ch],newpar)
 end
+
+
+
 
 
 
