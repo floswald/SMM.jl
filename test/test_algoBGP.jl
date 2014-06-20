@@ -246,7 +246,7 @@ end
 
 facts("testing localMovesMCMC") do
 
-	context("testing initila period") do
+	context("testing initial period") do
 
 		opts =["N"        => 20,		# number of chains
 		"mode"            => "serial",	# mode: serial or mpi
