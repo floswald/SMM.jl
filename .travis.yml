@@ -15,9 +15,6 @@ before_install:
   - git config --global user.name "Travis User"
   - git config --global user.email "travis@example.net"
 script:
-  # - julia -e "Pkg.init()"
-  # - mkdir -p ~/.julia/MOpt.jl
-  # - cp -R ./* ~/.julia/MOpt.jl
+  - cp -R ./* ~/.julia/MOpt.jl
   - julia -e 'Pkg.clone("git://github.com/floswald/MOpt.jl"); run(`ln -s $(pwd()) $(Pkg.dir("MOpt"))`); Pkg.pin("MOpt"); Pkg.resolve()'
-  - julia -e 'versioninfo(); Pkg.add("FactCheck"); Pkg.add("DataFrames"); Pkg.add("Distributions"); Pkg.add("PyPlot"); Pkg.add("Reexport")'
   - julia ~/.julia/MOpt.jl/test/runtests.jl
