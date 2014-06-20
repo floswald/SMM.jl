@@ -14,7 +14,7 @@ before_install:
   - sudo apt-get install libpcre3-dev julia -y
 script:
   - julia -e "Pkg.init()"
-  - julia -e "Pkg.add("FactCheck")"
   - mkdir -p ~/.julia/MOpt.jl
   - cp -R ./* ~/.julia/MOpt.jl
+  - julia -e 'versioninfo(); Pkg.add("FactCheck"); Pkg.add("DataFrames"); Pkg.add("Distributions"); Pkg.add("PyPlot"); Pkg.add("Reexport")'
   - julia ~/.julia/MOpt.jl/test/runtests.jl
