@@ -1,32 +1,43 @@
 
-module Mopt
+module MOpt
 
+# Dependencies
+# ############
 
-# imports
-using  DataFrames, Distributions, Debug, PyPlot
+using Distributions, PyPlot
+using Reexport
+@reexport using DataFrames
 import Base.show
+import PyPlot.plot
+
+# exports
+# ############
+
+export MProb, 
+       Chain,  
+       BGPChain,  
+       MAlgo,
+       MAlgoBGP,
+       Testobj, 
+       getindex,
+       setindex,
+       parameters,
+       evals,
+       infos,
+       allstats,
+       moments,
+       hist,
+       runMopt!
 
 
-# includes
+# load files
+# ############
+
 include("mprob.jl")
 include("chains.jl")
 include("incmopt.jl")
 include("AlgoAbstract.jl")
 include("AlgoBGP.jl")
-
-
-
-
-
-
-	
-# exports
-export MProb, Chain, Testobj, getindex
-	
-
-
-
-
 
 
 end 	# module

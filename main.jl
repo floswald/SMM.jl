@@ -13,7 +13,7 @@ include("test/test_algoBGP.jl")
 
 	
 # to develop in main: run this
-include("src/mopt.jl")
+include("src/MOpt.jl")
 
 
 # runnign examples:

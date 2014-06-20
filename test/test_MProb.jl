@@ -1,14 +1,9 @@
 
 module TestMProb
 
-using FactCheck, DataFrames
+using FactCheck, MOpt
 
-# eventually:
-# put push!(LOAD_PATH, "/Path/To/Mopt/module/") into your  ~\.juliarc.jl
-# using Mopt
 
-# for now:
-include("../src/mopt.jl")
 
 
 # Choose Algorithm and configure it
@@ -35,15 +30,15 @@ facts("Testing the MProb constructor") do
 
 	context("default constructor") do
 
-		mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
-		@fact isa(mprob, Mopt.MProb) => true
+		mprob = MProb(p,pb,Testobj,moms)
+		@fact isa(mprob, MProb) => true
 
 	end
 
 	context("constructor throws errors") do
 
 		# get an inexisting moment to subset
-		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms; moments_subset=["alpha","epsilon"]);
+		@fact_throws MProb(p,pb,Testobj,moms; moments_subset=["alpha","epsilon"]);
 
 		# get some wrong moments
 		moms = [
@@ -51,7 +46,7 @@ facts("Testing the MProb constructor") do
 			"beta"  => [ 0.8 , 0.02 ],
 			"gamma" => [ 0.8  ]
 		]
-		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms);
+		@fact_throws MProb(p,pb,Testobj,moms);
 
 		# i'm giving a parameter "c" that is not in initial_value
 		pb= [ "a" => [0,1] , "c" => [0,1] ]
@@ -60,11 +55,11 @@ facts("Testing the MProb constructor") do
 			"beta"  => [ 0.8 , 0.02 ],
 			"gamma" => [ 0.8 , 0.02 ]
 		]
-		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms);
+		@fact_throws MProb(p,pb,Testobj,moms);
 
 		# get some wrong bounds
 		pb= [ "a" => [1,0] , "b" => [0,1] ]
-		@fact_throws Mopt.MProb(p,pb,Mopt.Testobj,moms);
+		@fact_throws MProb(p,pb,Testobj,moms);
 	end
 
 end
@@ -78,16 +73,13 @@ facts("testing MProb methods") do
 		"beta"  => [ 0.8 , 0.02 ],
 		"gamma" => [ 0.8 , 0.02 ]
 	]
-	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms);
-	@fact collect(Mopt.ps_names(mprob)) == collect(keys(pb)) => true
-	@fact collect(Mopt.ms_names(mprob)) == collect(keys(moms)) => true
+	mprob = MProb(p,pb,Testobj,moms);
+	@fact collect(MOpt.ps_names(mprob)) == collect(keys(pb)) => true
+	@fact collect(MOpt.ms_names(mprob)) == collect(keys(moms)) => true
 
 	@fact eltype(mprob.p2sample_sym)==Symbol => true
 
 end
-
-
-
 
 
 end # module 

@@ -1,8 +1,7 @@
 module TestBGPChain
 
-using FactCheck, DataFrames
+using FactCheck, MOpt
 
-include("../src/mopt.jl")
 
 
 # TESTING Chains
@@ -19,13 +18,15 @@ moms = [
 
 facts("Testing BGPChain constructor") do
 	
-	mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms)
+	mprob = MProb(p,pb,Testobj,moms)
 	L = 9
 	temp = 100.0
 	shock = 12.0
-	jumptol = 1.1
+	accept_tol = 1.9
+	dist_tol = 0.001
+	jumpprob = 0.05
 	id = 180
-	chain = Mopt.BGPChain(id,mprob,L,temp,shock,jumptol)
+	chain = BGPChain(id,mprob,L,temp,shock,accept_tol,dist_tol,jumpprob)
 
 	@fact chain.i => 0 
 	@fact chain.id => id
@@ -35,24 +36,21 @@ facts("Testing BGPChain constructor") do
 		# test that all member except i are L long
 		@fact length(chain.infos[:evals])  => L
 		@fact length(chain.infos[:accept]) => L
-		for nm in Mopt.ps_names(mprob)
+		for nm in MOpt.ps_names(mprob)
 			@fact nrow(chain.parameters) => L
 		end
-		for nm in Mopt.ms_names(mprob)
+		for nm in MOpt.ms_names(mprob)
 			@fact nrow(chain.moments) => L
 		end
 		@fact chain.tempering => temp
 		@fact chain.shock_sd => shock
-		@fact chain.jumptol => jumptol
+		@fact chain.jump_prob => jumpprob
+		@fact chain.dist_tol => dist_tol
+		@fact chain.accept_tol => accept_tol
 	end
 
 
 end
-
-
-
-
-
 
 
 

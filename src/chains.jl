@@ -18,8 +18,8 @@ infos(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:]
 infos(c::AbstractChain, i::Int)                 = infos(c, i:i)
 evals(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:evals]
 evals(c::AbstractChain, i::Int)                 = evals(c, i:i)
-alls(c::AbstractChain,i::UnitRange{Int})        = cbind(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
-alls(c::AbstractChain,i::Int)                   = cbind(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
+allstats(c::AbstractChain,i::UnitRange{Int})        = cbind(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
+allstats(c::AbstractChain,i::Int)                   = cbind(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
 
 # appends values from objective function
 # at CURRENT iteration
@@ -122,7 +122,7 @@ end
 
 
 
-function alls(MC::Array) 
+function allstats(MC::Array) 
     cbind(infos(MC),parameters(MC)[MC[1].params_nms],moments(MC)[MC[1].moments_nms])
 end
 

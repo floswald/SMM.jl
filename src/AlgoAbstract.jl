@@ -33,7 +33,7 @@ function evaluateObjective(algo::MAlgo,which::Int)
 
 end
 
-function runMopt( algo::MAlgo )
+function runMopt!( algo::MAlgo )
 
 	# tasks
 	# =====

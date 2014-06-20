@@ -106,7 +106,7 @@ else
 
 	MA = Mopt.MAlgoBGP(mprob,opts)
 
-	Mopt.runMopt(MA)
+	Mopt.runMopt!(MA)
 	Mopt.plot(MA,"acc")
 	Mopt.plot(MA,"params_time")
 	Mopt.plot(MA,"params_dist")
