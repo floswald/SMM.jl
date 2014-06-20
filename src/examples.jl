@@ -1,7 +1,6 @@
 
 
 
-using PyPlot
 
 if banan 
 
@@ -98,8 +97,8 @@ else
 		"min_shock_sd"=>0.1,
 		"max_shock_sd"=>1,
 		"past_iterations"=>30,
-		"min_accept_tol"=>0.25,
-		"max_accept_tol"=>0.25,
+		"min_accept_tol"=>100,
+		"max_accept_tol"=>100,
 		"min_disttol"=>0.1,
 		"max_disttol"=>0.1,
 		"min_jump_prob"=>0.05,
@@ -108,18 +107,9 @@ else
 	MA = Mopt.MAlgoBGP(mprob,opts)
 
 	Mopt.runMopt(MA)
-	x=Mopt.alls(MA.MChains)
-	figure(1)
-	for i in 1:6
-		subplot(2,3,i)
-		plot(x[x[:chain_id].==i,:a])
-	end
-	suptitle("chain estimates for a")
-	figure(2)
-	for i in 1:6
-		subplot(2,3,i)
-		plot(x[x[:chain_id].==i,:b])
-	end
-	suptitle("chain estimates for b")
+	Mopt.plot(MA,"acc")
+	Mopt.plot(MA,"params_time")
+	Mopt.plot(MA,"params_dist")
+	
 
 end

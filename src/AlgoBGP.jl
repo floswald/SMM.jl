@@ -196,7 +196,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
 		    # update sampling variances
 		    algo.MChains[ch].infos[algo.i,:accept_rate]   = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
-		    algo.MChains[ch].shock_sd = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
+		    algo.MChains[ch].shock_sd                     = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
 		    algo.MChains[ch].infos[algo.i,:shock_sd]      = algo.MChains[ch].shock_sd
 		    algo.MChains[ch].infos[algo.i,:ratio_old_new] = xold / xnew
 		end
@@ -231,79 +231,6 @@ function exchangeMoves!(algo::MAlgoBGP,ch::Int,oldval)
 
 end
 
-
-
-
-# 	if !algo["rings"]
-
-# 		# Part 2a) EXCHANGE MOVES without rings
-# 		# ======================
-# 		# 1) N exchange moves are proposed
-# 		# 2) N pairs are chosen uniformly among all possible pairs with replacment 
-# 		# 3) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
-
-# 		jump_pairs = sample(algo.Jump_register,algo["N"],replace=false)
-# 		for pair in jump_pairs
-# 			distance = abs(evals(algo.MChains[pair[1]],algo.MChains[pair[1]].i) - evals(algo.MChains[pair[2]],algo.MChains[pair[2]].i))
-# 			# println("distance of pair $(pair) = $distance")
-# 			if distance[1] < algo.MChains[pair[1]].jumptol
-# 				swapRows!(algo,pair,algo.i)
-# 			end
-			
-# 		end
-
-# 	else
-# 		# Part 2b) EXCHANGE MOVES with rings
-# 		# ==================================
-# 		# 1) N exchange moves are proposed
-# 		# 2) a ring E_j is a partition of objective function space, i.e. 
-# 		#    chain j \in E_1 iff V_j \in [0,E_1]
-# 		#    chain j \in E_2 iff V_j \in [E_1,E_2]
-# 		#    ...                             
-# 		# 3) randomly choose N rings, with replacement. A ring with less than 2 chains is not admissible.                               
-# 		# 5) from within that ring, form jump_pairs 
-# 		# 6) exchange (z_i,theta_i) with (z_j,theta_j) if val_j < tol_i
-
-# 		chain_in_rings = infos(algo.MChains,algo.i)[[:chain_id,:evals]]
-# 		chain_in_rings = cbind(chain_in_rings,DataFrame(ring=findInterval(chain_in_rings[:evals],algo["rings"])))
-
-# 		# drop rings with less than 2 chains
-# 		hi = hist(chain_in_rings[:ring])
-# 		keeps = findin(chain_in_rings[:ring],unique(sort(chain_in_rings[:ring]))[hi[2].>1])
-# 		chain_in_rings = chain_in_rings[keeps,:]
-
-# 		if nrow(chain_in_rings) > 0
-
-# 			# draw pairs to exchange with 5% probability
-# 			chain_in_rings = cbind(chain_in_rings,DataFrame(exchange=sample([true,false],WeightVec([0.05,0.95]),nrow(chain_in_rings))))
-# 			chain_in_rings = chain_in_rings[chain_in_rings[:exchange] .== true,:]
-
-# 		# 	# choose N rings with replacement
-# 			rings = DataFrame(ringid=sample(chain_in_rings[:ring],algo["N"],replace=true), pair1 = [0 for i=1:algo["N"]], pair2 = [0 for i=1:algo["N"]])
-
-# 			# for each entry of rings, randomly choose a pair of chains
-# 			for ir = 1:nrow(rings)
-
-# 					# @bp length(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id]) ==1
-
-
-# 				pairs = sample(chain_in_rings[chain_in_rings[:ring] .== rings[ir,:ringid],:chain_id],2,replace=false)
-# 				# add to rings
-# 				rings[ir,:pair1] = pairs[1]
-# 				rings[ir,:pair2] = pairs[2]
-
-# 			end
-
-# 			# for each ring, if val(j) < tol_i, swap i with j
-# 			for irow in eachrow(rings)
-# 				distance = abs(evals(algo.MChains[irow[:pair2]],algo.MChains[irow[:pair2]].i)[1]) < algo.MChains[irow[:pair1]].jumptol
-# 				if distance
-# 					swapRows!(algo,(irow[:pair1],irow[:pair2]),algo.i,irow[:ringid])
-# 				end
-# 			end
-# 		end
-# 	end
-# end
 
 
 function findInterval(x,vec::Array)
@@ -390,9 +317,9 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		VV2 = VV
 		MVN = MvNormal(VV2)
 
-    # constraint the shock_sd: 95% conf interval should not exceed overall param interval width
-    shock_ub  = minimum(  (algo.m.params_to_sample_df[:ub] - algo.m.params_to_sample_df[:lb]) ./ (1.96 * 2 *diag(VV2) ))
-    algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
+   		 # constraint the shock_sd: 95% conf interval should not exceed overall param interval width
+   		 shock_ub  = minimum(  (algo.m.params_to_sample_df[:ub] - algo.m.params_to_sample_df[:lb]) ./ (1.96 * 2 *diag(VV2) ))
+   		 algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
