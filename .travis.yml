@@ -18,5 +18,6 @@ script:
   - julia -e "Pkg.init()"
   - mkdir -p ~/.julia/MOpt.jl
   - cp -R ./* ~/.julia/MOpt.jl
+  - julia -e 'run(`ln -s $(pwd()) $(Pkg.dir("MOpt"))`); Pkg.pin("MOpt"); Pkg.resolve()'
   - julia -e 'versioninfo(); Pkg.add("FactCheck"); Pkg.add("DataFrames"); Pkg.add("Distributions"); Pkg.add("PyPlot"); Pkg.add("Reexport")'
   - julia ~/.julia/MOpt.jl/test/runtests.jl
