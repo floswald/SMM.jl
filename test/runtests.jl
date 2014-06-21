@@ -1,7 +1,6 @@
 
 
-# using MOpt can't make that work!
-include("../src/MOpt.jl")
+using MOpt 
 using FactCheck
 
 include("test_chains.jl")
