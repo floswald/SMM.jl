@@ -12,5 +12,5 @@ before_install:
     - git config --global user.email "travis@example.net"
     - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-    - julia -e 'versioninfo(); Pkg.clone(pwd()); run(`ln -s $(pwd()) $(Pkg.dir("MOpt"))`)'
+    - julia -e 'versioninfo(); Pkg.clone(pwd()); run(`ln -s $(pwd()) $(Pkg.dir("MOpt"))`); push!(LOAD_PATH,Pkg.dir("MOpt"))'
     - julia ./test/runtests.jl
