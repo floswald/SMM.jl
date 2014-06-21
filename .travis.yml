@@ -13,5 +13,5 @@ before_install:
     - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
     - julia -e 'versioninfo(); Pkg.init(); Pkg.clone(pwd());'
-    - julia -e 'push!(LOAD_PATH,pwd())'
+    - julia -e 'pwd(); readdir(); push!(LOAD_PATH,pwd()); println(LOAD_PATH)'
     - julia ./test/runtests.jl
