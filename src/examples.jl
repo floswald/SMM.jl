@@ -29,14 +29,14 @@ if banan
 
 
 
-	mprob = Mopt.MProb(p,pb,banana,moms)
+	mprob = MOpt.MProb(p,pb,banana,moms)
 	opts =["N"=>6,"mode"=>"serial","maxiter"=> 500,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1,"max_shock_sd"=>3,"past_iterations"=>30,"min_accept_tol"=>500,"max_accept_tol"=>500,"min_disttol"=>100,"max_disttol"=>200,"min_jump_prob"=>0.05,"max_jump_prob"=>0.2] 
-	MA = Mopt.MAlgoBGP(mprob,opts)
+	MA = MOpt.MAlgoBGP(mprob,opts)
 
-	Mopt.runMopt(MA)
+	MOpt.runMOpt(MA)
 
 
-	x=Mopt.alls(MA.MChains)
+	x=MOpt.alls(MA.MChains)
 	figure(1)
 	for i in 1:6
 		subplot(2,3,i)
@@ -62,7 +62,7 @@ else
 
 		# compute simulated moments
 		mu = [p["a"],p["b"]]
-		MVN = Mopt.MvNormal(mu,sigma) 
+		MVN = MOpt.MvNormal(mu,sigma) 
 
 		# get data mometns
 		muD = Float64[mom["m1"][1], mom["m2"][1]]
@@ -86,7 +86,7 @@ else
 		"m2"  => [ 0.0 , 0.02 ]
 	]
 
-	mprob = Mopt.MProb(p,pb,objfunc_norm2,moms)
+	mprob = MOpt.MProb(p,pb,objfunc_norm2,moms)
 
 	opts =[
 		"N"=>6,
@@ -104,12 +104,12 @@ else
 		"min_jump_prob"=>0.05,
 		"max_jump_prob"=>0.2] 
 
-	MA = Mopt.MAlgoBGP(mprob,opts)
+	MA = MOpt.MAlgoBGP(mprob,opts)
 
-	Mopt.runMopt!(MA)
-	Mopt.plot(MA,"acc")
-	Mopt.plot(MA,"params_time")
-	Mopt.plot(MA,"params_dist")
+	MOpt.runMopt!(MA)
+	MOpt.plot(MA,"acc")
+	MOpt.plot(MA,"params_time")
+	MOpt.plot(MA,"params_dist")
 	
 
 end

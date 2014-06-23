@@ -351,6 +351,19 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 end
 
 
+# save algo to file
+function save(algo::MAlgoBGP, filename)
+
+  # step 1, create the file if it does not exist
+  ff5 = h5open(filename, "w")
+
+  # saving the chains
+  for cc in 1:algo["N"]
+    saveToHDF5(algo.MChains[cc], ff5, "chain/$cc")
+  end
+
+  close(ff5)
+end
 
 
 

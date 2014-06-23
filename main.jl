@@ -14,12 +14,15 @@ include("test/test_algoBGP.jl")
 	
 # to develop in main: run this
 include("src/MOpt.jl")
-
+using Mopt
 
 # runnign examples:
 banan=false
 include("src/examples.jl")
 	
+MOpt.save(MA,"algo.h5")
+
+
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
 moms = [

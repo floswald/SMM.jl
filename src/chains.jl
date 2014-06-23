@@ -12,8 +12,11 @@ abstract AbstractChain
 
 parameters(c::AbstractChain, i::UnitRange{Int}) = c.parameters[i,:]
 parameters(c::AbstractChain, i::Int)            = parameters(c, i:i)
+parameters(c::AbstractChain)                    = c.parameters
+moments(c::AbstractChain)                       = c.moments[i,:]
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
 moments(c::AbstractChain, i::Int)               = moments(c, i:i)
+infos(c::AbstractChain)                         = c.infos
 infos(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:]
 infos(c::AbstractChain, i::Int)                 = infos(c, i:i)
 evals(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:evals]
@@ -159,6 +162,17 @@ function updateIterChain!(MC::Array)
     end 
 end
 
+# saves a chain to a HF5 file at a given path
+function saveToHDF5(chain::AbstractChain, ff5::HDF5File, path::ASCIIString)
+    simpleDataFrameSave(chain.parameters,ff5, "$path/parameters")
+    simpleDataFrameSave(chain.infos,ff5, "$path/infos")
+    simpleDataFrameSave(chain.moments,ff5, "$path/moments")
+end
 
+function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path)
+    for nn in names(dd)
+        write(ff5,"$path/$(string(nn))",convert(Array{Float64,1},dd[nn]))
+    end
+end
 
 

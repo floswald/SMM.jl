@@ -71,15 +71,15 @@ end
 function plot(algo::MAlgo, what)
 
 	if (what == "acc")
-		dd = Mopt.infos(algo.MChains)
+		dd = infos(algo.MChains)
 		subplot(211)
-		for sdf in Mopt.groupby(dd, :chain_id)
+		for sdf in groupby(dd, :chain_id)
   			PyPlot.plot(sdf[:iter],sdf[:accept_rate])
   			I = sdf[:exchanged_with].>0
   			PyPlot.plot( sdf[I,:iter], sdf[I,:accept_rate],"o")
 		end
 		subplot(212)
-		for sdf in Mopt.groupby(dd, :chain_id)
+		for sdf in groupby(dd, :chain_id)
   			PyPlot.plot(sdf[:shock_sd])
   			I = sdf[:exchanged_with].>0
   			PyPlot.plot( sdf[I,:iter], sdf[I,:shock_sd],"o")
@@ -87,7 +87,7 @@ function plot(algo::MAlgo, what)
 	end
 
 	if (what == "params_time")
-		dd = sort!(Mopt.parameters(algo.MChains))
+		dd = sort!(parameters(algo.MChains))
 		npars = length(algo.m.p2sample_sym)
 		nrows = floor(sqrt(npars))
 		ncols = ceil(npars/nrows)
@@ -104,13 +104,13 @@ function plot(algo::MAlgo, what)
 		for par in algo.m.p2sample_sym
 			pid += 1
 			subplot(nrows,ncols,pid)
-			for sdf in Mopt.groupby(dd, :chain_id)
+			for sdf in groupby(dd, :chain_id)
   				plot(sdf[:iter],sdf[par])
   			end
 		end
 	end
 	if (what == "params_dist")
-		dd = Mopt.parameters(algo.MChains)
+		dd = parameters(algo.MChains)
 		npars = length(algo.m.p2sample_sym)
 		nrows = floor(sqrt(npars))
 		ncols = ceil(npars/nrows)
