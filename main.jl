@@ -5,17 +5,18 @@
 home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
+include("src/MOpt.jl")
+
 # to develop with tests: run this
-include("test/runtests.jl")
 
 include("test/test_MProb.jl")
 include("test/test_chains.jl")
 include("test/test_BGPchain.jl")
 include("test/test_algoBGP.jl")
 	
+include("test/runtests.jl")
 	
 # to develop in main: run this
-include("src/MOpt.jl")
 
 # runnign examples:
 banan=false

@@ -37,6 +37,46 @@ end
  # ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
 
 
+
+function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+
+    sigma = reshape([1.0, 0.0,0.0,1.0],2,2)
+    ns = 5000
+
+    # compute simulated moments
+    mu = [p["a"],p["b"]]
+    MVN = MOpt.MvNormal(mu,sigma) 
+
+    # get data mometns
+    muD = array(transpose(mom[:,[1,2]],1))'
+
+    # simulate model moments 
+    moments = mean(rand(MVN,ns),2)
+
+    # value = data - model
+    value = mean((muD - moments).^2)
+
+    momout = DataFrame(alpha = moments[1],beta = moments[2])
+
+
+    ret = ["value"=>value, "params" =>p, "time" =>0.0, "status" => 1, "moments" => momout]
+    return ret
+end
+
+
+
+function banana(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+
+    model = 100 .* (x["b"] - x["a"].^2 ).^2 .+ (1.-x["a"])^2
+    data  = 0.0
+
+    value = mean((data .- model).^2)
+
+    # we just want to find the lowest value - no moments involved.
+    ret = ["value" => value, "params" => x, "time" => 1.0, "status" => 1, "moments" => mom]
+    return ret
+end
+
 # transpose a 2-column dataframe to a one-row dataframe, so that 
 # col x become new column names
 function transpose(x::DataFrame,newNames::Int)

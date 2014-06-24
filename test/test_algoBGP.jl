@@ -3,14 +3,13 @@
 
 module TestAlgoBGP
 
-using FactCheck, DataFrames
-include("../src/MOpt.jl")
+using FactCheck, DataFrames, MOpt
 
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = MOpt.DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
 
-mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
+mprob = MProb(p,pb,MOpt.Testobj,moms)
 
 facts("testing MAlgoBGP Constructor") do
 
@@ -18,11 +17,11 @@ facts("testing MAlgoBGP Constructor") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
-		@fact isa(MA,MOpt.MAlgo) => true
-		@fact isa(MA,MOpt.MAlgoBGP) => true
-		@fact isa(MA.m,MOpt.MProb) => true
+		@fact isa(MA,MAlgo) => true
+		@fact isa(MA,MAlgoBGP) => true
+		@fact isa(MA.m,MProb) => true
 
 		@fact MA.i => 0
 		@fact length(MA.MChains) => opts["N"]
@@ -36,7 +35,7 @@ facts("testing MAlgoBGP Constructor") do
 	context("checking getters/setters on MAlgo") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
 		# getters
 		@fact MA["N"] => opts["N"]
@@ -86,7 +85,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 	context("test getParamCovariance") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
 		# fill chains with random values
 		for iter =1:(MA["maxiter"]-1)
@@ -104,7 +103,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		# get all parameters
 		lower_bound_index = maximum([1,MA.MChains[1].i-MA["past_iterations"]])
-		pars = MOpt.parameters(MA.MChains,lower_bound_index:MA.MChains[1].i)
+		pars = parameters(MA.MChains,lower_bound_index:MA.MChains[1].i)
 
 		# get the last MA["past_iterations"] iterations from each chain
 		# get parameter_to_sample names as symbols 
@@ -130,7 +129,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		# setup an Algo
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
 		# fill chains with random values up to iteration ix
 		ix = 5
@@ -164,7 +163,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 			MVN = MOpt.MvNormal( myVV.*MA.MChains[ich].tempering )
 			shock[ich] = rand(MVN)
 
-			oldp = MOpt.parameters(MA.MChains[ich],ix-1)	# get a dataframe of row ix-1
+			oldp = parameters(MA.MChains[ich],ix-1)	# get a dataframe of row ix-1
 			newp[ich] = copy(oldp[MA.m.p2sample_sym])	# get just those you wish to sample
 
 			# add shock
@@ -181,8 +180,9 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		for ich in 1:MA["N"]
 			# call library funciton
 			MOpt.updateCandidateParam!(MA,ich,shock[ich])
-
-			@fact collect(values(MA.current_param[ich])) == map(x->x[1],collect(values(MOpt.df2dict(newp[ich])))) => true
+			for (k,v) in MA.current_param[ich]
+				@fact v == newp[ich][symbol(k)][1] => true
+			end
 
 		end
 
@@ -196,7 +196,7 @@ facts("testing swaprows") do
 	context("testing swapRows!") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
 		# fill chains with random values up to iteration ix
 		ix = 5
@@ -217,24 +217,24 @@ facts("testing swaprows") do
 		pair = (1,3)
 
 		# get params and moms
-		p1 = MOpt.parameters(MA.MChains[pair[1]],ix)
-		p2 = MOpt.parameters(MA.MChains[pair[2]],ix)
-		m1 = MOpt.moments(MA.MChains[pair[1]],ix)
-		m2 = MOpt.moments(MA.MChains[pair[2]],ix)
-		v1 = MOpt.evals(MA.MChains[pair[1]],ix)
-		v2 = MOpt.evals(MA.MChains[pair[2]],ix)
+		p1 = parameters(MA.MChains[pair[1]],ix)
+		p2 = parameters(MA.MChains[pair[2]],ix)
+		m1 = moments(MA.MChains[pair[1]],ix)
+		m2 = moments(MA.MChains[pair[2]],ix)
+		v1 = evals(MA.MChains[pair[1]],ix)
+		v2 = evals(MA.MChains[pair[2]],ix)
 
 
 		# exchange
 		MOpt.swapRows!(MA,pair,ix)
 
 		# check parameters
-		@fact MOpt.parameters(MA.MChains[pair[1]],ix) == p2 => true
-		@fact MOpt.parameters(MA.MChains[pair[2]],ix) == p1 => true
-		@fact MOpt.moments(MA.MChains[pair[1]],ix) == m2 => true
-		@fact MOpt.moments(MA.MChains[pair[2]],ix) == m1 => true
-		@fact MOpt.evals(MA.MChains[pair[1]],ix) == v2 => true
-		@fact MOpt.evals(MA.MChains[pair[2]],ix) == v1 => true
+		@fact parameters(MA.MChains[pair[1]],ix) == p2 => true
+		@fact parameters(MA.MChains[pair[2]],ix) == p1 => true
+		@fact moments(MA.MChains[pair[1]],ix) == m2 => true
+		@fact moments(MA.MChains[pair[2]],ix) == m1 => true
+		@fact evals(MA.MChains[pair[1]],ix) == v2 => true
+		@fact evals(MA.MChains[pair[2]],ix) == v1 => true
 
 	end
 
@@ -260,7 +260,7 @@ facts("testing localMovesMCMC") do
 		"min_accept_tol"  => 1000.05,		# minimum acceptance level for local moves. Set for ABC-like estimation. For chain_i, accept param_x with probability rho iff value(param_x) < accept_tol_i. In practice, moves with only minor improvement are rejected.
 		"max_accept_tol"  => 1000.1]
 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
 		# get a return value
 		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
@@ -271,11 +271,11 @@ facts("testing localMovesMCMC") do
 		MOpt.localMovesMCMC!(MA,v)
 
 		# all accepted: 
-		@fact all(MOpt.infos(MA.MChains,1)[:accept]) => true
-		@fact all(MOpt.infos(MA.MChains,1)[:status] .== 1) => true
+		@fact all(infos(MA.MChains,1)[:accept]) => true
+		@fact all(infos(MA.MChains,1)[:status] .== 1) => true
 		# all params equal to initial value
 		for nm in 1:length(MA.MChains[1].params_nms)
-			@fact MOpt.parameters(MA.MChains[1],1)[MA.MChains[1].params_nms[nm]][1] == p[string(MA.MChains[1].params_nms[nm])] => true
+			@fact parameters(MA.MChains[1],1)[MA.MChains[1].params_nms[nm]][1] == p[string(MA.MChains[1].params_nms[nm])] => true
 		end
 
 		# next iteration
@@ -285,17 +285,17 @@ facts("testing localMovesMCMC") do
 		MOpt.localMovesMCMC!(MA,v)
 
 		# param equal to previous param is accepted with prob = 1
-		@fact all(MOpt.infos(MA.MChains,MA.i)[:prob] .== 1) => true
-		@fact all(MOpt.infos(MA.MChains,MA.i)[:status] .== 1) => true
+		@fact all(infos(MA.MChains,MA.i)[:prob] .== 1) => true
+		@fact all(infos(MA.MChains,MA.i)[:status] .== 1) => true
 	end
 
 	context("testing whether params get accept/rejected") do
 		
 		p    = ["a" => 3.1 , "b" => 4.9]
 		pb   = [ "a" => [0,1] , "b" => [0,1] ]
-		moms = MOpt.DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+		moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
 
-		mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
+		mprob = MProb(p,pb,Testobj,moms)
 
 		# impose zero exchange by setting jump_prob to 0.0
 		opts =["N"        => 20,		# number of chains
@@ -313,7 +313,7 @@ facts("testing localMovesMCMC") do
 		"min_accept_tol"  => 1000.05,		# minimum acceptance level for local moves. Set for ABC-like estimation. For chain_i, accept param_x with probability rho iff value(param_x) < accept_tol_i. In practice, moves with only minor improvement are rejected.
 		"max_accept_tol"  => 1000.1]
 		
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 		v=0
 
 
@@ -348,8 +348,8 @@ facts("testing localMovesMCMC") do
 
 
 		# acceptance prob is exactly 0.5
-		@fact all(abs(MOpt.infos(MA.MChains,MA.i)[:prob] .- exp(temps.*log(0.9))) .< 0.000000001) => true
-		vv = MOpt.infos(MA.MChains,MA.i)
+		@fact all(abs(infos(MA.MChains,MA.i)[:prob] .- exp(temps.*log(0.9))) .< 0.000000001) => true
+		vv = infos(MA.MChains,MA.i)
 		xx = v0[1]["value"] .- log(0.9)
 		# if !all(abs(vv[vv[:accept] .== true,:evals]  .- xx) .<0.000001)
 		# 	println("v0[1][value] .+ log(0.5) = $xx")
@@ -360,31 +360,31 @@ facts("testing localMovesMCMC") do
 
 		# check that where not accepted, params and moments are previous ones
 		for ch in 1:MA["N"]
-			if MOpt.infos(MA.MChains[ch],MA.i)[:accept][1]
+			if infos(MA.MChains[ch],MA.i)[:accept][1]
 
 				# if accepted, parameters(MA.MChains[ch],MA.i) == current_param
 				for nm in 1:length(MA.MChains[1].params_nms)
-					@fact MOpt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] == MA.current_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
+					@fact parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] == MA.current_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
 				end
 				# if accepted, parameters(MA.MChains[ch],MA.i) != parameters(MA.MChains[ch],MA.i-1)
-				@fact MOpt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms] != MOpt.parameters(MA.MChains[ch],MA.i-1)[MA.MChains[ch].params_nms] => true
+				@fact parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms] != parameters(MA.MChains[ch],MA.i-1)[MA.MChains[ch].params_nms] => true
 				# if accepted, moments(MA.MChains[ch],MA.i) != moments(MA.MChains[ch],MA.i-1)
-				@fact MOpt.moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != MOpt.moments(MA.MChains[ch],MA.i-1)[MA.MChains[ch].moments_nms] => true
+				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != moments(MA.MChains[ch],MA.i-1)[MA.MChains[ch].moments_nms] => true
 				# if accepted, moments(MA.MChains[ch],MA.i) == moments(MA.MChains[ch],MA.i-1)
-				@fact MOpt.moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == v[ch]["moments"][MA.MChains[ch].moments_nms] => true
+				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == v[ch]["moments"][MA.MChains[ch].moments_nms] => true
 			else
 				# if not, parameters(MA.MChains[ch],MA.i) == parameters(MA.MChains[ch],MA.i-1)
 
-				@fact MOpt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms] == MOpt.parameters(MA.MChains[ch],MA.i-1)[MA.MChains[ch].params_nms] => true
+				@fact parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms] == parameters(MA.MChains[ch],MA.i-1)[MA.MChains[ch].params_nms] => true
 
 				for nm in 1:length(MA.MChains[1].params_nms)
-					@fact MOpt.parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] != MA.current_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
+					@fact parameters(MA.MChains[ch],MA.i)[MA.MChains[ch].params_nms[nm]][1] != MA.current_param[ch][string(MA.MChains[ch].params_nms[nm])] => true
 				end
 
 				# if not accepted, moments(MA.MChains[ch],MA.i) == moments(MA.MChains[ch],MA.i-1)
-				@fact MOpt.moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == MOpt.moments(MA.MChains[ch],MA.i-1)[MA.MChains[ch].moments_nms] => true
+				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == moments(MA.MChains[ch],MA.i-1)[MA.MChains[ch].moments_nms] => true
 				# if not accepted, moments(MA.MChains[ch],MA.i) != moments(MA.MChains[ch],MA.i)
-				@fact MOpt.moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != v[ch]["moments"][MA.MChains[ch].moments_nms] => true
+				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != v[ch]["moments"][MA.MChains[ch].moments_nms] => true
 
 			end
 		end
@@ -399,7 +399,7 @@ facts("testing exchangeMoves") do
 
 		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
 		MOpt.updateIterChain!(MA.MChains)
 		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
@@ -425,11 +425,11 @@ facts("testing exchangeMoves") do
 		MOpt.exchangeMoves!(MA,ch,v[1]["value"])
 
 		# expect we exchanged ch with ch2 and nothing else
-		@fact MOpt.infos(MA.MChains[ch],MA.i)[:exchanged_with][1] .== ch2 =>true
-		@fact MOpt.infos(MA.MChains[ch2],MA.i)[:exchanged_with][1] .== ch =>true
+		@fact infos(MA.MChains[ch],MA.i)[:exchanged_with][1] .== ch2 =>true
+		@fact infos(MA.MChains[ch2],MA.i)[:exchanged_with][1] .== ch =>true
 		for i in 1:length(v) 
 			if ((i != ch) & (i != ch2))
-				@fact MOpt.infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
+				@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
 			end
 		end
 
@@ -440,7 +440,7 @@ facts("testing exchangeMoves") do
 	
 		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>0.0,"max_jump_prob"=>0.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
 		MOpt.updateIterChain!(MA.MChains)
 		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
@@ -465,7 +465,7 @@ facts("testing exchangeMoves") do
 		MOpt.exchangeMoves!(MA,ch,v[1]["value"])
 
 		for i in 1:length(v) 
-			@fact MOpt.infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
+			@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
 		end
 	end
 
@@ -479,7 +479,7 @@ facts("testing MAlgo methods") do
 	context("testing evaluateObjective(algo)") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MOpt.MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,opts)
 
 		which_chain = 1
 		x = MOpt.evaluateObjective(MA,which_chain)

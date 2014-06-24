@@ -64,8 +64,9 @@ function runMopt!( algo::MAlgo )
 end
 
 function hist(x,nb=30) 
-  n, bins = PyPlot.hist(x, nb)
-  bar(n[1:end-1], bins, width = n[2] - n[1])
+  n, bins = hist(x,nb)
+  nvec = [n]
+  bar(nvec[1:end-1], bins, width = nvec[2] - nvec[1])
 end
 
 function plot(algo::MAlgo, what)

@@ -1,23 +1,9 @@
 
 
 
-
 if banan 
 
 	# minimize the rosenbrock function
-	# y = 100 * (b - a * a)^2 + (1 - a)^2
-	function banana(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
-
-		model = 100 .* (x["b"] - x["a"].^2 ).^2 .+ (1.-x["a"])^2
-		data  = 0.0
-
-		value = mean((data .- model).^2)
-
-		# we just want to find the lowest value - no moments involved.
-		ret = ["value" => value, "params" => x, "time" => 1.0, "status" => 1, "moments" => mom]
-		return ret
-	end
-
 
 	# global min is (1,1)
 	p    = ["a" => 0.8 , "b" => 1.1]
@@ -34,7 +20,6 @@ if banan
 	MA = MOpt.MAlgoBGP(mprob,opts)
 
 	MOpt.runMOpt(MA)
-
 
 	x=MOpt.alls(MA.MChains)
 	figure(1)
@@ -55,38 +40,12 @@ else
 
 
 	# bivariate normal
-	function objfunc_norm2(p::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
-
-		sigma = reshape([1.0, 0.0,0.0,1.0],2,2)
-		ns = 5000
-
-		# compute simulated moments
-		mu = [p["a"],p["b"]]
-		MVN = MOpt.MvNormal(mu,sigma) 
-
-		# get data mometns
-		muD = Float64[mom["m1"][1], mom["m2"][1]]
-
-	    # simulate model moments 
-	    moments = mean(rand(MVN,ns),2)
-
-	    # value = data - model
-		value = mean((muD - moments).^2)
-
-		momdict = ["m1" => moments[1], "m2" => moments[2]]
-
-		ret = ["value"=>value, "params" =>p, "time" =>0.0, "status" => 1, "moments" => momdict]
-		return ret
-	end
-
-	p    = ["a" => 0.5 , "b" => -0.5]
+	
+	p    = ["a" => 0.9 , "b" => -0.9]
 	pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
-	moms = [
-		"m1" => [ 0.0 , 0.02 ],
-		"m2"  => [ 0.0 , 0.02 ]
-	]
+	moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 
-	mprob = MOpt.MProb(p,pb,objfunc_norm2,moms)
+	mprob = MOpt.MProb(p,pb,MOpt.objfunc_norm2,moms)
 
 	opts =[
 		"N"=>6,
@@ -107,8 +66,11 @@ else
 	MA = MOpt.MAlgoBGP(mprob,opts)
 
 	MOpt.runMopt!(MA)
+	MOpt.figure(1)
 	MOpt.plot(MA,"acc")
+	MOpt.figure(2)
 	MOpt.plot(MA,"params_time")
+	MOpt.figure(3)
 	MOpt.plot(MA,"params_dist")
 	
 

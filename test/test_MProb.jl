@@ -1,8 +1,7 @@
 
 module TestMProb
 
-using FactCheck
-include("../src/MOpt.jl")
+using FactCheck, MOpt
 
 
 
@@ -21,7 +20,7 @@ include("../src/MOpt.jl")
 # test default constructor type
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = MOpt.DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],
@@ -32,15 +31,15 @@ facts("Testing the MProb constructor") do
 
 	context("default constructor") do
 
-		mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
-		@fact isa(mprob, MOpt.MProb) => true
+		mprob = MProb(p,pb,Testobj,moms)
+		@fact isa(mprob, MProb) => true
 
 	end
 
 	context("constructor throws errors") do
 
 		# get an inexisting moment to subset
-		@fact_throws MOpt.MProb(p,pb,MOpt.Testobj,moms; moments_subset=["alpha","epsilon"]);
+		@fact_throws MProb(p,pb,Testobj,moms; moments_subset=["alpha","epsilon"]);
 
 		# get some wrong moments
 		# moms = [
@@ -57,11 +56,11 @@ facts("Testing the MProb constructor") do
 		# 	"beta"  => [ 0.8 , 0.02 ],
 		# 	"gamma" => [ 0.8 , 0.02 ]
 		# ]
-		@fact_throws MOpt.MProb(p,pb,MOpt.Testobj,moms);
+		@fact_throws MProb(p,pb,Testobj,moms);
 
 		# get some wrong bounds
 		pb= [ "a" => [1,0] , "b" => [0,1] ]
-		@fact_throws MOpt.MProb(p,pb,MOpt.Testobj,moms);
+		@fact_throws MProb(p,pb,Testobj,moms);
 	end
 
 end
@@ -75,7 +74,7 @@ facts("testing MProb methods") do
 	# 	"beta"  => [ 0.8 , 0.02 ],
 	# 	"gamma" => [ 0.8 , 0.02 ]
 	# ]
-	mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms);
+	mprob = MProb(p,pb,Testobj,moms);
 	@fact collect(MOpt.ps_names(mprob)) == collect(keys(pb)) => true
 	@fact MOpt.ms_names(mprob) == mprob.moments[:moment] => true
 

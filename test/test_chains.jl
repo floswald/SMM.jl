@@ -1,7 +1,6 @@
 module TestChain
 
-using FactCheck,DataFrames
-include("../src/MOpt.jl")
+using FactCheck,DataFrames,MOpt
 
 
 
@@ -9,15 +8,15 @@ include("../src/MOpt.jl")
 # ==============
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = MOpt.DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
 
 
 
 facts("Testing Default Chains constructor") do
 	
-	mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
+	mprob = MProb(p,pb,MOpt.Testobj,moms)
 	L = 9
-	chain = MOpt.Chain(mprob,L)
+	chain = Chain(mprob,L)
 
 	@fact chain.i => 0 
 
@@ -57,16 +56,16 @@ facts("testing Chain/MChain methods") do
 
 	context("testing getindex(chain,i)") do
 
-		mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
+		mprob = MProb(p,pb,MOpt.Testobj,moms)
 		v = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
 		L = 9	# length of chain
-		chain = MOpt.Chain(mprob,L)
+		chain = Chain(mprob,L)
 
 		i = rand(1:L)
 
-		x = MOpt.allstats(chain,i)
+		x = allstats(chain,i)
 
-		@fact isa(x,MOpt.DataFrame) => true
+		@fact isa(x,DataFrame) => true
 		@fact nrow(x) => 1
 
 
@@ -74,29 +73,29 @@ facts("testing Chain/MChain methods") do
 
 	context("testing getindex(chain,i::Range)") do
 
-		mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
+		mprob = MProb(p,pb,MOpt.Testobj,moms)
 		v     = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
 		L     = 9	# length of chain
-		chain = MOpt.Chain(mprob,L)
+		chain = Chain(mprob,L)
 
 		i = 3:L
-		x = MOpt.allstats(chain,i)
+		x = allstats(chain,i)
 		
-		@fact isa(x,MOpt.DataFrame) => true
+		@fact isa(x,DataFrame) => true
 		@fact nrow(x) => length(i)
 
 	end
 	
 	context("test appendEval!(chain)") do
 
-		mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
+		mprob = MProb(p,pb,MOpt.Testobj,moms)
 		v = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
 		for (k,va) in v["params"]
 			v["params"][k] = va + 1.1
 		end
 
 		L = 9
-		chain = MOpt.Chain(mprob,L)
+		chain = Chain(mprob,L)
 
 		# set i to 1 to test this:
 		chain.i = 1
@@ -122,14 +121,14 @@ facts("testing Chain/MChain methods") do
 
 	context("test appendEval!(chain) if par is a dataframe") do
 
-		mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
-		v = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
+		mprob = MProb(p,pb,Testobj,moms)
+		v = Testobj(p,moms,["alpha","beta","gamma"])
 		for (k,va) in v["params"]
 			v["params"][k] = va + 1.1
 		end
 
 		L = 9
-		chain = MOpt.Chain(mprob,L)
+		chain = Chain(mprob,L)
 
 		# set i to 1 to test this:
 		chain.i = 1
@@ -142,7 +141,7 @@ facts("testing Chain/MChain methods") do
 			# and set random
 		end
 
-		oldpar = MOpt.parameters(chain,chain.i)
+		oldpar = parameters(chain,chain.i)
 		for i in chain.params_nms
 			oldpar[i] = rand()
 		end
@@ -164,12 +163,12 @@ end
 
 facts("testing collectFields and fillinFields functions") do
 	
-	mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
-	chain = MOpt.Chain(mprob,10)
+	mprob = MProb(p,pb,Testobj,moms)
+	chain = Chain(mprob,10)
 
 	context("collectFields") do
 
-		df= MOpt.parameters(chain,1)
+		df= parameters(chain,1)
 		@fact isa(df,DataFrame) => true
 		@fact df[:a] => [0.0]
 		@fact df[:b] => [0.0]
