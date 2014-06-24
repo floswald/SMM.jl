@@ -1,18 +1,26 @@
 
 # define a Test objective function
-function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
+function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
 	t0 = time()
-	mm = DataFrame(name=collect(keys(mom)),data=map(x -> x[1],values(mom)),model=[x["a"] + x["b"] + i for i=1:length(mom)])
 
-	# get model moments as a dict
-	mdict = {i => mm[findin(mm[:name],[i]),:model][1] for i in collect(keys(mom)) }
+    mm = deepcopy(mom)
+    nm0 = names(mm)
+    DataFrames.insert_single_column!(mm,zeros(nrow(mm)),ncol(mm)+1)
+    names!(mm,[nm0,:model_value])
 
-	# subset to required moments only
-	mm = mm[findin(mm[:name],whichmom),:]
+    for ir in eachrow(mm)
+        ir[:model_value] = ir[:data_value] + 2.2
+    end
+
+	# output all moments
+    mout = transpose(mm[[:moment,:model_value]],1)
+
+	# subset mm to required moments to compute function value
+	mm = mm[findin(mm[:moment],whichmom),:]
 
 	# compute distance
-	v = sum((mm[:data] - mm[:model]).^2)
+	v = sum((mm[:data_value] - mm[:model_value]).^2)
 
 	# status
 	status = 1
@@ -21,12 +29,33 @@ function Testobj(x::Dict,mom::Dict,whichmom::Array{ASCIIString,1})
 	t0 = time() - t0
 
 	# return a dict
-	ret = ["value" => v, "params" => x, "time" => t0, "status" => status, "moments" => mdict]
+	ret = ["value" => v, "params" => deepcopy(x), "time" => t0, "status" => status, "moments" => mout]
 	return ret
 
 end
 
  # ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
+
+
+# transpose a 2-column dataframe to a one-row dataframe, so that 
+# col x become new column names
+function transpose(x::DataFrame,newNames::Int)
+    if ncol(x) != 2
+        throw(ArgumentError("x must have 2 columns"))
+    end
+    if !in(newNames,[1,2])
+        throw(ArgumentError("newNames indexes col with new names: either 1 or 2"))
+    end
+    newrows = setdiff([1,2],newNames)[1]
+    # make new column names out of col index newNames
+    z = DataFrame(Float64,1,nrow(x))
+    names!(z,Symbol[y for y in x[:,newNames]])
+    for i in 1:nrow(x)
+        z[1,i] = x[i,newrows][1]
+    end
+    return z
+end
+
 
 
 # taking a dictionary of vectors, returns

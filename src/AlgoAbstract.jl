@@ -28,7 +28,7 @@ end
 function evaluateObjective(algo::MAlgo,which::Int)
 
 	# eval chain i with param p
-	x = eval(Expr(:call,algo.m.objfunc,algo.candidate_param[which],algo.m.moments,algo.m.moments_subset))
+	x = eval(Expr(:call,algo.m.objfunc,algo.current_param[which],algo.m.moments,algo.m.moments_subset))
 	return x
 
 end

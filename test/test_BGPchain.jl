@@ -1,24 +1,22 @@
 module TestBGPChain
 
-using FactCheck, MOpt
+using FactCheck, DataFrames
 
+include("../src/MOpt.jl")
 
 
 # TESTING Chains
 # ==============
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = [
-	"alpha" => [ 0.8 , 0.02 ],
-	"beta"  => [ 0.8 , 0.02 ],
-	"gamma" => [ 0.8 , 0.02 ]
-]
+moms = MOpt.DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+
 
 
 
 facts("Testing BGPChain constructor") do
 	
-	mprob = MProb(p,pb,Testobj,moms)
+	mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
 	L = 9
 	temp = 100.0
 	shock = 12.0
@@ -26,7 +24,7 @@ facts("Testing BGPChain constructor") do
 	dist_tol = 0.001
 	jumpprob = 0.05
 	id = 180
-	chain = BGPChain(id,mprob,L,temp,shock,accept_tol,dist_tol,jumpprob)
+	chain = MOpt.BGPChain(id,mprob,L,temp,shock,accept_tol,dist_tol,jumpprob)
 
 	@fact chain.i => 0 
 	@fact chain.id => id

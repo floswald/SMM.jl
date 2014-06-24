@@ -52,7 +52,7 @@ type MAlgoBGP <: MAlgo
   opts            :: Dict	# list of options
   i               :: Int 	# iteration
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
-  candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
+  # candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
 
   function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
@@ -72,11 +72,11 @@ type MAlgoBGP <: MAlgo
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
   	# candidate param values
-  	cpar0 = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
+  	# cpar0 = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
   	# jump register
   	
 
-    return new(m,opts,0,cpar,cpar0,chains)
+    return new(m,opts,0,cpar,chains)
   end
 end
 
@@ -159,16 +159,19 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		if algo.i == 1
 			# accept all
 			ACC = true
-	  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch])
+	  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch])
 	  		status = 1
 	  		prob = 1.0
 			xnew = v[ch]["value"][1]
 			xold = v[ch]["value"][1]
 			algo.MChains[ch].infos[algo.i,:accept_rate] = 0.1
 		    # append values to MChains at index ch
-		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
+		    # appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
+			appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
+			pold = parameters(algo.MChains[ch],algo.i-1)
+			mold = moments(algo.MChains[ch],algo.i-1)
 			xnew = v[ch]["value"][1]
 			prob = minimum([1.0, exp(algo.MChains[ch].tempering *(xold - xnew))])
 			prob = prob * (xnew < algo.MChains[ch].accept_tol)
@@ -176,24 +179,23 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 				prob = 0.0
 				status = -1
 				ACC = false
+				appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob)
 			elseif !isfinite(xold)
 				prob = 1.0
 				status = -2
 				ACC = false
+				appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
 			else 
+				status = 1
 				if prob > rand()
 					ACC = true
-			  		algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
+			  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
+					appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
 				else
 					ACC = false
-					v[ch]["value"]   = xold # reset value in output of obj to previous value
-					v[ch]["params"]  = deepcopy(algo.current_param[ch])	# reset param in output of obj to previous value
-					v[ch]["moments"] = df2dict(moments(algo.MChains[ch],algo.i-1))	# reset moments in output of obj to previous value
+					appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob)
 				end
-				status = 1
 			end 
-			# append values to MChains at index ch
-		    appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
 		    # update sampling variances
 		    algo.MChains[ch].infos[algo.i,:accept_rate]   = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
 		    algo.MChains[ch].shock_sd                     = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
@@ -347,7 +349,7 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 	fitMirror!(newpar,algo.m.params_to_sample_df)
 
 	# set as dict on algo.current_param
-	fillinFields!(algo.candidate_param[ch],newpar)
+	fillinFields!(algo.current_param[ch],newpar)
 end
 
 

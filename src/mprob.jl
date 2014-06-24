@@ -10,7 +10,8 @@ type MProb
   params_to_sample_df  :: DataFrame
   p2sample_sym     :: Array{Symbol,1} # column names of params to sample for dataframes
   objfunc          :: Function # objective function
-  moments          :: Dict  # a dictionary of moments to track
+  # moments          :: Dict  # a dictionary of moments to track
+  moments          :: DataFrame # a dictionary of moments to track
   moments_subset   :: Array{ASCIIString}  # an array of moment names to subset objective funciton
 
   # constructor
@@ -18,13 +19,10 @@ type MProb
     initial_value,
     params_to_sample,
     objfunc,moments; 
-    moments_subset=collect(keys(moments)))
-
-    # assert that moments_subset is a subset of moment keys
-    @assert issubset(moments_subset, keys(moments))
+    moments_subset=moments[:moment])
 
     # assert that moments has two entries for each moment: value and sd
-    @assert all(map(x -> length(x),values(moments)) .== 2)
+    # @assert all(map(x -> length(x),values(moments)) .== 2)
 
     # assert that params_to_sample are subset of initial_value
     @assert issubset(keys(initial_value),keys(params_to_sample))
@@ -50,7 +48,7 @@ function ps_names(mprob::MProb)
 end
 
 function ms_names(mprob::MProb)
-  return(keys(mprob.moments))
+  return(mprob.moments[:moment])
 end
 
 
@@ -58,14 +56,13 @@ end
 
 function show(io::IO,m::MProb)
 
-  mdf = DataFrame(moment=collect(keys(m.moments)),value=map(x -> x[1], values(m.moments)),sd=map(x -> x[2], values(m.moments)))
 
   print(io,"MProb Object:\n")
   print(io,"==============\n\n")
   print(io,"Parameters to sample:\n")
   print(io,m.params_to_sample_df)
   print(io,"\nMoment Table:\n")
-  print(io,mdf)
+  print(io,m.moments)
   print(io,"Moment to use:\n")
   print(io,m.moments_subset)
   print(io,"\n")
