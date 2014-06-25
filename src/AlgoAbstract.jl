@@ -63,7 +63,7 @@ function runMopt!( algo::MAlgo )
 	# save
 end
 
-function hist(x,nb=30) 
+function histogram(x,nb::Int) 
   n, bins = hist(x,nb)
   nvec = [n]
   bar(nvec[1:end-1], bins, width = nvec[2] - nvec[1])
@@ -121,7 +121,7 @@ function plot(algo::MAlgo, what)
 			subplot(nrows,ncols,pid)
 			# println(sdf[:iter])
 			# plot(sdf[:iter],sdf[par])
-			hist(dd[par])
+			histogram(dd[par],30)
 			title(string(par))
 			xlabel("parameter value")
   		end

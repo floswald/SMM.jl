@@ -6,7 +6,7 @@ home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
 include("src/MOpt.jl")
-
+	
 # to develop with tests: run this
 
 include("test/test_MProb.jl")

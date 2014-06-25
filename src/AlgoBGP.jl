@@ -207,7 +207,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		end
 	end
 	if mod(algo.i,100) == 0
-		println(infos(algo.MChains,algo.i))
+		println("iter = $(algo.i)")
 	end
 end
 
