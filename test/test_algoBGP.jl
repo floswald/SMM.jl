@@ -526,16 +526,20 @@ facts("testing saving of algo") do
 
 	MA = MAlgoBGP(mprob,opts)
 
-	runMopt!(MA)
-	save(MA,joinpath(MA["path"],"MA.h5"))
+	tname = tempname()
 
-	ff5 = MOpt.h5open(joinpath(opts["path"],"MA.h5"),"r")
+
+	runMopt!(MA)
+	save(MA,tname)
+
+	ff5 = MOpt.h5open(tname,"r")
 	MAopts = read(ff5,"algo/opts/keys")
 	@fact MAopts == collect(keys(opts)) => true
 
 	ich = rand(1:MA["N"]) 	# pick a random chain
 	chain_a = read(ff5,"chain/$ich/parameters/a")
-	@fact convert(Array{Float64,1},parameters(MA.MChains[1])[:a]) => roughly( chain_a)
+	# println(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a)
+	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
 
 end
 	
