@@ -6,6 +6,7 @@ home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
 include("src/MOpt.jl")
+using MOpt
 	
 # to develop with tests: run this
 
@@ -25,20 +26,22 @@ include("src/examples.jl")
 MOpt.save(MA,"algo.h5")
 
 
-p    = ["a" => 3.1 , "b" => 4.9]
-pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+p    = ["a" => 0.9 , "b" => -0.9]
+pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],
 # 	"gamma" => [ 0.8 , 0.02 ]
 # ]
 
-MOpt.Testobj(p,moms,["alpha","beta","gamma"])
-mprob = MOpt.MProb(p,pb,MOpt.Testobj,moms)
-# opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>1.0,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_jumptol"=>0.1,"max_jumptol"=>1.0] 
-# MA = Mopt.MAlgoBGP(mprob,opts)
-# Mopt.runMopt(MA)
+mprob = MOpt.MProb(p,pb,MOpt.objfunc_norm2,moms)
+
+x = MOpt.slices(mprob,30)
+
+# usign Gadfly
+# MOpt.plotSlices(mprob,x,joinpath(pwd(),"slices.pdf"))
+MOpt.plotSlices(mprob,x)
 
 
 

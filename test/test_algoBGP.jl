@@ -263,7 +263,7 @@ facts("testing localMovesMCMC") do
 		MA = MAlgoBGP(mprob,opts)
 
 		# get a return value
-		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
+		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
 
 		# set iteration on chains and algo = 1
 		MA.i = 1
@@ -320,7 +320,7 @@ facts("testing localMovesMCMC") do
 		# first iteration
 		MA.i = 1
 		MOpt.updateIterChain!(MA.MChains)
-		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
+		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
 		MOpt.localMovesMCMC!(MA,v)
 
 		# second iteration
@@ -337,7 +337,7 @@ facts("testing localMovesMCMC") do
 		end
 
 		# get a return value
-		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
+		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
 
 		v0 = deepcopy(v)
 		for i in 1:length(v) 
@@ -402,7 +402,7 @@ facts("testing exchangeMoves") do
 		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
 		MOpt.updateIterChain!(MA.MChains)
-		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
+		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
 		for ch in 1:MA["N"] MOpt.appendEval!(MA.MChains[ch],v[ch]["value"],v[ch]["params"],v[ch]["moments"],true,1,rand()) end
 
 		MA.i = 2
@@ -443,7 +443,7 @@ facts("testing exchangeMoves") do
 		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
 		MOpt.updateIterChain!(MA.MChains)
-		v = map( x -> MOpt.evaluateObjective(MA,x), 1:MA["N"])
+		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
 		for ch in 1:MA["N"] MOpt.appendEval!(MA.MChains[ch],v[ch]["value"],v[ch]["params"],v[ch]["moments"],false,1,1.0) end
 
 		MA.i = 2
@@ -482,7 +482,7 @@ facts("testing MAlgo methods") do
 		MA = MAlgoBGP(mprob,opts)
 
 		which_chain = 1
-		x = MOpt.evaluateObjective(MA,which_chain)
+		x = MOpt.evaluateObjective(MA.m,MA.current_param[which_chain])
 
 		@fact haskey(x,"value") => true
 		@fact x["params"] => p
@@ -491,13 +491,54 @@ facts("testing MAlgo methods") do
 		# change p on MA:
 		newp = ["a" => 103.1 , "b" => -2.2]
 		MA.current_param[which_chain] = newp
-		x = MOpt.evaluateObjective(MA,1)
+		x = MOpt.evaluateObjective(MA.m,newp)
+		# x = MOpt.evaluateObjective(MA,1)
 		@fact x["params"] => newp
 	end
 
 
 	
 end
+
+facts("testing saving of algo") do
+
+	p    = ["a" => 0.9 , "b" => -0.9]
+	pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+	moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+
+	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
+
+	opts =[
+		"N"=>3,
+		"mode"=>"serial",
+		"maxiter"=> 100,
+		"path"=> pwd(),
+		"maxtemp"=>100,
+		"min_shock_sd"=>0.1,
+		"max_shock_sd"=>1,
+		"past_iterations"=>30,
+		"min_accept_tol"=>100,
+		"max_accept_tol"=>100,
+		"min_disttol"=>0.1,
+		"max_disttol"=>0.1,
+		"min_jump_prob"=>0.05,
+		"max_jump_prob"=>0.2] 
+
+	MA = MAlgoBGP(mprob,opts)
+
+	runMopt!(MA)
+	save(MA,joinpath(MA["path"],"MA.h5"))
+
+	ff5 = MOpt.h5open(joinpath(opts["path"],"MA.h5"),"r")
+	MAopts = read(ff5,"algo/opts/keys")
+	@fact MAopts == collect(keys(opts)) => true
+
+	ich = rand(1:MA["N"]) 	# pick a random chain
+	chain_a = read(ff5,"chain/$ich/parameters/a")
+	@fact convert(Array{Float64,1},parameters(MA.MChains[1])[:a]) => roughly( chain_a)
+
+end
+	
 
 
 

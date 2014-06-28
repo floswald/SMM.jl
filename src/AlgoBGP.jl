@@ -23,6 +23,7 @@ type BGPChain <: AbstractChain
 
   params_nms ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
   moments_nms::Array{Symbol,1}	# names of moments
+  params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
 
   # TODO need either of those not both
   # the paper uses tempering to set up the kernel,
@@ -34,14 +35,15 @@ type BGPChain <: AbstractChain
     infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),ratio_old_new=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
     parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
     moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
-    par_nms = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
-    mom_nms = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
+    par_nms   = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
+    par2s_nms = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
+    mom_nms   = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
     names!(parameters,[:chain_id,:iter, par_nms])
     names!(moments   ,[:chain_id,:iter, mom_nms])
     # infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
     # parameters = { x => zeros(L) for x in ps_names(MProb) }
     # moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
-    return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,temp,shock)
+    return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
   end
 end
 
@@ -107,8 +109,6 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# else update iteration count on all chains
 		updateIterChain!(algo.MChains)
 
-
-	
 		@assert algo.i == algo.MChains[1].i
 
 		# New Candidates
@@ -123,9 +123,9 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# evaluate objective on all chains
 		# --------------------------------
 		if algo["mode"] == "serial"
-			v = map( x -> evaluateObjective(algo,x), 1:algo["N"])
+			v = map( x -> evaluateObjective(algo.m,x), algo.current_param)
 		else
-			v = pmap( x -> evaluateObjective(algo,x), 1:algo["N"])
+			v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
 		end
 
 		# notice that at this point, v[chain_id]["param"] is the candidate param vector
@@ -156,6 +156,7 @@ end
 # but accepts lower function values with lower proability
 function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 	for ch in 1:algo["N"]
+		xold = -99.0
 		if algo.i == 1
 			# accept all
 			ACC = true
@@ -170,7 +171,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
-			pold = parameters(algo.MChains[ch],algo.i-1)
+			pold = parameters(algo.MChains[ch],algo.i-1)	# all=false: only get p2sample here!
 			mold = moments(algo.MChains[ch],algo.i-1)
 			xnew = v[ch]["value"][1]
 			prob = minimum([1.0, exp(algo.MChains[ch].tempering *(xold - xnew))])
@@ -251,12 +252,12 @@ end
 function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 
 	# pars, moms and value from 1
-	p1 = parameters(algo.MChains[pair[1]],i)
+	p1 = parameters(algo.MChains[pair[1]],i,true) 	# true: get entire row
 	m1 = moments(algo.MChains[pair[1]],i)
 	v1 = evals(algo.MChains[pair[1]],i)
 
 	# same for 2
-	p2 = parameters(algo.MChains[pair[2]],i)
+	p2 = parameters(algo.MChains[pair[2]],i,true) 	# true: get entire row
 	m2 = moments(algo.MChains[pair[2]],i)
 	v2 = evals(algo.MChains[pair[2]],i)
 
@@ -353,20 +354,36 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 end
 
 
-# save algo to file
+# save algo chains component-wise to HDF5 file
 function save(algo::MAlgoBGP, filename)
 
   # step 1, create the file if it does not exist
   ff5 = h5open(filename, "w")
 
-  # saving the chains
-  for cc in 1:algo["N"]
-    saveToHDF5(algo.MChains[cc], ff5, "chain/$cc")
-  end
+  	# TODO find a way to add entire objects
+  		# add global algo info: opts
+        write(ff5,"algo/opts/keys",convert(Array{ASCIIString,1},collect(keys(algo.opts))))
+        # write(ff5,"algo/opts/values",collect(values(algo.opts)))
+
+	  # saving the chains
+	  for cc in 1:algo["N"]
+	    saveChainToHDF5(algo.MChains[cc], ff5, "chain/$cc")
+	  end
 
   close(ff5)
 end
 
+# # save algo entirely to jdl file
+# function saveJLD(algo::MAlgoBGP,filename::ASCIIString)
+# 	file = jldopen(filename,"w") 
+# 	addrequire(file, "MOpt")
+# 	@write file algo
+# 	close(file)
+# end
+
+# function saveAlgoToHDF5(algo:MAlgoBGP,ff5::::HDF5File)
+#             HDF5.write(ff5,joinpath(path,string(nn)),array(dd[:nn]))
+#             HDF5.write(ff,"algo/opts",algo.opts)
 
 
 

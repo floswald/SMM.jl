@@ -37,7 +37,6 @@ end
  # ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
 
 
-
 function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
     sigma = reshape([1.0, 0.0,0.0,1.0],2,2)
@@ -52,7 +51,7 @@ function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
     # simulate model moments 
     moments = mean(rand(MVN,ns),2)
-
+        
     # value = data - model
     value = mean((muD - moments).^2)
 
@@ -72,8 +71,12 @@ function banana(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
     value = mean((data .- model).^2)
 
+    momout = DataFrame(alpha = model)
+
+
+
     # we just want to find the lowest value - no moments involved.
-    ret = ["value" => value, "params" => x, "time" => 1.0, "status" => 1, "moments" => mom]
+    ret = ["value" => value, "params" => x, "time" => 1.0, "status" => 1, "moments" => momout]
     return ret
 end
 
@@ -143,9 +146,9 @@ function fillinFields!(dict::Dict,df::DataFrame)
     if nrow(df)!=1
         error("can fill in only a single dataframe row")
     end
-    dk = collect(keys(dict))
+    dk = names(df)
     for ik in dk
-        dict[ik] = df[symbol(ik)][1]
+        dict[string(ik)] = df[ik][1]
     end
 
 end

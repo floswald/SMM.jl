@@ -16,27 +16,44 @@ type Chain <: AbstractChain
   parameters ::DataFrame  
   moments    ::DataFrame 
   params_nms ::Array{Symbol,1}  # DataFrame names of parameters (i.e. exclusive of "id" or "iter", etc)
+  params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
   moments_nms::Array{Symbol,1}  # DataFrame names of moments
 
   function Chain(MProb,L)
     # infos      = DataFrame(iter=0, evals = 0.0, accept = true, status = 0, exhanged_with=0, prob=0.0)
     infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L))
     par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
+    par2s_nms = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
     mom_nms = Symbol[ symbol(x) for x in ms_names(MProb) ]
     parameters = convert(DataFrame,zeros(L,length(par_nms)+1))
     moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
     names!(parameters,[:iter, par_nms])
     names!(moments   ,[:iter, mom_nms])
-    return new(0,infos,parameters,moments,par_nms,mom_nms)
+    return new(0,infos,parameters,moments,par_nms,par2s_nms,mom_nms)
   end
 end
 
 # methods for a single chain
 # ==========================
 
-parameters(c::AbstractChain, i::UnitRange{Int}) = c.parameters[i,:]
-parameters(c::AbstractChain, i::Int)            = parameters(c, i:i)
-parameters(c::AbstractChain)                    = c.parameters
+function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}),all=false)
+    if all
+        c.parameters[i,:]
+    else
+        c.parameters[i,c.params2s_nms]
+    end
+end
+function parameters(c::AbstractChain;all=false)
+    if all
+        c.parameters
+    else
+        c.parameters[:,c.params2s_nms]
+    end
+end
+
+# FIXME
+# could do the same for moments? i.e. only return MProb.moments_subset?
+
 moments(c::AbstractChain)                       = c.moments[i,:]
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
 moments(c::AbstractChain, i::Int)               = moments(c, i:i)
@@ -70,6 +87,7 @@ function appendEval!(chain::AbstractChain, val::Float64, par::Dict, mom::DataFra
   return nothing
 end
 
+# same for 
 function appendEval!(chain::AbstractChain, val::Float64, par::DataFrame, mom::DataFrame, ACC::Bool, status::Int, prob::Float64)
     # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
     chain.infos[chain.i,:evals] = val
@@ -80,7 +98,7 @@ function appendEval!(chain::AbstractChain, val::Float64, par::DataFrame, mom::Da
     # for im in chain.moments_nms
     #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
     # end
-    chain.parameters[chain.i,chain.params_nms] = par[chain.params_nms]
+    chain.parameters[chain.i,names(par)] = par  # just exchange the cols in par
     # for ip in chain.params_nms
     #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
     # end
@@ -94,27 +112,24 @@ end
 # no method for parameters(BGPChain)
 #
 # return an rbind of params from all chains
-function parameters(MC::Array,i::UnitRange{Int})
+function parameters(MC::Array,i::Union(Integer, UnitRange{Int});allp=false)
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
-    r = parameters(MC[1],i) 
+    r = parameters(MC[1],i,allp) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,parameters(MC[ix],i))
+            r = rbind(r,parameters(MC[ix],i,allp))
         end
     end
     return r
 end
 
-function parameters(MC::Array,i::Int)
-    parameters(MC,i:i)
-end
-function parameters(MC::Array)
-    parameters(MC,1:MC[1].i)
+function parameters(MC::Array,all::Bool)
+    parameters(MC,1:MC[1].i,allp=all)
 end
 
-function moments(MC::Array,i::UnitRange{Int})
+function moments(MC::Array,i::Union(Integer, UnitRange{Int}))
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
@@ -187,16 +202,22 @@ function updateIterChain!(MC::Array)
     end 
 end
 
+
 # saves a chain to a HF5 file at a given path
-function saveToHDF5(chain::AbstractChain, ff5::HDF5File, path::ASCIIString)
-    simpleDataFrameSave(chain.parameters,ff5, "$path/parameters")
-    simpleDataFrameSave(chain.infos,ff5, "$path/infos")
-    simpleDataFrameSave(chain.moments,ff5, "$path/moments")
+# will not work standalone, since must open the file at some point
+function saveChainToHDF5(chain::AbstractChain, ff5::HDF5File,path::ASCIIString)
+    simpleDataFrameSave(chain.parameters,ff5,joinpath(path,"parameters"))
+    simpleDataFrameSave(chain.infos,ff5, joinpath(path,"infos"))
+    simpleDataFrameSave(chain.moments,ff5, joinpath(path,"moments"))
 end
 
-function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path)
+function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::ASCIIString)
     for nn in names(dd)
-        write(ff5,"$path/$(string(nn))",convert(Array{Float64,1},dd[nn]))
+        if eltype(dd[nn]) <: Number
+            write(ff5,joinpath(path,string(nn)),convert(Array{Float64,1},dd[nn])) 
+        elseif eltype(dd[nn]) <: String
+            write(ff5,joinpath(path,string(nn)),convert(Array{ASCIIString,1},dd[nn])) 
+        end
     end
 end
 

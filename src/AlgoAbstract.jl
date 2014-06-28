@@ -22,24 +22,12 @@ end
 
 
 
-# evalute objective function
-# with param vector number i
-# always evaluates the field "candidate_param"
-function evaluateObjective(algo::MAlgo,which::Int)
-
-	# eval chain i with param p
-	x = eval(Expr(:call,algo.m.objfunc,algo.current_param[which],algo.m.moments,algo.m.moments_subset))
-	return x
-
-end
 
 function runMopt!( algo::MAlgo )
 
 	# tasks
 	# =====
-
 	# load data from file if set in algo.opts
-
 	# setup cluster if required
 
 	# do iteration
@@ -47,21 +35,23 @@ function runMopt!( algo::MAlgo )
 
 		algo.i = i
 
-		if mod(algo.i,100) == 0
-			println("algo.i=$(algo.i)")
-		end
-
 		computeNextIteration!( algo )
 
 		# save at certain frequency
+		# TODO look into HDF5 chunk saving
 
-		# reporting
-
-
+		if mod(algo.i,100) == 0
+			println("algo.i=$(algo.i)")
+		end
 	end
-
-	# save
 end
+
+
+
+
+
+
+
 
 function histogram(x,nb::Int) 
   n, bins = hist(x,nb)
@@ -85,23 +75,15 @@ function plot(algo::MAlgo, what)
   			I = sdf[:exchanged_with].>0
   			PyPlot.plot( sdf[I,:iter], sdf[I,:shock_sd],"o")
 		end
+		suptitle("Acceptance Rates by Chain")
 	end
 
 	if (what == "params_time")
-		dd = sort!(parameters(algo.MChains))
+		dd = sort!(parameters(algo.MChains,true)[[:chain_id,:iter,algo.m.p2sample_sym]])
 		npars = length(algo.m.p2sample_sym)
 		nrows = floor(sqrt(npars))
 		ncols = ceil(npars/nrows)
 		pid = 0
-		# for par in algo.m.p2sample_sym
-		# 	pid += 1
-		# 	subplot(nrows,ncols,pid)
-		# 	for ic in 1:algo["N"]
-		# 		# println(sdf[:iter])
-  # 				# plot(sdf[:iter],sdf[par])
-  # 				plot(algo.MChains[ic].parameters[:iter],algo.MChains[ic].parameters[par])
-  # 			end
-		# end
 		for par in algo.m.p2sample_sym
 			pid += 1
 			subplot(nrows,ncols,pid)
@@ -109,9 +91,10 @@ function plot(algo::MAlgo, what)
   				plot(sdf[:iter],sdf[par])
   			end
 		end
+		suptitle("Parameter values over time")
 	end
 	if (what == "params_dist")
-		dd = parameters(algo.MChains)
+		dd = parameters(algo.MChains,true)[[:chain_id,:iter,algo.m.p2sample_sym]]
 		npars = length(algo.m.p2sample_sym)
 		nrows = floor(sqrt(npars))
 		ncols = ceil(npars/nrows)
@@ -125,6 +108,7 @@ function plot(algo::MAlgo, what)
 			title(string(par))
 			xlabel("parameter value")
   		end
+		suptitle("Posterior Distribution of Parameters")
 	end
 
 end
