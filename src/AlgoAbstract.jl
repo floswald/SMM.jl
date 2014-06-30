@@ -30,6 +30,8 @@ function runMopt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
+	info("Starting estimation loop.")
+
 	# do iteration
 	for i in 1:algo["maxiter"]
 
@@ -40,8 +42,18 @@ function runMopt!( algo::MAlgo )
 		# save at certain frequency
 		# TODO look into HDF5 chunk saving
 
-		if mod(algo.i,100) == 0
-			println("algo.i=$(algo.i)")
+		if haskey(algo.opts,"print_level")
+			if algo["print_level"] > 2
+				println(infos(algo.MChains,algo.i))
+			elseif algo["print_level"] > 1
+				if mod(algo.i,10) == 0
+					println(infos(algo.MChains,algo.i))
+				end
+			elseif algo["print_level"] > 0
+				if mod(algo.i,100) == 0
+					println(infos(algo.MChains,algo.i))
+				end
+			end
 		end
 	end
 end

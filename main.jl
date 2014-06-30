@@ -4,9 +4,11 @@
 
 home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
+include("src/examples.jl")
+
+
 
 include("src/MOpt.jl")
-using MOpt
 	
 # to develop with tests: run this
 
@@ -20,8 +22,6 @@ include("test/runtests.jl")
 # to develop in main: run this
 
 # runnign examples:
-banan=false
-include("src/examples.jl")
 	
 MOpt.save(MA,"algo.h5")
 

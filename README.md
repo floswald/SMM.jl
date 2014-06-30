@@ -9,95 +9,82 @@ This package implements several MCMC algorithms to optimize a non-differentiable
 
 For an R implementation which is the basis of this package, see [https://github.com/tlamadon/mopt](https://github.com/tlamadon/mopt)
 
-## Example Useage
+## Detailed Documentation
+
+[http://moptjl.readthedocs.org/en/latest/](Documentation available on readthedocs.)
+
+
+## Example Useage of the BGP Algorithm
 
 ```julia
 using Mopt
 
-# get a parameter vector
-p = ["a" => 3.1 , "b" => 4.9]
-# define params to use with bounds
-pb= [ "a" => [0,1] , "b" => [0,1] ]
+# data are generated from a bivariate normal
+# with mu = [a,b] = [0,0]
+# aim: 
+# 1) sample [a',b'] from a space [-1,1] x [-1,1] and
+# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
+#    and accepting/rejecting [a',b'] according to BGP
+# 3) S([a,b]) returns a summary of features of the data
 
-# get some moments
-# first entry is moment estimate, second is standard deviation
-moms = [
-	"alpha" => [ 0.8 , 0.02 ],
-	"beta"  => [ 0.8 , 0.02 ],
-	"gamma" => [ 0.8 , 0.02 ]
-]
+# initial value
+p    = ["a" => 0.9 , "b" => -0.9]
+# param bounds
+pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+# data moments
+moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 
-# a subset of moments to match
-submoms = ["alpha", "beta"]
+# define a minization problem
+mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 
-# call objective
-x = Mopt.Testobj(p,moms,submoms)
+opts =[
+	"N"               => 6,							# number of MCMC chains
+	"mode"            => "serial",					# mode: serial or mpi
+	"maxiter"         => 500,						# max number of iterations
+	"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
+	"print_level"     => 1,							# increasing verbosity level of output
+	"maxtemp"         => 100,						# tempering of hottest chain
+	"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
+	"max_shock_sd"    => 1,							# initial sd of shock on hottest chain
+	"past_iterations" => 30,						# num of periods used to compute Cov(p)
+	"min_accept_tol"  => 100,						# ABC-MCMC cutoff for rejecting small improvements
+	"max_accept_tol"  => 100,						# ABC-MCMC cutoff for rejecting small improvements
+	"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
+	"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
+	"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
+	"max_jump_prob"   => 0.2]						# prob of jumps from hottest chain
 
-# Define an Moment Optimization Problem
-mprob = Mopt.MProb(p,pb,Mopt.Testobj,moms;moments_subset=submoms)
+# setup the BGP algorithm
+MA = MAlgoBGP(mprob,opts)
 
-# show
-mprob
+# run it
+runMopt!(MA)
 
-# step 2: choose an algorithm
-# ----------------------
-algo = Mopt.MAlgoRandom(mprob,opts=["mode"=>"serial","maxiter"=>100])
+# plot outputs
+plot(MA,"acc")
+```
+[![acceptance rates](doc/img/acceptance.png)]()
 
-# step 3: run estimation
-# ----------------------
-runMopt(algo)
 
+```julia
+plot(MA,"params_time")
 ```
 
-## API
+[![acceptance rates](doc/img/pars_time.png)]()
 
-* there are three custom types: `MProb`, `MAlgo` and `MChain`
+```julia
+plot(MA,"params_dist")
+```
 
-### `MProb`
+[![acceptance rates](doc/img/pars_dist.png)]()
 
-#### Objective Function
-
-You supply an objective function to the constructor of `MProb` must be callable as `objfunc(p,moments,whichmom,...)`, where the first three arguments are compulsory and are explained below.
-
-you need an objective function that has an input/output structure as follows:
-
-Input: 
-
-1. parameter vector `p`: parameterized as a `Dict`. Thought about custom types (hard to implement because I'd have to guess what exactly that type looks like), and simple (unnamed) vectors. Took `Dict` because closest to `R list()`
-2. data moments. 
-3. `whichmom`: `Array{ASCIIString}` of moment names to which you want the objective function subset to in the current estimation
-
-Output: 
-1. function value (model deviation from data moments - metric up to the user): `Float64`
-2. custom model info (user specific. could be a `Dict`)
-
-#### Initiating the `MProb` Object
-
-set up a `MProb` object by calling the constructor. there is a list of **compulsory arguments**, which must be supplied in the following **order**: 
-
-1. `p`: the initial value of the full parameter vector.
-2. `params_to_sample`: a `Dict{ASCIIString,Array{Float,1}}` of the kind `["a" => [0,1]]`, where `a` is the name of the parameter and `[0,1]]` are lower and upper bounds. (all  parameters not in `params_to_sample` remain fixed). 
-3. `objfunc`: type `Function` representing your objective function. Internally we evaluate `Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use)`. 
-4. `moments`: a `Dict{ASCIIString,Array{Float,1}}` ["alpha" => [1.192,0.01]]`, where `alpha` is the name of the moment and `[1.192,0.01]]` are value and standard deviation.
-
-Then there is a list of **optional arguments** which have to be supplied by *keyword*. If you don't supply them, we'll take a default value:
-
-* `moments_to_use`: a vector of moment names you want to use in the current estimatiom. This subsets `moments`. Default=all
+```julia
+# save results
+save(MA,MA["savefile"])
+```
 
 
-### MAlgo
 
-this type implements most of the computation. There is a lot of flexibility to define new algorithms. 
-
-options:
-
-* `shock_var`: variance of shocks. Default=1 
-* `np_shock`: new parameter shock. Default=1
-* `save_freq`: after how many iterations to save to disk. Default=25
-* `N`: Number of chains. If `mode=="mpi"`, choose `N==numberOfNodes`. Default=3
-* `n_untempered`: number of untempered chains. Default =1
-* `mode`: "serial" or "mpi". Default="serial"
-* `path`: a string to where to save  
 
 
 

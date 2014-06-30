@@ -32,7 +32,7 @@ type BGPChain <: AbstractChain
   shock_sd   ::Float64 # sd of shock to 
 
   function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
-    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),ratio_old_new=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
+    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
     parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
     moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
     par_nms   = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
@@ -73,10 +73,18 @@ type MAlgoBGP <: MAlgo
   	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
-  	# candidate param values
-  	# cpar0 = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
-  	# jump register
-  	
+ 
+ 	if opts["mode"] == "mpi"
+ 		# check if cluster is running
+ 		working = workers()
+ 		if length(working) > 0
+ 			println("we have got $(length(working)) workers:")
+ 			println(working)
+ 			require(opts["source_on_nodes"])
+ 		else
+ 			throw(ArgumentError("something is wrong with the mpi cluster: no workers"))
+ 		end
+ 	end
 
     return new(m,opts,0,cpar,chains)
   end
@@ -201,7 +209,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 		    algo.MChains[ch].infos[algo.i,:accept_rate]   = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
 		    algo.MChains[ch].shock_sd                     = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
 		    algo.MChains[ch].infos[algo.i,:shock_sd]      = algo.MChains[ch].shock_sd
-		    algo.MChains[ch].infos[algo.i,:ratio_old_new] = xold / xnew
+		    algo.MChains[ch].infos[algo.i,:perc_new_old] = (xnew - xold) / abs(xold)
 		end
 		if algo.i>1 && algo["N"] > 1 
 			exchangeMoves!(algo,ch,xold)
