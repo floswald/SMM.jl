@@ -17,7 +17,7 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 ## Example Useage of the BGP Algorithm
 
 ```julia
-using Mopt
+using MOpt
 
 # data are generated from a bivariate normal
 # with mu = [a,b] = [0,0]
