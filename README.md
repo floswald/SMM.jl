@@ -5,13 +5,13 @@
 
 [![Build Status](https://travis-ci.org/floswald/MOpt.jl.png?branch=master)](https://travis-ci.org/floswald/MOpt.jl)
 
-This package provides a `Julia` infrastructure for *[http://en.wikipedia.org/wiki/Method_of_simulated_moments](Simulated Method of Moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
+This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
 [![acceptance rates](doc/img/acceptance.png)]()
 
 ## Detailed Documentation
 
-[http://moptjl.readthedocs.org/en/latest/](Documentation available on readthedocs.)
+[Documentation available on readthedocs.](http://moptjl.readthedocs.org/en/latest/)
 
 
 ## Example Useage of the BGP Algorithm
