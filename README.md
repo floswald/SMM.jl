@@ -14,7 +14,7 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 [Documentation available on readthedocs.](http://moptjl.readthedocs.org/en/latest/)
 
 
-## Example Useage of the BGP Algorithm
+## Example Usage of the BGP Algorithm
 
 ```julia
 using MOpt
