@@ -1,22 +1,5 @@
 
 
-# MOpt.jl: Moment Optimization Library for [Julia](http://julialang.org)
-
-
-[![Build Status](https://travis-ci.org/floswald/MOpt.jl.png?branch=master)](https://travis-ci.org/floswald/MOpt.jl)
-
-This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
-
-[![acceptance rates](doc/img/acceptance.png)]()
-
-## Detailed Documentation
-
-[Documentation available on readthedocs.](http://moptjl.readthedocs.org/en/latest/)
-
-
-## Example Usage of the BGP Algorithm
-
-```julia
 using MOpt
 
 # data are generated from a bivariate normal
@@ -39,9 +22,10 @@ mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 
 opts =[
 	"N"               => 6,							# number of MCMC chains
-	"mode"            => "serial",					# mode: serial or mpi
+	"mode"            => "mpi",						# mode: serial or mpi
 	"maxiter"         => 500,						# max number of iterations
 	"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
+	"source_on_nodes" => joinpath(pwd(),"nodes.jl"),	
 	"print_level"     => 1,							# increasing verbosity level of output
 	"maxtemp"         => 100,						# tempering of hottest chain
 	"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
@@ -61,43 +45,15 @@ MA = MAlgoBGP(mprob,opts)
 runMopt!(MA)
 
 # plot outputs
+MOpt.figure(1)
 plot(MA,"acc")
-# see first plot above
-```
-
-
-```julia
+MOpt.figure(2)
 plot(MA,"params_time")
-```
-
-[![acceptance rates](doc/img/pars_time.png)]()
-
-```julia
+MOpt.figure(3)
 plot(MA,"params_dist")
-```
 
-[![acceptance rates](doc/img/pars_dist.png)]()
-
-```julia
 # save results
 save(MA,MA["savefile"])
-```
-
-## Contributing
-
-We encourage user contributions. Please submit a pull request for any improvements you would like to suggest, or a new algorithm you implemented. 
-
-New algorithms:
-*You can model your algo on the basis of `src/AlgoBGP.jl` - 
-* your algorithm needs a storage system for chains, derived from the default type `Chain` in `src/chains.jl`
-* you need to implement the function `computeNextIteration!( algo )` for your `algo`
-
-
-
-
-
-
-
-
+	
 
 

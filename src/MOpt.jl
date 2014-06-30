@@ -30,8 +30,7 @@ export MProb,
        moments,
        hist,
        runMopt!,
-       save,
-       saveJLD
+       save
 
 
 # load files

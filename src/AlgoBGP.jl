@@ -90,12 +90,45 @@ type MAlgoBGP <: MAlgo
   end
 end
 
-
-function resetCurrentParam2initial(algo::MAlgoBGP)
-	for j in 1:length(algo.current_param)
-		algo.current_param[j] = algo.m.initial_value
-	end
+function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
+    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
+    chain.infos[chain.i,:evals] = val
+    chain.infos[chain.i,:prob] = prob
+    chain.infos[chain.i,:accept] = ACC
+    chain.infos[chain.i,:status] = status
+    chain.infos[chain.i,:eval_time] = time
+    chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
+    # for im in chain.moments_nms
+    #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
+    # end
+    for (k,v) in par
+        chain.parameters[chain.i,symbol(k)] = v
+    end
+    # for ip in chain.params_nms
+    #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
+    # end
+  return nothing
 end
+
+# same for 
+function appendEval!(chain::BGPChain, val::Float64, par::DataFrame, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
+    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
+    chain.infos[chain.i,:evals] = val
+    chain.infos[chain.i,:prob] = prob
+    chain.infos[chain.i,:accept] = ACC
+    chain.infos[chain.i,:status] = status
+    chain.infos[chain.i,:eval_time] = time
+    chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
+    # for im in chain.moments_nms
+    #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
+    # end
+    chain.parameters[chain.i,names(par)] = par  # just exchange the cols in par
+    # for ip in chain.params_nms
+    #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
+    # end
+  return nothing
+end
+
 
 
 
@@ -176,7 +209,7 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 			algo.MChains[ch].infos[algo.i,:accept_rate] = 0.1
 		    # append values to MChains at index ch
 		    # appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
-			appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
+			appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob,v[ch]["time"])
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
 			pold = parameters(algo.MChains[ch],algo.i-1)	# all=false: only get p2sample here!
@@ -188,21 +221,21 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
 				prob = 0.0
 				status = -1
 				ACC = false
-				appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob)
+				appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob,v[ch]["time"])
 			elseif !isfinite(xold)
 				prob = 1.0
 				status = -2
 				ACC = false
-				appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
+				appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob,v[ch]["time"])
 			else 
 				status = 1
 				if prob > rand()
 					ACC = true
 			  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
-					appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob)
+					appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob,v[ch]["time"])
 				else
 					ACC = false
-					appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob)
+					appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob,v[ch]["time"])
 				end
 			end 
 		    # update sampling variances
@@ -242,16 +275,36 @@ function exchangeMoves!(algo::MAlgoBGP,ch::Int,oldval)
 
 end
 
+function findInterval{T<:Number}(x::T,vec::Array{T})
 
+    out = zeros(Int,length(x))
+    vec = unique(vec)
+    sort!(vec)
 
-function findInterval(x,vec::Array)
+    for j in 1:length(x)
+        if x[j] < vec[1]
+            out[1] = 0
+        elseif x[j] > vec[end]
+            out[end] = 0
+        else
+            out[j] = searchsortedfirst(vec,x[j])-1 
+        end
+    end
+    return out
+end
+function findInterval{T<:Number}(x::T,vec::Array{T})
 
 	out = zeros(Int,length(x))
 	sort!(vec)
-	i = 0
 
 	for j in 1:length(x)
-		out[j] = findfirst(vec .> x[j]) - 1
+		if x[j] < vec[1]
+			out[1] = 0
+		elseif x[j] > vec[end]
+			out[end] = 0
+		else
+			out[j] = searchsortedfirst(vec,x[j])-1 
+		end
 	end
 	return out
 end
@@ -363,7 +416,7 @@ end
 
 
 # save algo chains component-wise to HDF5 file
-function save(algo::MAlgoBGP, filename)
+function save(algo::MAlgoBGP, filename::ASCIIString)
 
   # step 1, create the file if it does not exist
   ff5 = h5open(filename, "w")
@@ -380,6 +433,26 @@ function save(algo::MAlgoBGP, filename)
 
   close(ff5)
 end
+
+
+function show(io::IO,MA::MAlgoBGP)
+	print(io,"BGP Algorithm with $(MA["N"]) chains\n")
+	print(io,"====================================\n")
+	print(io,"\n")
+	print(io,"Algorithm\n")
+	print(io,"---------\n")
+	print(io,"Computation done in: $(MA["mode"])\n")
+	print(io,"Current iteration: $(MA.i)\n")
+	print(io,"Number of params to estimate: $(length(MA.m.params2s_nms))\n")
+	print(io,"Number of moments to match: $(length(MA.m.moments_subset))\n")
+	print(io,"Chains\n")
+	print(io,"------\n")
+	print(io,"Tempering range: [$(MA.MChains[1].tempering),$(MA.MChains[end].tempering)]\n")
+	print(io,"Jump probability range: [$(MA.MChains[1].jump_prob),$(MA.MChains[end].jump_prob)]\n")
+end
+
+
+
 
 # # save algo entirely to jdl file
 # function saveJLD(algo::MAlgoBGP,filename::ASCIIString)
