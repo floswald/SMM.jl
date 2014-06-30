@@ -7,7 +7,7 @@
 
 This package implements several MCMC algorithms to optimize a non-differentiable objective function. The main application are **likelihood-free estimators**, which requires evaluating the objective at many regions. In general, this implements *Simulated Method of Moments*. The library is targeted to run MCMC on an SGE cluster, where each node is a chain.
 
-For an R implementation which is the basis of this package, see [https://github.com/tlamadon/mopt](https://github.com/tlamadon/mopt)
+[![acceptance rates](doc/img/acceptance.png)]()
 
 ## Detailed Documentation
 
@@ -62,8 +62,8 @@ runMopt!(MA)
 
 # plot outputs
 plot(MA,"acc")
+# see first plot above
 ```
-[![acceptance rates](doc/img/acceptance.png)]()
 
 
 ```julia
