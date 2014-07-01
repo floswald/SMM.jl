@@ -46,6 +46,11 @@ println("Started julia")
 
 bind_pe_procs()
 
+prinln(Sys.DL_LOAD_PATH)
+prinln(LOAD_PATH)
+prinln("trying to load HDF5")
+using HDF5
+
 # here a function that runs your estimation:
 # using MOpt, mig
 include("/data/uctpfos/git/MOpt.jl/src/example-mpi.jl")
