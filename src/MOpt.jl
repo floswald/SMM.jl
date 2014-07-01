@@ -9,7 +9,7 @@ using Reexport
 @reexport using DataFrames
 import Base.show
 import PyPlot.plot
-using HDF5, JLD
+using HDF5
 
 # exports
 # ############
