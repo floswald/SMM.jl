@@ -415,7 +415,7 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 end
 
 
-save algo chains component-wise to HDF5 file
+# save algo chains component-wise to HDF5 file
 function save(algo::MAlgoBGP, filename::ASCIIString)
 
   # step 1, create the file if it does not exist
