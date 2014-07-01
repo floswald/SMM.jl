@@ -62,36 +62,85 @@ function evaluateObjective(m::MProb,p::Dict)
 end
 
 
-
-function slices(m::MProb,npoints::Int,pad=0.1)
+function computeSlice(m::MProb,npoints::Int,par::ASCIIString,pad)
 
     pdf = m.params_to_sample_df
+    # make a deepcopy of initial_value of parameters
+    pp = deepcopy(m.initial_value)
+    # generate a param range
+    lb = pdf[pdf[:param].==par,:lb][1]
+    ub = pdf[pdf[:param].==par,:ub][1]
 
-    # output: a dataframe
-    df = DataFrame()
+    prange = linspace( lb+(ub-lb)*pad/2, lb+(ub-lb)*(1-pad/2),npoints)
+    # make first row for this par
+    pp[par] = prange[1]
+    v = evaluateObjective(m,pp)
+    df = DataFrame(p_name=par,p_val=prange[1],f_val=v["value"])
 
-    for par in m.p2sample_sym
-        # make a deepcopy of initial_value of parameters
-        pp = deepcopy(m.initial_value)
-        # generate a param range
-        lb = pdf[pdf[:param].==string(par),:lb][1]
-        ub = pdf[pdf[:param].==string(par),:ub][1]
-
-        prange = linspace( lb+(ub-lb)*pad/2, lb+(ub-lb)*(1-pad/2),npoints)
-        # make first row for this par
-        pp[string(par)] = prange[1]
+    for i in 2:npoints
+        pp[par] = prange[i]
         v = evaluateObjective(m,pp)
-        df2 = DataFrame(p_name=string(par),p_val=prange[1],f_val=v["value"])
-
-        for i in 2:npoints
-            pp[string(par)] = prange[i]
-            v = evaluateObjective(m,pp)
-            push!(df2,{string(par),prange[i],v["value"]})
-        end
-        df = rbind(df,df2)
+        push!(df,{par,prange[i],v["value"]})
     end
     return df
 end
+
+function slices(m::MProb,npoints::Int,parallel::Bool,pad=0.1)
+
+    npar = nrow(m.params_to_sample_df)
+    if parallel
+        v = pmap( x -> computeSlice(m,npoints,x,pad), m.params_to_sample_df[:param])
+     else
+        v =  map( x -> computeSlice(m,npoints,x,pad), m.params_to_sample_df[:param])
+    end
+    
+    df = v[1]
+    if npar>1
+        for i in 2:npar
+            df = rbind(df,v[i])    
+        end
+    end
+
+    return df
+end
+
+
+# function slices2(m::MProb,npoints::Int,parallel::Bool,pad=0.1)
+
+#     # make a dict of grids for each param
+#     pdf = m.params_to_sample_df
+#     pranges = Dict{ASCIIString,Array{Float64,1}}[]
+#     for irow in eachrow(pdf)
+#         lb = irow[:lb][1]
+#         ub = irow[:lb][1]
+#         push!(pranges,[irow[:param] => linspace(irow[:lb][1], irow[:ub][1], npoints) ] )
+#     end
+#     dd = computeSlice2()
+
+   
+# end
+
+# function computeSlice2(m::MProb,prange::Dict{ASCIIString,Array{Float64,1}},par::ASCIIString,pad)
+
+#     pdf = m.params_to_sample_df
+#     # make a deepcopy of initial_value of parameters
+#     pp = deepcopy(m.initial_value)
+
+#     # make first row for this par
+#     pp[par] = prange[1]
+#     v = evaluateObjective(m,pp)
+#     df = DataFrame(p_name=par,p_val=prange[1],f_val=v["value"])
+
+#     for i in 2:npoints
+#         pp[par] = prange[i]
+#         v = evaluateObjective(m,pp)
+#         push!(df,{par,prange[i],v["value"]})
+#     end
+#     return df
+# end
+
+
+
 
 function plotSlices(m::MProb,x::DataFrame)
     npars = length(m.p2sample_sym)
@@ -106,6 +155,8 @@ function plotSlices(m::MProb,x::DataFrame)
     end
     suptitle("slices")
 end
+
+
 
 # gadfly works, but gets mixed up with PyPlot.plot!
 # function plotSlices(x::DataFrame,filename)

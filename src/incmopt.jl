@@ -60,7 +60,7 @@ function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
     t0 = time() - t0
 
-    ret = ["value"=>value, "params" =>p, "time" =>t0 , "status" => 1, "moments" => momout]
+        ret = ["value"=>value, "params" =>p, "time" =>t0 , "status" => 1, "moments" => momout]
     return ret
 end
 
@@ -194,8 +194,6 @@ function fitMirror!(x::DataFrame,b::DataFrame)
         x[i] = fitMirror(convert(Float64,x[i][1]),convert(Float64,b[i,:lb][1]),convert(Float64,b[i,:ub][1]))
     end
 end
-
-
 
 
             
