@@ -23,7 +23,7 @@ end
 
 
 
-function runMopt!( algo::MAlgo )
+function runMOpt!( algo::MAlgo )
 
 	# tasks
 	# =====

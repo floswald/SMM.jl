@@ -41,7 +41,7 @@ opts =[
 MA = MAlgoBGP(mprob,opts)
 
 # run it
-runMopt!(MA)
+runMOpt!(MA)
 
 # plot outputs
 MOpt.figure(1)

@@ -43,8 +43,20 @@ opts =[
 # setup the BGP algorithm
 MA = MAlgoBGP(mprob,opts)
 
+# check that all have a valid MProb object
+wkr = workers()
+println("workers are : ")
+println(wkr)
+
+@everywhere rows = nrow(mprob.moments)
+for w in wkr
+	remotecall_fetch(w,() -> rows)
+end
+
+println("calling runMopt now")
+
 # run it
-runMopt!(MA)
+runMOpt!(MA)
 
 # plot outputs
 MOpt.figure(1)

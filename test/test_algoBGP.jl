@@ -529,7 +529,7 @@ facts("testing saving of algo") do
 	tname = tempname()
 
 
-	runMopt!(MA)
+	runMOpt!(MA)
 	save(MA,tname)
 
 	ff5 = MOpt.h5open(tname,"r")

@@ -40,9 +40,6 @@ type BGPChain <: AbstractChain
     mom_nms   = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
     names!(parameters,[:chain_id,:iter, par_nms])
     names!(moments   ,[:chain_id,:iter, mom_nms])
-    # infos      = { "evals" => @data([0.0 for i = 1:L]) , "accept" => @data([false for i = 1:L]), "status" => [0 for i = 1:L], "exchanged_with" => [0 for i = 1:L]}
-    # parameters = { x => zeros(L) for x in ps_names(MProb) }
-    # moments    = { x => @data([0.0 for i = 1:L]) for x in ms_names(MProb) }
     return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
   end
 end
@@ -54,23 +51,16 @@ type MAlgoBGP <: MAlgo
   opts            :: Dict	# list of options
   i               :: Int 	# iteration
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
-  # candidate_param :: Array{Dict,1}  # dict of candidate parameters: if rejected, go back to current
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
 
   function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
 
-  	# temperatures for each chain
-	temps = linspace(1.0,opts["maxtemp"],opts["N"])
-  	# acceptance tolerance within each chain. condition: abs(old - new)/abs(old) > tol
-	acctol = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
-  	# shock standard deviations for each chain
-	shocksd = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
-  	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
-	disttol = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
-  	# acceptance tolerance for cross chain jumps. condition: abs(val(1) - val(2)) < tol
+	temps     = linspace(1.0,opts["maxtemp"],opts["N"])
+	acctol    = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
+	shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
+	disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
 	jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-  	# create chains
-  	chains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
  
@@ -91,22 +81,16 @@ type MAlgoBGP <: MAlgo
 end
 
 function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
+    # push!(chain.infos,[chain.i,val,ACC,status,0,prob]) if want to grow dataframe
     chain.infos[chain.i,:evals] = val
     chain.infos[chain.i,:prob] = prob
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = status
     chain.infos[chain.i,:eval_time] = time
     chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
-    # for im in chain.moments_nms
-    #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
-    # end
     for (k,v) in par
         chain.parameters[chain.i,symbol(k)] = v
     end
-    # for ip in chain.params_nms
-    #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
-    # end
   return nothing
 end
 

@@ -29,7 +29,7 @@ export MProb,
        allstats,
        moments,
        hist,
-       runMopt!,
+       runMOpt!,
        save
 
 
