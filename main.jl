@@ -4,7 +4,7 @@
 
 home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
-include("src/examples.jl")
+include("src/example-serial.jl")
 
 
 
@@ -23,12 +23,12 @@ include("test/runtests.jl")
 
 # runnign examples:
 	
-MOpt.save(MA,"algo.h5")
+# MOpt.save(MA,"algo.h5")
 
 
 p    = ["a" => 0.9 , "b" => -0.9]
 pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
-moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],
@@ -36,6 +36,7 @@ moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 # ]
 
 mprob = MOpt.MProb(p,pb,MOpt.objfunc_norm2,moms)
+MAlgoBGP(mprob,)
 
 x = MOpt.slices(mprob,30)
 

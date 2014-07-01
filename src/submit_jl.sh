@@ -16,6 +16,12 @@ module load sge/2011.11
 #$ -e timer.err # <- name of the stderr file.
 #$ -wd /data/uctpfos/git/MOpt.jl
 
-echo "calling mpirun now"
 
-LD_LIBRARY_PATH=/data/uctpfos/local/hdf5/lib julia /data/uctpfos/git/MOpt.jl/src/sge.jl
+echo "adding hdf5 to library path"
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/uctpfos/local/hdf5/lib:
+export LD_LIBRARY_PATH
+
+echo ""
+
+echo "calling mpirun now"
+julia /data/uctpfos/git/MOpt.jl/src/sge.jl

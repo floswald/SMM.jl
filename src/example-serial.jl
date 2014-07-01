@@ -52,6 +52,6 @@ MOpt.figure(3)
 plot(MA,"params_dist")
 
 # save results
-save(MA,MA["savefile"])
+# save(MA,MA["savefile"])
 	
 

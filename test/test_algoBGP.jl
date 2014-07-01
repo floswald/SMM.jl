@@ -500,48 +500,48 @@ facts("testing MAlgo methods") do
 	
 end
 
-facts("testing saving of algo") do
+# facts("testing saving of algo") do
 
-	p    = ["a" => 0.9 , "b" => -0.9]
-	pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
-	moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+# 	p    = ["a" => 0.9 , "b" => -0.9]
+# 	pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+# 	moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 
-	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
+# 	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 
-	opts =[
-		"N"=>3,
-		"mode"=>"serial",
-		"maxiter"=> 100,
-		"path"=> pwd(),
-		"maxtemp"=>100,
-		"min_shock_sd"=>0.1,
-		"max_shock_sd"=>1,
-		"past_iterations"=>30,
-		"min_accept_tol"=>100,
-		"max_accept_tol"=>100,
-		"min_disttol"=>0.1,
-		"max_disttol"=>0.1,
-		"min_jump_prob"=>0.05,
-		"max_jump_prob"=>0.2] 
+# 	opts =[
+# 		"N"=>3,
+# 		"mode"=>"serial",
+# 		"maxiter"=> 100,
+# 		"path"=> pwd(),
+# 		"maxtemp"=>100,
+# 		"min_shock_sd"=>0.1,
+# 		"max_shock_sd"=>1,
+# 		"past_iterations"=>30,
+# 		"min_accept_tol"=>100,
+# 		"max_accept_tol"=>100,
+# 		"min_disttol"=>0.1,
+# 		"max_disttol"=>0.1,
+# 		"min_jump_prob"=>0.05,
+# 		"max_jump_prob"=>0.2] 
 
-	MA = MAlgoBGP(mprob,opts)
+# 	MA = MAlgoBGP(mprob,opts)
 
-	tname = tempname()
+# 	tname = tempname()
 
 
-	runMopt!(MA)
-	save(MA,tname)
+# 	runMopt!(MA)
+# 	save(MA,tname)
 
-	ff5 = MOpt.h5open(tname,"r")
-	MAopts = read(ff5,"algo/opts/keys")
-	@fact MAopts == collect(keys(opts)) => true
+# 	ff5 = MOpt.h5open(tname,"r")
+# 	MAopts = read(ff5,"algo/opts/keys")
+# 	@fact MAopts == collect(keys(opts)) => true
 
-	ich = rand(1:MA["N"]) 	# pick a random chain
-	chain_a = read(ff5,"chain/$ich/parameters/a")
-	# println(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a)
-	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
+# 	ich = rand(1:MA["N"]) 	# pick a random chain
+# 	chain_a = read(ff5,"chain/$ich/parameters/a")
+# 	# println(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a)
+# 	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
 
-end
+# end
 	
 
 

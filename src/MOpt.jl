@@ -9,7 +9,7 @@ using Reexport
 @reexport using DataFrames
 import Base.show
 import PyPlot.plot
-using HDF5
+# using HDF5
 
 # exports
 # ############
@@ -29,8 +29,8 @@ export MProb,
        allstats,
        moments,
        hist,
-       runMopt!,
-       save
+       runMopt!
+       # save
 
 
 # load files

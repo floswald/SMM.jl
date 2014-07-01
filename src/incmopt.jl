@@ -39,6 +39,7 @@ end
 
 function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
+    t0 = time()
     sigma = reshape([1.0, 0.0,0.0,1.0],2,2)
     ns = 5000
 
@@ -57,8 +58,9 @@ function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
     momout = DataFrame(alpha = moments[1],beta = moments[2])
 
+    t0 = time() - t0
 
-    ret = ["value"=>value, "params" =>p, "time" =>0.0, "status" => 1, "moments" => momout]
+    ret = ["value"=>value, "params" =>p, "time" =>t0 , "status" => 1, "moments" => momout]
     return ret
 end
 
