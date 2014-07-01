@@ -18,4 +18,4 @@ module load sge/2011.11
 
 echo "calling mpirun now"
 
-/data/uctpfos/git/julia/julia /data/uctpfos/git/MOpt.jl/src/sge.jl
+LD_LIBRARY_PATH=/data/uctpfos/local/hdf5/lib julia /data/uctpfos/git/MOpt.jl/src/sge.jl
