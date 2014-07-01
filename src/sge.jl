@@ -43,6 +43,7 @@ function bind_pe_procs()
 end
 
 println("Started julia")
+cd("/data/uctpfos/git/MOpt.jl/")
 
 bind_pe_procs()
 
