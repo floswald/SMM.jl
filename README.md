@@ -37,6 +37,21 @@ moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 # define a minization problem
 mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 
+# look at slices of the model: 
+# how does the objective function behave 
+# if we vary each parameter one by one, holding 
+# the others fixed?
+
+obj_slices = MOpt.slices(mprob,30)
+MOpt.plotSlices(mprob,obj_slices)
+```
+
+[![model slices](doc/img/slices.png)]()
+
+
+```julia
+# setup a minization algorithm: options
+
 opts =[
 	"N"               => 6,							# number of MCMC chains
 	"mode"            => "serial",					# mode: serial or mpi
@@ -64,7 +79,6 @@ runMopt!(MA)
 plot(MA,"acc")
 # see first plot above
 ```
-
 
 ```julia
 plot(MA,"params_time")

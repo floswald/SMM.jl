@@ -40,10 +40,19 @@ opts =[
 # setup the BGP algorithm
 MA = MAlgoBGP(mprob,opts)
 
-# run it
+# look at slice of the model: 
+# how does the objective function behave 
+# if we vary each parameter one by one, holding 
+# the others fixed?
+
+obj_slices = MOpt.slices(mprob,30)
+MOpt.figure(4)
+MOpt.plotSlices(mprob,obj_slices)
+
+# run the estimation
 runMOpt!(MA)
 
-# plot outputs
+# plot restults
 MOpt.figure(1)
 plot(MA,"acc")
 MOpt.figure(2)
