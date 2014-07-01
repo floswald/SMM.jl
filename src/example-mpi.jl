@@ -20,12 +20,14 @@ moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 # define a minization problem
 mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 
+root = joinpath(ENV["HOME"],"git/MOpt.jl")
+
 opts =[
 	"N"               => 6,							# number of MCMC chains
 	"mode"            => "mpi",						# mode: serial or mpi
 	"maxiter"         => 500,						# max number of iterations
-	"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
-	"source_on_nodes" => joinpath(pwd(),"src/nodes.jl"),	
+	"savefile"        => joinpath(root,"MA.h5"),	# filename to save results
+	"source_on_nodes" => joinpath(root,"src/nodes.jl"),	
 	"print_level"     => 1,							# increasing verbosity level of output
 	"maxtemp"         => 100,						# tempering of hottest chain
 	"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
