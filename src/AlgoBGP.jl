@@ -179,7 +179,7 @@ end
 
 # notice: higher tempering draws candiates further spread out,
 # but accepts lower function values with lower proability
-function localMovesMCMC!(algo::MAlgoBGP,v::Array{Dict{ASCIIString,Any},1})
+function localMovesMCMC!(algo::MAlgoBGP,v::Array)
 	for ch in 1:algo["N"]
 		xold = -99.0
 		if algo.i == 1
