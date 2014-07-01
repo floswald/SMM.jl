@@ -46,10 +46,6 @@ println("Started julia")
 
 bind_pe_procs()
 
-println(Sys.DL_LOAD_PATH)
-println(LOAD_PATH)
-println("trying to load HDF5")
-using HDF5
 
 # here a function that runs your estimation:
 # using MOpt, mig

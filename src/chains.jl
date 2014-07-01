@@ -205,20 +205,20 @@ end
 
 # saves a chain to a HF5 file at a given path
 # will not work standalone, since must open the file at some point
-# function saveChainToHDF5(chain::AbstractChain, ff5::HDF5File,path::ASCIIString)
-#     simpleDataFrameSave(chain.parameters,ff5,joinpath(path,"parameters"))
-#     simpleDataFrameSave(chain.infos,ff5, joinpath(path,"infos"))
-#     simpleDataFrameSave(chain.moments,ff5, joinpath(path,"moments"))
-# end
+function saveChainToHDF5(chain::AbstractChain, ff5::HDF5File,path::ASCIIString)
+    simpleDataFrameSave(chain.parameters,ff5,joinpath(path,"parameters"))
+    simpleDataFrameSave(chain.infos,ff5, joinpath(path,"infos"))
+    simpleDataFrameSave(chain.moments,ff5, joinpath(path,"moments"))
+end
 
-# function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::ASCIIString)
-#     for nn in names(dd)
-#         if eltype(dd[nn]) <: Number
-#             write(ff5,joinpath(path,string(nn)),convert(Array{Float64,1},dd[nn])) 
-#         elseif eltype(dd[nn]) <: String
-#             write(ff5,joinpath(path,string(nn)),convert(Array{ASCIIString,1},dd[nn])) 
-#         end
-#     end
-# end
+function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::ASCIIString)
+    for nn in names(dd)
+        if eltype(dd[nn]) <: Number
+            write(ff5,joinpath(path,string(nn)),convert(Array{Float64,1},dd[nn])) 
+        elseif eltype(dd[nn]) <: String
+            write(ff5,joinpath(path,string(nn)),convert(Array{ASCIIString,1},dd[nn])) 
+        end
+    end
+end
 
 

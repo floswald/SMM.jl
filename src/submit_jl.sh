@@ -17,10 +17,6 @@ module load sge/2011.11
 #$ -wd /data/uctpfos/git/MOpt.jl
 
 
-echo "adding hdf5 to library path"
-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/uctpfos/local/hdf5/lib:
-export LD_LIBRARY_PATH
-
 echo ""
 
 echo "calling mpirun now"
