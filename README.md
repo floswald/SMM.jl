@@ -28,9 +28,9 @@ using MOpt
 # 3) S([a,b]) returns a summary of features of the data
 
 # initial value
-p    = ["a" => 0.9 , "b" => -0.9]
+p    = ["a" => 1.9 , "b" => -0.9]
 # param bounds
-pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+pb   = [ "a" => [-2,2] , "b" => [-1,1] ]
 # data moments
 moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 
