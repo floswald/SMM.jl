@@ -7,7 +7,7 @@
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
-[![acceptance rates](doc/img/acceptance.png)]()
+[![acceptance rates](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/acceptance.png)]()
 
 ## Detailed Documentation
 
@@ -47,9 +47,9 @@ obj_slices = MOpt.slices(mprob,30)
 MOpt.plotSlices(mprob,obj_slices[1],obj_slices[2])
 ```
 
-[![objective slices](doc/img/slices_objective.png)]()
-[![alpha slices](doc/img/slices_alpha.png)]()
-[![beta slices](doc/img/slices_beta.png)]()
+[![objective slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_objective.png)]()
+[![alpha slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_alpha.png)]()
+[![beta slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_beta.png)]()
 
 
 ```julia
@@ -87,13 +87,13 @@ plot(MA,"acc")
 plot(MA,"params_time")
 ```
 
-[![acceptance rates](doc/img/pars_time.png)]()
+[![params over time](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/pars_time.png)]()
 
 ```julia
 plot(MA,"params_dist")
 ```
 
-[![acceptance rates](doc/img/pars_dist.png)]()
+[![posterior](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/pars_dist.png)]()
 
 ```julia
 # save results
