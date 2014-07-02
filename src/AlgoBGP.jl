@@ -64,17 +64,17 @@ type MAlgoBGP <: MAlgo
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
  
- 	if opts["mode"] == "mpi"
- 		# check if cluster is running
- 		working = workers()
- 		if length(working) > 0
- 			println("we have got $(length(working)) workers:")
- 			println(working)
- 			require(opts["source_on_nodes"])
- 		else
- 			throw(ArgumentError("something is wrong with the mpi cluster: no workers"))
- 		end
- 	end
+ 	# if opts["mode"] == "mpi"
+ 	# 	# check if cluster is running
+ 	# 	working = workers()
+ 	# 	if length(working) > 0
+ 	# 		println("we have got $(length(working)) workers:")
+ 	# 		println(working)
+ 	# 		require(opts["source_on_nodes"])
+ 	# 	else
+ 	# 		throw(ArgumentError("something is wrong with the mpi cluster: no workers"))
+ 	# 	end
+ 	# end
 
     return new(m,opts,0,cpar,chains)
   end

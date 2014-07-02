@@ -167,7 +167,7 @@ function savePlots(path::ASCIIString,as::ASCIIString)
         savefig(joinpath(path,"figure$i.pdf"))
     end
   end
-
+  true
 end
 
 

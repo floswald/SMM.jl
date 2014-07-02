@@ -33,7 +33,7 @@ export MProb,
        save,
        slices,
        plotSlices,
-       savePlotSlices
+       savePlots
 
 
 # load files
