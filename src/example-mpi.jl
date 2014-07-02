@@ -5,7 +5,7 @@ require("src/nodes.jl")
 root = joinpath(ENV["HOME"],"git/MOpt.jl")
 
 opts =[
-	"N"               => lenght(workers()),							# number of MCMC chains
+	"N"               => length(workers()),							# number of MCMC chains
 	# "mode"            => "mpi",						# mode: serial or mpi
 	"maxiter"         => 500,						# max number of iterations
 	"savefile"        => joinpath(root,"MA.h5"),	# filename to save results
