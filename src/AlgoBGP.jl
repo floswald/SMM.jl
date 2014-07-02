@@ -147,11 +147,11 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 		# evaluate objective on all chains
 		# --------------------------------
-		if algo["mode"] == "serial"
-			v = map( x -> evaluateObjective(algo.m,x), algo.current_param)
-		else
+		# if algo["mode"] == "serial"
+		# 	v = map( x -> evaluateObjective(algo.m,x), algo.current_param)
+		# else
 			v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
-		end
+		# end
 
 		# notice that at this point, v[chain_id]["param"] is the candidate param vector
 		# we append v to the chain
