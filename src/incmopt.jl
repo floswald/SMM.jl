@@ -40,7 +40,7 @@ end
 function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
 
     t0 = time()
-    sigma = reshape([1.0, 0.0,0.0,1.0],2,2)
+    sigma = convert(Matrix,Diagonal([1.0,1.0]))
     ns = 5000
 
     # compute simulated moments

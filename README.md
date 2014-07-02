@@ -20,9 +20,9 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 using MOpt
 
 # data are generated from a bivariate normal
-# with mu = [a,b] = [0,0]
+# with mu = [a,b] = [0,0], and cov = Diagonal([1,1])
 # aim: 
-# 1) sample [a',b'] from a space [-1,1] x [-1,1] and
+# 1) sample [a',b'] from a space [-2,2] x [-1,1] and
 # 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
 #    and accepting/rejecting [a',b'] according to BGP
 # 3) S([a,b]) returns a summary of features of the data
