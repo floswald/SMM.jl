@@ -80,14 +80,16 @@ function plot(algo::MAlgo, what)
   			PyPlot.plot(sdf[:iter],sdf[:accept_rate])
   			I = sdf[:exchanged_with].>0
   			PyPlot.plot( sdf[I,:iter], sdf[I,:accept_rate],"o")
+  			title("Acceptance Rates by chain")
 		end
 		subplot(212)
 		for sdf in groupby(dd, :chain_id)
   			PyPlot.plot(sdf[:shock_sd])
   			I = sdf[:exchanged_with].>0
   			PyPlot.plot( sdf[I,:iter], sdf[I,:shock_sd],"o")
+  			title("Variance of shock by chain")
 		end
-		suptitle("Acceptance Rates by Chain")
+		# suptitle("MCMC Sampling Processes by Chain\nColored dots indicate jumps")
 	end
 
 	if (what == "params_time")
@@ -101,6 +103,7 @@ function plot(algo::MAlgo, what)
 			subplot(nrows,ncols,pid)
 			for sdf in groupby(dd, :chain_id)
   				plot(sdf[:iter],sdf[par])
+  				title("$(string(par))")
   			end
 		end
 		suptitle("Parameter values over time")
