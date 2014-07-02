@@ -19,5 +19,5 @@ module load sge/2011.11
 
 echo ""
 
-echo "calling mpirun now"
+echo "calling julia now"
 julia /data/uctpfos/git/MOpt.jl/src/example-serial.jl

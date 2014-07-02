@@ -6,10 +6,8 @@ root = joinpath(ENV["HOME"],"git/MOpt.jl")
 
 opts =[
 	"N"               => length(workers()),							# number of MCMC chains
-	# "mode"            => "mpi",						# mode: serial or mpi
 	"maxiter"         => 500,						# max number of iterations
 	"savefile"        => joinpath(root,"MA.h5"),	# filename to save results
-	# "source_on_nodes" => joinpath(root,"src/nodes.jl"),	
 	"print_level"     => 1,							# increasing verbosity level of output
 	"maxtemp"         => 100,						# tempering of hottest chain
 	"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain

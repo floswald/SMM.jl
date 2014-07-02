@@ -38,7 +38,8 @@ end
 
 
 function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
-    println("I am worker number: $(myid())")
+    
+    # println("I am worker number: $(myid())")
 
     t0 = time()
     sigma = convert(Matrix,Diagonal([1.0,1.0]))

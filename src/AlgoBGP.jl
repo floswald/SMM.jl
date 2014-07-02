@@ -53,7 +53,7 @@ type MAlgoBGP <: MAlgo
   current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
   MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
 
-  function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"mode"=>"serial","maxiter"=>100,"maxtemp"=> 100])
+  function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
 
 	temps     = linspace(1.0,opts["maxtemp"],opts["N"])
 	acctol    = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
@@ -63,18 +63,6 @@ type MAlgoBGP <: MAlgo
   	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
   	# current param values
   	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
- 
- 	# if opts["mode"] == "mpi"
- 	# 	# check if cluster is running
- 	# 	working = workers()
- 	# 	if length(working) > 0
- 	# 		println("we have got $(length(working)) workers:")
- 	# 		println(working)
- 	# 		require(opts["source_on_nodes"])
- 	# 	else
- 	# 		throw(ArgumentError("something is wrong with the mpi cluster: no workers"))
- 	# 	end
- 	# end
 
     return new(m,opts,0,cpar,chains)
   end
@@ -147,15 +135,7 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 		# evaluate objective on all chains
 		# --------------------------------
-		# if algo["mode"] == "serial"
-		# 	v = map( x -> evaluateObjective(algo.m,x), algo.current_param)
-		# else
-			v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
-		# end
-
-		# notice that at this point, v[chain_id]["param"] is the candidate param vector
-		# we append v to the chain
-		# so if candidate is rejected, go back into v[chain_id]["param"] and reset to previous param
+		v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
 
 
 		# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
@@ -425,7 +405,6 @@ function show(io::IO,MA::MAlgoBGP)
 	print(io,"\n")
 	print(io,"Algorithm\n")
 	print(io,"---------\n")
-	print(io,"Computation done in: $(MA["mode"])\n")
 	print(io,"Current iteration: $(MA.i)\n")
 	print(io,"Number of params to estimate: $(length(MA.m.p2sample_sym))\n")
 	print(io,"Number of moments to match: $(length(MA.m.moments_subset))\n")

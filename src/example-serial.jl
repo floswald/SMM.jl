@@ -30,7 +30,6 @@ plotSlices(mprob,obj_slices[1],obj_slices[2])
 
 opts =[
 	"N"               => 6,							# number of MCMC chains
-	"mode"            => "serial",					# mode: serial or mpi
 	"maxiter"         => 500,						# max number of iterations
 	"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
 	"print_level"     => 1,							# increasing verbosity level of output
