@@ -157,6 +157,19 @@ function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame)
 end
 
 
+function savePlots(path::ASCIIString,as::ASCIIString)
+
+  for i in get_fignums()
+    figure(i)
+    if as=="png"
+        savefig(joinpath(path,"figure$i.png"))
+    elseif as=="pdf"
+        savefig(joinpath(path,"figure$i.pdf"))
+    end
+  end
+
+end
+
 
 # gadfly works, but gets mixed up with PyPlot.plot!
 # function plotSlices(x::DataFrame,filename)

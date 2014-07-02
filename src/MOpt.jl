@@ -32,7 +32,8 @@ export MProb,
        runMOpt!,
        save,
        slices,
-       plotSlices
+       plotSlices,
+       savePlotSlices
 
 
 # load files
