@@ -26,8 +26,8 @@ include("test/runtests.jl")
 # MOpt.save(MA,"algo.h5")
 
 
-p    = ["a" => 0.9 , "b" => -0.9]
-pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+p    = ["a" => 1.9 , "b" => -0.9]
+pb   = [ "a" => [-2,2] , "b" => [-1,1] ]
 moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
@@ -36,13 +36,13 @@ moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(
 # ]
 
 mprob = MOpt.MProb(p,pb,MOpt.objfunc_norm2,moms)
-MAlgoBGP(mprob,)
+MAlgoBGP(mprob,opts)
 
-x = MOpt.slices(mprob,30)
+x = MOpt.slices(mprob,30,false)
+MOpt.plotSlices(mprob,x)
 
 # usign Gadfly
 # MOpt.plotSlices(mprob,x,joinpath(pwd(),"slices.pdf"))
-MOpt.plotSlices(mprob,x)
 
 
 

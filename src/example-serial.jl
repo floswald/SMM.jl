@@ -11,14 +11,22 @@ using MOpt
 # 3) S([a,b]) returns a summary of features of the data
 
 # initial value
-p    = ["a" => 0.9 , "b" => -0.9]
+p    = ["a" => 1.9 , "b" => -0.9]
 # param bounds
-pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
+pb   = [ "a" => [-2,2] , "b" => [-1,1] ]
 # data moments
 moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 
 # define a minization problem
 mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
+
+# look at slice of the model: 
+# how does the objective function behave 
+# if we vary each parameter one by one, holding 
+# the others fixed?
+
+obj_slices = MOpt.slices(mprob,30)
+MOpt.plotSlices(mprob,obj_slices[1],obj_slices[2])
 
 opts =[
 	"N"               => 6,							# number of MCMC chains
@@ -40,24 +48,16 @@ opts =[
 # setup the BGP algorithm
 MA = MAlgoBGP(mprob,opts)
 
-# look at slice of the model: 
-# how does the objective function behave 
-# if we vary each parameter one by one, holding 
-# the others fixed?
-
-obj_slices = MOpt.slices(mprob,30)
-MOpt.figure(4)
-MOpt.plotSlices(mprob,obj_slices)
 
 # run the estimation
 runMOpt!(MA)
 
 # plot restults
-MOpt.figure(1)
+MOpt.figure()
 plot(MA,"acc")
-MOpt.figure(2)
+MOpt.figure()
 plot(MA,"params_time")
-MOpt.figure(3)
+MOpt.figure()
 plot(MA,"params_dist")
 
 # save results

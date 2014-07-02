@@ -62,98 +62,98 @@ function evaluateObjective(m::MProb,p::Dict)
 end
 
 
-function computeSlice(m::MProb,npoints::Int,par::ASCIIString,pad)
 
+function slices(m::MProb,npoints::Int,pad=0.1)
+
+    # make a dict of grids for each param
+    # loop over params!
     pdf = m.params_to_sample_df
-    # make a deepcopy of initial_value of parameters
-    pp = deepcopy(m.initial_value)
-    # generate a param range
-    lb = pdf[pdf[:param].==par,:lb][1]
-    ub = pdf[pdf[:param].==par,:ub][1]
-
-    prange = linspace( lb+(ub-lb)*pad/2, lb+(ub-lb)*(1-pad/2),npoints)
-    # make first row for this par
-    pp[par] = prange[1]
-    v = evaluateObjective(m,pp)
-    df = DataFrame(p_name=par,p_val=prange[1],f_val=v["value"])
-
-    for i in 2:npoints
-        pp[par] = prange[i]
-        v = evaluateObjective(m,pp)
-        push!(df,{par,prange[i],v["value"]})
+    pranges = Dict{ASCIIString,Array{Float64,1}}()
+    for irow in eachrow(pdf)
+        lb = irow[:lb][1]
+        ub = irow[:lb][1]
+        pranges[irow[:param]] = linspace(irow[:lb][1], irow[:ub][1], npoints)  
     end
-    return df
+    # return pranges
+    val_df = DataFrame()
+    mom_df = DataFrame()
+    for (k,v) in pranges
+        dtmp = computeSlice(m,k,v)
+        val_df = rbind(val_df,dtmp[1])
+        mom_df = rbind(mom_df,dtmp[2])
+    end
+    return (val_df,mom_df)
+   
 end
 
-function slices(m::MProb,npoints::Int,parallel::Bool,pad=0.1)
+function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
 
-    npar = nrow(m.params_to_sample_df)
-    if parallel
-        v = pmap( x -> computeSlice(m,npoints,x,pad), m.params_to_sample_df[:param])
-     else
-        v =  map( x -> computeSlice(m,npoints,x,pad), m.params_to_sample_df[:param])
+    npar = length(prange)
+    nmom = length(m.moments_subset)
+
+    # make an array of different params
+    # where par varies in prange
+    pp = [deepcopy(m.initial_value) for i=1:npar]
+    for i in 1:length(prange)
+        pp[i][par] = prange[i]
     end
+
+    v = pmap(x -> evaluateObjective(m,x), pp)
+
+    mom_df = DataFrame(p_name = [par for i=1:(npar*nmom)], m_name=ASCIIString[ i for j=1:npar, i in m.moments_subset][:], p_val = repeat(prange,inner=[1],outer=[nmom]), m_val = zeros(npar*nmom))
     
-    df = v[1]
-    if npar>1
-        for i in 2:npar
-            df = rbind(df,v[i])    
+    val_df = DataFrame(p_name = [par for i=1:(npar)], p_val = prange, f_val = zeros(npar))
+
+    for ip in 1:npar
+        # fill in function values
+        val_df[ip, :f_val ] = v[ip]["value"][1]
+
+        for im in 1:nmom
+            # fill in moments values
+            mom_df[(mom_df[:p_val].==prange[ip]) & (mom_df[:m_name].==m.moments_subset[im]), :m_val ] = v[ip]["moments"][1,symbol(m.moments_subset[im])]
         end
     end
 
-    return df
+    return (val_df,mom_df)
+
 end
 
 
-# function slices2(m::MProb,npoints::Int,parallel::Bool,pad=0.1)
-
-#     # make a dict of grids for each param
-#     pdf = m.params_to_sample_df
-#     pranges = Dict{ASCIIString,Array{Float64,1}}[]
-#     for irow in eachrow(pdf)
-#         lb = irow[:lb][1]
-#         ub = irow[:lb][1]
-#         push!(pranges,[irow[:param] => linspace(irow[:lb][1], irow[:ub][1], npoints) ] )
-#     end
-#     dd = computeSlice2()
-
-   
-# end
-
-# function computeSlice2(m::MProb,prange::Dict{ASCIIString,Array{Float64,1}},par::ASCIIString,pad)
-
-#     pdf = m.params_to_sample_df
-#     # make a deepcopy of initial_value of parameters
-#     pp = deepcopy(m.initial_value)
-
-#     # make first row for this par
-#     pp[par] = prange[1]
-#     v = evaluateObjective(m,pp)
-#     df = DataFrame(p_name=par,p_val=prange[1],f_val=v["value"])
-
-#     for i in 2:npoints
-#         pp[par] = prange[i]
-#         v = evaluateObjective(m,pp)
-#         push!(df,{par,prange[i],v["value"]})
-#     end
-#     return df
-# end
 
 
-
-
-function plotSlices(m::MProb,x::DataFrame)
+function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame)
+    # each moment has it's own figure
+    # within each figure, there are npars subplots
     npars = length(m.p2sample_sym)
     nrows = floor(sqrt(npars))
     ncols = ceil(npars/nrows)
-    pid = 0
-    for sdf in groupby(x, :p_name)
-        subplot(nrows,ncols,pid)
-        pid += 1
-        plot(sdf[:p_val],sdf[:f_val])
-        title(sdf[1,:p_name])
+
+    # plots of moments vs parameter values
+    for m_subdf in groupby(mom_df,:m_name)
+        figure()
+        pid = 0
+        for p_subdf in groupby(m_subdf,:p_name)
+            pid += 1
+            subplot(nrows,ncols,pid)
+            plot(p_subdf[:p_val],p_subdf[:m_val])
+            axhline(y=m.moments[m.moments[:moment].==p_subdf[1,:m_name],:data_value],color="r",linestyle="--")
+            axvline(x=m.initial_value[p_subdf[1,:p_name]],linestyle="-",color="grey")
+            title(p_subdf[1,:p_name])
+        end
+        suptitle("Moment: $(m_subdf[1,:m_name]) vs Parameters")
     end
-    suptitle("slices")
+
+    # plots of objective function vs parameter value
+    figure()
+    pid = 0
+    for p_subdf in groupby(val_df,:p_name)
+        pid += 1
+        subplot(nrows,ncols,pid)
+        plot(p_subdf[:p_val],p_subdf[:f_val])
+        axvline(x=m.initial_value[p_subdf[1,:p_name]],linestyle="-",color="grey")
+        title(p_subdf[1,:p_name])
+    end
+    suptitle("Objective Function vs Parameters")
 end
 
 

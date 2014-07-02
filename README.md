@@ -38,15 +38,18 @@ moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
 mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 
 # look at slices of the model: 
-# how does the objective function behave 
-# if we vary each parameter one by one, holding 
-# the others fixed?
+# how do objective function and
+# simulated moments vary with each
+# parameter one by one, holding 
+# the others fixed at initial value?
 
 obj_slices = MOpt.slices(mprob,30)
-MOpt.plotSlices(mprob,obj_slices)
+MOpt.plotSlices(mprob,obj_slices[1],obj_slices[2])
 ```
 
-[![model slices](doc/img/slices.png)]()
+[![objective slices](doc/img/slices_objective.png)]()
+[![alpha slices](doc/img/slices_alpha.png)]()
+[![beta slices](doc/img/slices_beta.png)]()
 
 
 ```julia

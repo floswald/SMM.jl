@@ -30,7 +30,9 @@ export MProb,
        moments,
        hist,
        runMOpt!,
-       save
+       save,
+       slices,
+       plotSlices
 
 
 # load files
