@@ -49,7 +49,7 @@ bind_pe_procs()
 
 # here a function that runs your estimation:
 # using MOpt, mig
-include("/data/uctpfos/git/MOpt.jl/src/example-mpi.jl")
+include("examples/example-mpi.jl")
 
 println("done. quitting cluster.")
 

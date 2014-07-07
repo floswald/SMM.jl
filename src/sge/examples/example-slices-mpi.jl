@@ -1,5 +1,5 @@
 
-require("src/nodes.jl")
+require("nodes.jl")
 
 
 # compute slices in parallel

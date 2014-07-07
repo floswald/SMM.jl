@@ -39,11 +39,11 @@ export MProb,
 # load files
 # ############
 
-include("mprob.jl")
-include("chains.jl")
-include("incmopt.jl")
-include("AlgoAbstract.jl")
-include("AlgoBGP.jl")
+include("mopt/mprob.jl")
+include("mopt/chains.jl")
+include("mopt/incmopt.jl")
+include("mopt/AlgoAbstract.jl")
+include("mopt/AlgoBGP.jl")
 
 
 end 	# module

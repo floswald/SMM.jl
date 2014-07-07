@@ -1,6 +1,6 @@
 
 
-require("src/nodes.jl")
+require("nodes.jl")
 
 root = joinpath(ENV["HOME"],"git/MOpt.jl")
 

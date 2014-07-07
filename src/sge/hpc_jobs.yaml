@@ -1,0 +1,20 @@
+slices:
+  name:   MOpt-slices
+  desc:   testing slices of MOpt
+  ncore:   5
+  logout:   mopttest.log
+  logerr:   mopttest.err
+  template: cmd.qsub
+  wd: /data/uctpfos/git/MOpt.jl/src/sge
+  run:   sge_slices_mpi.jl 
+
+
+estim:
+  name:   MOpt-estimate
+  desc:   testing estimation of MOpt
+  ncore:   5
+  logout:   mopttest.log
+  logerr:   mopttest.err
+  template: cmd.qsub
+  wd: /data/uctpfos/git/MOpt.jl/src/sge
+  run:   sge_est_mpi.jl 
