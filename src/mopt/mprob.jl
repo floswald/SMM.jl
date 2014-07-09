@@ -78,6 +78,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     val_df = DataFrame()
     mom_df = DataFrame()
     for (k,v) in pranges
+        println("currently computing slices over $k")
         dtmp = computeSlice(m,k,v)
         val_df = rbind(val_df,dtmp[1])
         mom_df = rbind(mom_df,dtmp[2])
