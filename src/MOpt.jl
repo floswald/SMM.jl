@@ -7,7 +7,7 @@ module MOpt
 using Distributions, PyPlot
 using Reexport
 @reexport using DataFrames
-import Base.show
+import Base.show, Base.transpose
 import PyPlot.plot
 using HDF5
 
@@ -33,7 +33,8 @@ export MProb,
        save,
        slices,
        plotSlices,
-       savePlots
+       savePlots,
+       transpose
 
 
 # load files

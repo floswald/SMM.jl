@@ -39,9 +39,9 @@ moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(
 mprob = MOpt.MProb(p,pb,MOpt.objfunc_norm2,moms)
 MAlgoBGP(mprob,opts)
 
-x = MOpt.slices(mprob,30,false)
-MOpt.plotSlices(mprob,x)
-
+x = MOpt.slices(mprob,30)
+MOpt.plotSlices(mprob,x[1],x[2],facet="moments")
+	
 # usign Gadfly
 # MOpt.plotSlices(mprob,x,joinpath(pwd(),"slices.pdf"))
 
