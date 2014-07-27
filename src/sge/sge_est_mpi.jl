@@ -38,7 +38,7 @@ function bind_pe_procs()
 
 
   println("adding machines to current system")
-  addprocs(machines, dir= "/data/uctpfos/git/julia/")
+  addprocs(machines, dir= "/cm/shared/apps/Julia/0.3.0.pre/bin")
   println("done")
 end
 
