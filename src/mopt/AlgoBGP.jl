@@ -380,23 +380,23 @@ end
 
 
 # save algo chains component-wise to HDF5 file
-function save(algo::MAlgoBGP, filename::ASCIIString)
+# function save(algo::MAlgoBGP, filename::ASCIIString)
 
-  # step 1, create the file if it does not exist
-  ff5 = h5open(filename, "w")
+#   # step 1, create the file if it does not exist
+#   ff5 = h5open(filename, "w")
 
-  	# TODO find a way to add entire objects
-  		# add global algo info: opts
-        write(ff5,"algo/opts/keys",convert(Array{ASCIIString,1},collect(keys(algo.opts))))
-        # write(ff5,"algo/opts/values",collect(values(algo.opts)))
+#   	# TODO find a way to add entire objects
+#   		# add global algo info: opts
+#         write(ff5,"algo/opts/keys",convert(Array{ASCIIString,1},collect(keys(algo.opts))))
+#         # write(ff5,"algo/opts/values",collect(values(algo.opts)))
 
-	  # saving the chains
-	  for cc in 1:algo["N"]
-	    saveChainToHDF5(algo.MChains[cc], ff5, "chain/$cc")
-	  end
+# 	  # saving the chains
+# 	  for cc in 1:algo["N"]
+# 	    saveChainToHDF5(algo.MChains[cc], ff5, "chain/$cc")
+# 	  end
 
-  close(ff5)
-end
+#   close(ff5)
+# end
 
 
 function show(io::IO,MA::MAlgoBGP)

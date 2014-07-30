@@ -9,7 +9,7 @@ using Reexport
 @reexport using DataFrames
 import Base.show, Base.transpose
 import PyPlot.plot
-using HDF5
+# using HDF5
 
 # exports
 # ############
@@ -30,7 +30,7 @@ export MProb,
        moments,
        hist,
        runMOpt!,
-       save,
+       # save,
        slices,
        plotSlices,
        savePlots,
