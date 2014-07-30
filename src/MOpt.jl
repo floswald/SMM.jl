@@ -4,12 +4,10 @@ module MOpt
 # Dependencies
 # ############
 
-using Distributions, PyPlot
+using Distributions
 using Reexport
 @reexport using DataFrames
 import Base.show, Base.transpose
-import PyPlot.plot
-# using HDF5
 
 # exports
 # ############
@@ -25,15 +23,12 @@ export MProb,
        parameters,
        evals,
        infos,
-       plot,
        allstats,
        moments,
        hist,
        runMOpt!,
        # save,
        slices,
-       plotSlices,
-       savePlots,
        transpose
 
 
