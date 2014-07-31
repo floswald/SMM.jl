@@ -24,7 +24,7 @@ pbs_slices:
   name:   MOpt-slices
   desc:   testing slices of MOpt
   nnodes:   2
-  ppnnodes:  8 
+  ppnodes:  8 
   numprocs:   16
   logout:   mopttest.log
   logerr:   mopttest.err
@@ -37,7 +37,7 @@ pbs_estim:
   name:   MOpt-estimate
   desc:   testing estimation of MOpt
   nnodes:   2
-  ppnnodes:  8 
+  ppnodes:  8 
   numprocs:   16
   logout:   mopttest.log
   logerr:   mopttest.err

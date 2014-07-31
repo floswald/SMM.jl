@@ -15,4 +15,4 @@ module load gcc/4.8.1
 module load python
 
 echo "calling julia now"
-julia -p {{numprocs}} {{runscript}} 
+julia -p {{numprocs}} {{run}} 
