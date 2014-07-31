@@ -26,6 +26,7 @@ pbs_slices:
   nnodes:   2
   ppnodes:  8 
   numprocs:   16
+  walltime: 05:00
   logout:   mopttest.log
   logerr:   mopttest.err
   template: PBS.qsub
@@ -39,6 +40,7 @@ pbs_estim:
   nnodes:   2
   ppnodes:  8 
   numprocs:   16
+  walltime: 05:00
   logout:   mopttest.log
   logerr:   mopttest.err
   template: PBS.qsub
