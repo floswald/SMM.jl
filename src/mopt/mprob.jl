@@ -58,6 +58,7 @@ end
 function evaluateObjective(m::MProb,p::Dict)
 
     x = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+    gc()
     return x
 end
 
@@ -86,6 +87,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     return (val_df,mom_df)
    
 end
+
 
 function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
 
