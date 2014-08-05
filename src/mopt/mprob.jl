@@ -109,7 +109,7 @@ function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
 
     for ip in 1:npar
         # fill in function values
-        val_df[ip, :f_val ] = v[ip]["value"][1]
+        val_df[ip, :f_val ] = v[ip]["value"]
 
         for im in 1:nmom
             # fill in moments values
