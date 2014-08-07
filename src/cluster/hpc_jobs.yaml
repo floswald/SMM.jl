@@ -1,0 +1,48 @@
+sge_slices:
+  name:   MOpt-slices
+  desc:   testing slices of MOpt
+  ncore:   5
+  logout:   mopttest.log
+  logerr:   mopttest.err
+  template: SGE.qsub
+  wd: /data/uctpfos/git/MOpt.jl/src/cluster
+  run:   sge_slices_mpi.jl 
+
+
+sge_estim:
+  name:   MOpt-estimate
+  desc:   testing estimation of MOpt
+  ncore:   5
+  logout:   mopttest.log
+  logerr:   mopttest.err
+  template: SGE.qsub
+  wd: /data/uctpfos/git/MOpt.jl/src/cluster
+  run:   sge_est_mpi.jl 
+
+
+pbs_slices:
+  name:   MOpt-slices
+  desc:   testing slices of MOpt
+  nnodes:   2
+  ppnodes:  8 
+  numprocs:   16
+  walltime: 05:00
+  logout:   mopttest.log
+  logerr:   mopttest.err
+  template: PBS.qsub
+  wd: /home/eisuc151/git/MOpt.jl/src/cluster
+  run:   pbs_slices_mpi.jl 
+
+
+pbs_estim:
+  name:   MOpt-estimate
+  desc:   testing estimation of MOpt
+  nnodes:   2
+  ppnodes:  8 
+  numprocs:   16
+  walltime: 05:00
+  logout:   mopttest.log
+  logerr:   mopttest.err
+  template: PBS.qsub
+  wd: /home/eisuc151/git/MOpt.jl/src/sge
+  run:   pbs_est_mpi.jl 
