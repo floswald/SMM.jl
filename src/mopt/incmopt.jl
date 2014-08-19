@@ -98,7 +98,7 @@ function transpose(x::DataFrame,newNames::Int)
     z = DataFrame(Float64,1,nrow(x))
     names!(z,Symbol[y for y in x[:,newNames]])
     for i in 1:nrow(x)
-        z[1,i] = x[i,newrows][1]
+        z[1,i] = x[i,newrows]
     end
     return z
 end
