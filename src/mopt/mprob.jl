@@ -105,11 +105,12 @@ function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
 
     mom_df = DataFrame(p_name = [par for i=1:(npar*nmom)], m_name=ASCIIString[ i for j=1:npar, i in m.moments_subset][:], p_val = repeat(prange,inner=[1],outer=[nmom]), m_val = zeros(npar*nmom))
     
-    val_df = DataFrame(p_name = [par for i=1:(npar)], p_val = prange, f_val = zeros(npar))
+    val_df = DataFrame(p_name = [par for i=1:(npar)], p_val = prange, f_val = zeros(npar), status = zeros(npar))
 
     for ip in 1:npar
         # fill in function values
-        val_df[ip, :f_val ] = v[ip]["value"]
+        val_df[ip, :f_val ] = v[ip]["value"][1]
+        val_df[ip, :status] = v[ip]["status"][1]
 
         for im in 1:nmom
             # fill in moments values
