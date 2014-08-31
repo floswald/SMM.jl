@@ -41,7 +41,11 @@ include("mopt/incmopt.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 
+# for now plotting only on my box because
+# installing matplotlib on unix hpc is tricky.
+# comment this out if you want the plot function
 if Sys.OS_NAME == :Darwin
+       using PyPlot
        include("mopt/plotting.jl")
 end
 
