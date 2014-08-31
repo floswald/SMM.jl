@@ -38,16 +38,5 @@ println("calling runMopt now")
 # run it
 runMOpt!(MA)
 
-# plot outputs
-MOpt.figure(1)
-plot(MA,"acc")
-MOpt.figure(2)
-plot(MA,"params_time")
-MOpt.figure(3)
-plot(MA,"params_dist")
-
-# save results
-save(MA,MA["savefile"])
-	
 
 

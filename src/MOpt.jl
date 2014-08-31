@@ -4,12 +4,10 @@ module MOpt
 # Dependencies
 # ############
 
-using Distributions, PyPlot
+using Distributions, HDF5
 using Reexport
 @reexport using DataFrames
 import Base.show, Base.transpose
-import PyPlot.plot
-# using HDF5
 
 # exports
 # ############
@@ -25,15 +23,12 @@ export MProb,
        parameters,
        evals,
        infos,
-       plot,
        allstats,
        moments,
        hist,
        runMOpt!,
-       # save,
+       save,
        slices,
-       plotSlices,
-       savePlots,
        transpose
 
 
@@ -45,6 +40,10 @@ include("mopt/chains.jl")
 include("mopt/incmopt.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
+
+if Sys.OS_NAME == :Darwin
+       include("mopt/plotting.jl")
+end
 
 
 end 	# module

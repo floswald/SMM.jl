@@ -380,23 +380,33 @@ end
 
 
 # save algo chains component-wise to HDF5 file
-# function save(algo::MAlgoBGP, filename::ASCIIString)
+function save(algo::MAlgoBGP, filename::ASCIIString)
 
-#   # step 1, create the file if it does not exist
-#   ff5 = h5open(filename, "w")
 
-#   	# TODO find a way to add entire objects
-#   		# add global algo info: opts
-#         write(ff5,"algo/opts/keys",convert(Array{ASCIIString,1},collect(keys(algo.opts))))
-#         # write(ff5,"algo/opts/values",collect(values(algo.opts)))
+    # step 1, create the file if it does not exist
+    ff5 = h5open(filename, "w")
 
-# 	  # saving the chains
-# 	  for cc in 1:algo["N"]
-# 	    saveChainToHDF5(algo.MChains[cc], ff5, "chain/$cc")
-# 	  end
+	# saving the opts dict: complicated because values are numbers and strings.
+    vals = ASCIIString[]
+    keys = ASCIIString[]
+	for (k,v) in algo.opts
+		if typeof(v) <: Number
+			push!(vals,"$v")
+		else
+			push!(vals,v)
+		end
+		push!(keys,k)
+	end
+    write(ff5,"algo/opts/keys",keys)
+    write(ff5,"algo/opts/vals",vals)
 
-#   close(ff5)
-# end
+	# saving the chains
+	for cc in 1:algo["N"]
+	    saveChainToHDF5(algo.MChains[cc], ff5, "chain/$cc")
+	end
+
+    close(ff5)
+end
 
 
 function show(io::IO,MA::MAlgoBGP)

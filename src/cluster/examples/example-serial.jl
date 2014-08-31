@@ -26,7 +26,6 @@ mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 # the others fixed?
 
 obj_slices = slices(mprob,30)
-plotSlices(mprob,obj_slices[1],obj_slices[2])
 
 opts =[
 	"N"               => 6,							# number of MCMC chains
@@ -51,16 +50,6 @@ MA = MAlgoBGP(mprob,opts)
 # run the estimation
 runMOpt!(MA)
 
-# plot restults
-MOpt.figure()
-plot(MA,"acc")
-MOpt.figure()
-plot(MA,"params_time")
-MOpt.figure()
-plot(MA,"params_dist")
-
-# save all plots
-savePlots(pwd(),"png")
 
 # save results
 # save(MA,MA["savefile"])

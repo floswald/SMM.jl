@@ -2,6 +2,8 @@
 
 # MOpt.jl: Moment Optimization Library for [Julia](http://julialang.org)
 
+# this branch is without plotting facilities. for hpc systems where installing PYplot is difficult.
+
 
 [![Build Status](https://travis-ci.org/floswald/MOpt.jl.png?branch=master)](https://travis-ci.org/floswald/MOpt.jl)
 

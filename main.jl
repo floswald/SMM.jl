@@ -5,7 +5,7 @@
 home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
-include("src/sge/examples/example-serial.jl")
+include("src/cluster/examples/example-serial.jl")
 
 
 

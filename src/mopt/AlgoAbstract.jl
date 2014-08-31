@@ -32,6 +32,18 @@ function runMOpt!( algo::MAlgo )
 
 	info("Starting estimation loop.")
 
+	# TODO
+	# currently this recreates the full dataset on each save
+	# if this is slow or otherwise problematic, do something like
+
+    # ff5 = h5open(filename, "w")
+	# g = ff5["parameters"]
+	# a_data = d_create(g, "a", datatype(Float64), dataspace(algo["maxiter"],1), "chunk", (ifloor(algo["maxiter"] / algo["save_frequency"]),1))
+	# b_data = d_create(g, "b", datatype(Float64), dataspace(algo["maxiter"],1), "chunk", (ifloor(algo["maxiter"] / algo["save_frequency"]),1))
+	# if saving...
+	# a_data[i-algo["save_frequency"] + 1 : i] = ...
+	# although needs to be done by chain...
+
 	# do iteration
 	for i in 1:algo["maxiter"]
 
@@ -40,8 +52,15 @@ function runMOpt!( algo::MAlgo )
 		computeNextIteration!( algo )
 
 		# save at certain frequency
-		# TODO look into HDF5 chunk saving
+		# TODO look into HDF5 chunk saving?
+		if haskey(algo.opts,"save_frequency")
+			@assert haskey(algo.opts,"filename")
+			if mod(i,algo["save_frequency"]) == 0
+				save(algo,algo["filename"])
+			end
+		end
 
+		# printing progress
 		if haskey(algo.opts,"print_level")
 			if algo["print_level"] > 2
 				println(infos(algo.MChains,algo.i))
@@ -56,77 +75,10 @@ function runMOpt!( algo::MAlgo )
 			end
 		end
 	end
+	info("Done with estimation loop.")
 end
 
 
-
-
-
-
-
-
-function histogram(x,nb::Int) 
-  n, bins = hist(x,nb)
-  nvec = [n]
-  bar(nvec[1:end-1], bins, width = nvec[2] - nvec[1])
-end
-
-function plot(algo::MAlgo, what)
-
-	if (what == "acc")
-		dd = infos(algo.MChains)
-		subplot(211)
-		for sdf in groupby(dd, :chain_id)
-  			PyPlot.plot(sdf[:iter],sdf[:accept_rate])
-  			I = sdf[:exchanged_with].>0
-  			PyPlot.plot( sdf[I,:iter], sdf[I,:accept_rate],"o")
-  			title("Acceptance Rates by chain")
-		end
-		subplot(212)
-		for sdf in groupby(dd, :chain_id)
-  			PyPlot.plot(sdf[:shock_sd])
-  			I = sdf[:exchanged_with].>0
-  			PyPlot.plot( sdf[I,:iter], sdf[I,:shock_sd],"o")
-  			title("Variance of shock by chain")
-		end
-		# suptitle("MCMC Sampling Processes by Chain\nColored dots indicate jumps")
-	end
-
-	if (what == "params_time")
-		dd = sort!(parameters(algo.MChains,true)[[:chain_id,:iter,algo.m.p2sample_sym]])
-		npars = length(algo.m.p2sample_sym)
-		nrows = floor(sqrt(npars))
-		ncols = ceil(npars/nrows)
-		pid = 0
-		for par in algo.m.p2sample_sym
-			pid += 1
-			subplot(nrows,ncols,pid)
-			for sdf in groupby(dd, :chain_id)
-  				plot(sdf[:iter],sdf[par])
-  				title("$(string(par))")
-  			end
-		end
-		suptitle("Parameter values over time")
-	end
-	if (what == "params_dist")
-		dd = parameters(algo.MChains,true)[[:chain_id,:iter,algo.m.p2sample_sym]]
-		npars = length(algo.m.p2sample_sym)
-		nrows = floor(sqrt(npars))
-		ncols = ceil(npars/nrows)
-		pid = 0
-		for par in algo.m.p2sample_sym
-			pid += 1
-			subplot(nrows,ncols,pid)
-			# println(sdf[:iter])
-			# plot(sdf[:iter],sdf[par])
-			histogram(dd[par],30)
-			title(string(par))
-			xlabel("parameter value")
-  		end
-		suptitle("Posterior Distribution of Parameters")
-	end
-
-end
 
 
 
