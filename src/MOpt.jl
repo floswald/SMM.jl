@@ -4,7 +4,7 @@ module MOpt
 # Dependencies
 # ############
 
-using Distributions
+using Distributions, HDF5
 using Reexport
 @reexport using DataFrames
 import Base.show, Base.transpose
@@ -27,7 +27,7 @@ export MProb,
        moments,
        hist,
        runMOpt!,
-       # save,
+       save,
        slices,
        transpose
 
@@ -40,6 +40,10 @@ include("mopt/chains.jl")
 include("mopt/incmopt.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
+
+if Sys.OS_NAME == :Darwin
+       include("mopt/plotting.jl")
+end
 
 
 end 	# module
