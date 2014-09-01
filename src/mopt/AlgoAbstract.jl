@@ -47,6 +47,8 @@ function runMOpt!( algo::MAlgo )
 	# do iteration
 	for i in 1:algo["maxiter"]
 
+		t0 = time()
+
 		algo.i = i
 
 		computeNextIteration!( algo )
@@ -61,17 +63,22 @@ function runMOpt!( algo::MAlgo )
 		end
 
 		# printing progress
-		if haskey(algo.opts,"print_level")
-			if algo["print_level"] > 2
+		t1 = round(time()-t0,2)
+		if get(algo.opts,"print_level",0) > 2 
+			info("iteration $i took $t1 seconds")
+			println()
+			println(infos(algo.MChains,algo.i))
+		elseif get(algo.opts,"print_level",0) > 1
+			if mod(algo.i,10) == 0
+				info("iteration $i took $t1 seconds")
+				println()
 				println(infos(algo.MChains,algo.i))
-			elseif algo["print_level"] > 1
-				if mod(algo.i,10) == 0
-					println(infos(algo.MChains,algo.i))
-				end
-			elseif algo["print_level"] > 0
-				if mod(algo.i,100) == 0
-					println(infos(algo.MChains,algo.i))
-				end
+			end
+		elseif get(algo.opts,"print_level",0) > 0
+			if mod(algo.i,100) == 0
+				info("iteration $i took $t1 seconds")
+				println()
+				println(infos(algo.MChains,algo.i))
 			end
 		end
 	end

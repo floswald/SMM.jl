@@ -11,26 +11,26 @@ abstract AbstractChain
 # we create a dictionary with arrays
 # for each parameters
 type Chain <: AbstractChain
-  i::Int              # current index
-  infos      ::DataFrame   
-  parameters ::DataFrame  
-  moments    ::DataFrame 
-  params_nms ::Array{Symbol,1}  # DataFrame names of parameters (i.e. exclusive of "id" or "iter", etc)
-  params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
-  moments_nms::Array{Symbol,1}  # DataFrame names of moments
-
-  function Chain(MProb,L)
-    # infos      = DataFrame(iter=0, evals = 0.0, accept = true, status = 0, exhanged_with=0, prob=0.0)
-    infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L))
-    par_nms = Symbol[ symbol(x) for x in ps_names(MProb) ]
-    par2s_nms = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
-    mom_nms = Symbol[ symbol(x) for x in ms_names(MProb) ]
-    parameters = convert(DataFrame,zeros(L,length(par_nms)+1))
-    moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
-    names!(parameters,[:iter, par_nms])
-    names!(moments   ,[:iter, mom_nms])
-    return new(0,infos,parameters,moments,par_nms,par2s_nms,mom_nms)
-  end
+    i            :: Int              # current index
+    infos        :: DataFrame
+    parameters   :: DataFrame
+    moments      :: DataFrame
+    params_nms   :: Array{Symbol,1}  # DataFrame names of parameters (i.e. exclusive of "id" or "iter", etc)
+    params2s_nms :: Array{Symbol,1}  # DataFrame names of parameters to sample
+    moments_nms  :: Array{Symbol,1}  # DataFrame names of moments
+  
+    function Chain(MProb,L)
+        # infos      = DataFrame(iter=0, evals = 0.0, accept = true, status = 0, exhanged_with=0, prob=0.0)
+        infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L))
+        par_nms    = Symbol[ symbol(x) for x in ps_names(MProb) ]
+        par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
+        mom_nms    = Symbol[ symbol(x) for x in ms_names(MProb) ]
+        parameters = convert(DataFrame,zeros(L,length(par_nms)+1))
+        moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
+        names!(parameters,[:iter, par_nms])
+        names!(moments   ,[:iter, mom_nms])
+        return new(0,infos,parameters,moments,par_nms,par2s_nms,mom_nms)
+    end
 end
 
 # methods for a single chain
@@ -84,7 +84,7 @@ function appendEval!(chain::AbstractChain, val::Float64, par::Dict, mom::DataFra
     # for ip in chain.params_nms
     #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
     # end
-  return nothing
+    return nothing
 end
 
 # same for 
@@ -102,7 +102,7 @@ function appendEval!(chain::AbstractChain, val::Float64, par::DataFrame, mom::Da
     # for ip in chain.params_nms
     #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
     # end
-  return nothing
+    return nothing
 end
 # methods for an array of chains
 # ==============================

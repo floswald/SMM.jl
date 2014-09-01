@@ -399,7 +399,7 @@ facts("testing exchangeMoves") do
 
 	println("this test sets min_jump_prob=1 to make sure that there is a jump for sure")
 
-		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1,"printlevel" => 3] 
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1,"print_level" => 3] 
 
 		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
@@ -522,7 +522,7 @@ facts("testing saving of algo") do
 		"maxiter"=> 100,
 		"filename"=> joinpath(pwd(),"test.h5"),
 		"maxtemp"=>100,
-		"printlevel"=>2,
+		"print_level"=>2,
 		"min_shock_sd"=>0.1,
 		"max_shock_sd"=>1,
 		"past_iterations"=>30,
@@ -582,7 +582,7 @@ facts("testing intermittent saving of algo") do
 		"filename"=> joinpath(pwd(),"test.h5"),
 		"save_frequency"=> 10,
 		"maxtemp"=>100,
-		"printlevel"=>2,
+		"print_level"=>2,
 		"min_shock_sd"=>0.1,
 		"max_shock_sd"=>1,
 		"past_iterations"=>30,

@@ -234,7 +234,8 @@ function exchangeMoves!(algo::MAlgoBGP)
 			if rand() < algo.MChains[ch].jump_prob
 				ex_with =sample(close)
 				swapRows!(algo,(ch,ex_with),algo.i)
-				if algo["printlevel"] > 2
+
+				if get(algo.opts,"print_level",0) > 2 	# if opts has key "print_level, get it, else get default (0)"
 					println("exchanged $ex_with with $ch")
 				end
 			end
@@ -356,7 +357,7 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
 
-		if algo["printlevel"] > 2
+		if get(algo.opts,"print_level",0) > 3
 			println("shock to parameters on chain $ch :")
 			println(shock)
 		end
