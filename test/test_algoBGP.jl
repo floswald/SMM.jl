@@ -397,7 +397,9 @@ facts("testing exchangeMoves") do
 
 	context("testing exchangeMoves: some chains exchange") do
 
-		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
+	println("this test sets min_jump_prob=1 to make sure that there is a jump for sure")
+
+		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1,"printlevel" => 3] 
 
 		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
@@ -408,28 +410,31 @@ facts("testing exchangeMoves") do
 		MA.i = 2
 		MOpt.updateIterChain!(MA.MChains)
 
-		# index we want to fix: ch
+		# index we want to exchange 1 and 2 with something else
 		ch = 1
 		ch2 = 2
-		v[ch2]["value"] = v[ch2]["value"] + randn()*0.01
-		MOpt.appendEval!(MA.MChains[ch],v[ch]["value"],v[ch]["params"],v[ch]["moments"],true,1,rand())
 		MOpt.appendEval!(MA.MChains[ch],v[ch]["value"],v[ch]["params"],v[ch]["moments"],false,1,1.0) 
 		MOpt.appendEval!(MA.MChains[ch2],v[ch2]["value"],v[ch2]["params"],v[ch2]["moments"],false,1,1.0) 
 		for i in 1:length(v) 
+			# for all other chains set jump_prob = 0 
 			if ((i != ch) & (i != ch2))
-				v[i]["value"] = v[i]["value"]+100
+				MA.MChains[i].jump_prob = 0.0
 				MOpt.appendEval!(MA.MChains[i],v[i]["value"],v[i]["params"],v[i]["moments"],false,1,1.0)
 			end
 		end
 
-		MOpt.exchangeMoves!(MA,ch,v[1]["value"])
+		MOpt.exchangeMoves!(MA)
 
-		# expect we exchanged ch with ch2 and nothing else
-		@fact infos(MA.MChains[ch],MA.i)[:exchanged_with][1] .== ch2 =>true
-		@fact infos(MA.MChains[ch2],MA.i)[:exchanged_with][1] .== ch =>true
+		# expect we exchanged ch1 and ch2 but nothing else
+		ex_1 = infos(MA.MChains[ch],MA.i)[:exchanged_with][1]
+		ex_2 = infos(MA.MChains[ch2],MA.i)[:exchanged_with][1]
+		@fact  ex_1 != 0 => true
+		@fact  ex_2 != 0 => true
 		for i in 1:length(v) 
-			if ((i != ch) & (i != ch2))
-				@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
+			if ((i != ch) & (i != ch2) &(i != ex_1) & (i!=ex_2))
+				@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] == 0 =>true
+			else
+				# dont' know the pairs!
 			end
 		end
 
@@ -437,6 +442,7 @@ facts("testing exchangeMoves") do
 
 
 	context("testing exchangeMoves: 0 chains exchange") do
+	println("this test sets min_jump_prob=0 to rule out any jump")
 	
 		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>0.0,"max_jump_prob"=>0.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
 
@@ -462,7 +468,7 @@ facts("testing exchangeMoves") do
 			end
 		end
 
-		MOpt.exchangeMoves!(MA,ch,v[1]["value"])
+		MOpt.exchangeMoves!(MA)
 
 		for i in 1:length(v) 
 			@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
@@ -516,6 +522,7 @@ facts("testing saving of algo") do
 		"maxiter"=> 100,
 		"filename"=> joinpath(pwd(),"test.h5"),
 		"maxtemp"=>100,
+		"printlevel"=>2,
 		"min_shock_sd"=>0.1,
 		"max_shock_sd"=>1,
 		"past_iterations"=>30,
@@ -575,6 +582,7 @@ facts("testing intermittent saving of algo") do
 		"filename"=> joinpath(pwd(),"test.h5"),
 		"save_frequency"=> 10,
 		"maxtemp"=>100,
+		"printlevel"=>2,
 		"min_shock_sd"=>0.1,
 		"max_shock_sd"=>1,
 		"past_iterations"=>30,

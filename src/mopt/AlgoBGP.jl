@@ -75,6 +75,7 @@ function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, A
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = status
     chain.infos[chain.i,:eval_time] = time
+    chain.infos[chain.i,:shock_sd] = chain.shock_sd
     chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
     for (k,v) in par
         chain.parameters[chain.i,symbol(k)] = v
@@ -109,7 +110,7 @@ end
 # *) computes N new parameter vectors
 # *) applies a criterion to accept/reject any new params
 # *) stores the result in chains
-function computeNextIteration!( algo::MAlgoBGP  )
+function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
@@ -122,7 +123,10 @@ function computeNextIteration!( algo::MAlgoBGP  )
 		# else update iteration count on all chains
 		updateIterChain!(algo.MChains)
 
-		@assert algo.i == algo.MChains[1].i
+		# check algo index is the same on all chains
+		for ic in 1:algo["N"]
+			@assert algo.i == algo.MChains[ic].i
+		end
 
 		# New Candidates
 		# --------------
@@ -143,11 +147,11 @@ function computeNextIteration!( algo::MAlgoBGP  )
 
 		localMovesMCMC!(algo,v)
 
-		# # Part 2) EXCHANGE MOVES 
-		# # ----------------------
-		# if algo["N"] >1
-		# 	exchangeMoves!(algo)
-		# end
+		# Part 2) EXCHANGE MOVES 
+		# ----------------------
+		if algo.i>1 && algo["N"] > 1 
+			exchangeMoves!(algo)
+		end
 
 		# Part 3) update sampling variances
 	end
@@ -208,31 +212,31 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array)
 		    algo.MChains[ch].infos[algo.i,:shock_sd]      = algo.MChains[ch].shock_sd
 		    algo.MChains[ch].infos[algo.i,:perc_new_old] = (xnew - xold) / abs(xold)
 		end
-		if algo.i>1 && algo["N"] > 1 
-			exchangeMoves!(algo,ch,xold)
-		end
-	end
-	if mod(algo.i,100) == 0
-		println("iter = $(algo.i)")
 	end
 end
 
-function exchangeMoves!(algo::MAlgoBGP,ch::Int,oldval)
-
-	# 1) find all chains with value +/- 10% of chain ch
-	for ch2 in 1:algo["N"]
-		dist = Float64[]
-		idx = Int64[]
-		if ch != ch2
-			tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)
-			push!(dist,tmp)
-			push!(idx,ch2)
+function exchangeMoves!(algo::MAlgoBGP)
+	# for all chains
+	for ch in 1:algo["N"]
+		oldval = evals(algo.MChains[ch],algo.MChains[ch].i)[1]
+		# 1) find all other chains with value +/- x% of chain ch
+		close = Int64[]  # vector of indices of "close" chains
+		for ch2 in 1:algo["N"]
+			if ch != ch2
+				tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)
+				if tmp < algo.MChains[ch].dist_tol
+					push!(close,ch2)
+				end
+			end
 		end
-		close = idx[dist .< algo.MChains[ch].dist_tol]
-		if length(close) >0
-			# 2) with 5% probability exchange with a randomly chosen chain from close
+		# 2) with y% probability exchange with a randomly chosen chain from close
+		if length(close) > 0
 			if rand() < algo.MChains[ch].jump_prob
-				swapRows!(algo,(ch,sample(close)),algo.i)
+				ex_with =sample(close)
+				swapRows!(algo,(ch,ex_with),algo.i)
+				if algo["printlevel"] > 2
+					println("exchanged $ex_with with $ch")
+				end
 			end
 		end
 	end
@@ -351,6 +355,11 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
+
+		if algo["printlevel"] > 2
+			println("shock to parameters on chain $ch :")
+			println(shock)
+		end
 
 		updateCandidateParam!(algo,ch,shock)
 

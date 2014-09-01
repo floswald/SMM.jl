@@ -15,6 +15,8 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 
 ## Example Usage of the BGP Algorithm
 
+Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](http://arxiv.org/abs/1108.3423) propose an approximate Bayesian Computation (ABC) algorithm that incorporates the parallel tempering idea of Geyer (1991). We provide the BGP algorithm as a template called `MAlgoBGP`. Here we use it to run a simple toy example.
+
 ```julia
 using MOpt
 
