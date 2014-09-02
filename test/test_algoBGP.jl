@@ -217,10 +217,10 @@ facts("testing swaprows") do
 		pair = (1,3)
 
 		# get params and moms
-		p1 = parameters(MA.MChains[pair[1]],ix)
-		p2 = parameters(MA.MChains[pair[2]],ix)
-		m1 = moments(MA.MChains[pair[1]],ix)
-		m2 = moments(MA.MChains[pair[2]],ix)
+		p1 = parameters(MA.MChains[pair[1]],ix,false)
+		p2 = parameters(MA.MChains[pair[2]],ix,false)
+		m1 = MA.MChains[pair[1]].moments[ix,MA.MChains[pair[1]].moments_nms]
+		m2 = MA.MChains[pair[2]].moments[ix,MA.MChains[pair[2]].moments_nms]
 		v1 = evals(MA.MChains[pair[1]],ix)
 		v2 = evals(MA.MChains[pair[2]],ix)
 
@@ -231,8 +231,8 @@ facts("testing swaprows") do
 		# check parameters
 		@fact parameters(MA.MChains[pair[1]],ix) == p2 => true
 		@fact parameters(MA.MChains[pair[2]],ix) == p1 => true
-		@fact moments(MA.MChains[pair[1]],ix) == m2 => true
-		@fact moments(MA.MChains[pair[2]],ix) == m1 => true
+		@fact MA.MChains[pair[1]].moments[ix,MA.MChains[pair[1]].moments_nms] == m2 => true
+		@fact MA.MChains[pair[2]].moments[ix,MA.MChains[pair[2]].moments_nms] == m1 => true
 		@fact evals(MA.MChains[pair[1]],ix) == v2 => true
 		@fact evals(MA.MChains[pair[2]],ix) == v1 => true
 

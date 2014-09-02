@@ -12,60 +12,64 @@
 
 # Define a Chain Type for BGP
 type BGPChain <: AbstractChain
-  id::Int             # chain id
-  i::Int              # current index
-  infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
-  parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
-  moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
-  accept_tol ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
-  dist_tol   ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
-  jump_prob  ::Float64 # probability of swapping with "close" chain
+    id::Int             # chain id
+    i::Int              # current index
+    infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
+    parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
+    moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
+    accept_tol ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
+    dist_tol   ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
+    jump_prob  ::Float64 # probability of swapping with "close" chain
+  
+    params_nms ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
+    moments_nms::Array{Symbol,1}	# names of moments
+    params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
+  
+    # TODO need either of those not both
+    # the paper uses tempering to set up the kernel,
+    # tibo uses shock_sd to amplify the shocks. expect small difference.
+    tempering  ::Float64 # tempering in update probability
+    shock_sd   ::Float64 # sd of shock to 
 
-  params_nms ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
-  moments_nms::Array{Symbol,1}	# names of moments
-  params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
-
-  # TODO need either of those not both
-  # the paper uses tempering to set up the kernel,
-  # tibo uses shock_sd to amplify the shocks. expect small difference.
-  tempering  ::Float64 # tempering in update probability
-  shock_sd   ::Float64 # sd of shock to 
-
-  function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
-    infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L))
-    parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
-    moments = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
-    par_nms   = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
-    par2s_nms = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
-    mom_nms   = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
-    names!(parameters,[:chain_id,:iter, par_nms])
-    names!(moments   ,[:chain_id,:iter, mom_nms])
-    return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
-  end
+    function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
+    	infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
+	    parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
+	    moments    = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
+	    par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
+	    par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
+	    mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
+	    names!(parameters,[:chain_id,:iter, par_nms])
+	    names!(moments   ,[:chain_id,:iter, mom_nms])
+	    return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
+    end
 end
 
 
 
 type MAlgoBGP <: MAlgo
-  m               :: MProb # an MProb
-  opts            :: Dict	# list of options
-  i               :: Int 	# iteration
-  current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
-  MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
+    m               :: MProb # an MProb
+    opts            :: Dict	# list of options
+    i               :: Int 	# iteration
+    current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
+    MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
+  
+    function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
 
-  function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
+		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
+		acctol    = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
+		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
+		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
+		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
+	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+	  	# current param values
+	  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
 
-	temps     = linspace(1.0,opts["maxtemp"],opts["N"])
-	acctol    = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
-	shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
-	disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
-	jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
-  	# current param values
-  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
+	    return new(m,opts,0,cpar,chains)
+    end
+end
 
-    return new(m,opts,0,cpar,chains)
-  end
+type BGPChains
+	MChains :: Array{BGPChain,1}
 end
 
 function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
@@ -76,6 +80,7 @@ function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, A
     chain.infos[chain.i,:status] = status
     chain.infos[chain.i,:eval_time] = time
     chain.infos[chain.i,:shock_sd] = chain.shock_sd
+    chain.infos[chain.i,:tempering] = chain.tempering
     chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
     for (k,v) in par
         chain.parameters[chain.i,symbol(k)] = v
@@ -91,6 +96,8 @@ function appendEval!(chain::BGPChain, val::Float64, par::DataFrame, mom::DataFra
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = status
     chain.infos[chain.i,:eval_time] = time
+    chain.infos[chain.i,:shock_sd] = chain.shock_sd
+    chain.infos[chain.i,:tempering] = chain.tempering
     chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
     # for im in chain.moments_nms
     #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
@@ -281,14 +288,16 @@ end
 
 function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 
+	mnames = algo.MChains[pair[1]].moments_nms
+	pnames = algo.MChains[pair[1]].params2s_nms
 	# pars, moms and value from 1
-	p1 = parameters(algo.MChains[pair[1]],i,true) 	# true: get entire row
-	m1 = moments(algo.MChains[pair[1]],i)
+	p1 = parameters(algo.MChains[pair[1]],i,false) 	# false: only get params to sample
+	m1 = algo.MChains[pair[1]].moments[i,mnames]
 	v1 = evals(algo.MChains[pair[1]],i)
 
 	# same for 2
-	p2 = parameters(algo.MChains[pair[2]],i,true) 	# true: get entire row
-	m2 = moments(algo.MChains[pair[2]],i)
+	p2 = parameters(algo.MChains[pair[2]],i,false) 	# false: only get params to sample
+	m2 = algo.MChains[pair[2]].moments[i,mnames]
 	v2 = evals(algo.MChains[pair[2]],i)
 
 	# make a note in infos
@@ -296,10 +305,10 @@ function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
 
 	# swap
-	algo.MChains[pair[1]].parameters[i,:] = p2
-	algo.MChains[pair[2]].parameters[i,:] = p1
-	algo.MChains[pair[1]].moments[i,:] = m2
-	algo.MChains[pair[2]].moments[i,:] = m1
+	algo.MChains[pair[1]].parameters[i,pnames] = p2
+	algo.MChains[pair[2]].parameters[i,pnames] = p1
+	algo.MChains[pair[1]].moments[i,mnames] = m2
+	algo.MChains[pair[2]].moments[i,mnames] = m1
 	algo.MChains[pair[1]].infos[i,:evals] = v2[1]
 	algo.MChains[pair[2]].infos[i,:evals] = v1[1]
 
