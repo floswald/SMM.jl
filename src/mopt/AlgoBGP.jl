@@ -156,7 +156,8 @@ function computeNextIteration!( algo::MAlgoBGP )
 
 		# Part 2) EXCHANGE MOVES 
 		# ----------------------
-		if algo.i>1 && algo["N"] > 1 
+		# starting mixing in period 4
+		if algo.i>2 && algo["N"] > 1 
 			exchangeMoves!(algo)
 		end
 
@@ -230,7 +231,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 		close = Int64[]  # vector of indices of "close" chains
 		for ch2 in 1:algo["N"]
 			if ch != ch2
-				tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)
+				tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
 				if tmp < algo.MChains[ch].dist_tol
 					push!(close,ch2)
 				end

@@ -8,7 +8,7 @@ using FactCheck, DataFrames, MOpt
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
 moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
-
+# objfunc_opts = ["printlevel" => 1]
 mprob = MProb(p,pb,MOpt.Testobj,moms)
 
 facts("testing MAlgoBGP Constructor") do
@@ -482,6 +482,12 @@ end
 
 facts("testing MAlgo methods") do
 	
+	p    = ["a" => 0.1 , "b" => 0.9]
+	pb   = [ "a" => [0,1] , "b" => [0,1] ]
+	moms = DataFrame(moment=["alpha","beta"],data_value=[0.8,0.7],data_sd=rand(2))
+	objfunc_opts = ["printlevel" => 1]
+	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms,objfunc_opts=objfunc_opts)
+
 	context("testing evaluateObjective(algo)") do
 
 		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 

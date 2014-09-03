@@ -1,8 +1,14 @@
 
 # define a Test objective function
-function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
 
 	t0 = time()
+
+    if length(vargs) > 0
+        if get(vargs[1],"printlevel",0) > 0
+            info("in Test objective function")
+        end
+    end
 
     mm = deepcopy(mom)
     nm0 = names(mm)
@@ -37,11 +43,17 @@ end
  # ret = ["value" => 1.1, "params" => ["a"=>1.1,"b"=>12.1], "time" => 0, "status" => 1, "moments" => ["alpha"=>1.1,"beta"=>12.1,"gamma"=>12.1] ]
 
 
-function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
     
     # println("I am worker number: $(myid())")
 
     t0 = time()
+    if length(vargs) > 0
+        if get(vargs[1],"printlevel",0) > 0
+            info("in Test objective function")
+        end
+    end
+    
     sigma = convert(Matrix,Diagonal([1.0,1.0]))
     ns = 5000
 

@@ -10,6 +10,7 @@ type MProb
   params_to_sample_df  :: DataFrame
   p2sample_sym     :: Array{Symbol,1} # column names of params to sample for dataframes
   objfunc          :: Function # objective function
+  objfunc_opts     :: Dict     # options passed to the objective function, e.g. printlevel
   # moments          :: Dict  # a dictionary of moments to track
   moments          :: DataFrame # a dictionary of moments to track
   moments_subset   :: Array{ASCIIString}  # an array of moment names to subset objective funciton
@@ -19,7 +20,7 @@ type MProb
     initial_value,
     params_to_sample,
     objfunc,moments; 
-    moments_subset=moments[:moment])
+    moments_subset=moments[:moment],objfunc_opts=Dict())
 
     # assert that moments has two entries for each moment: value and sd
     # @assert all(map(x -> length(x),values(moments)) .== 2)
@@ -37,7 +38,7 @@ type MProb
     pdf = DataFrame(param=collect(keys(params_to_sample)),lb=map(x -> x[1], values(params_to_sample)),ub=map(x -> x[2], values(params_to_sample)))
     sort!(pdf,cols=1)
 
-    return new(p0,pdf,par2sample_sym,objfunc,moments,moments_subset)
+    return new(p0,pdf,par2sample_sym,objfunc,objfunc_opts,moments,moments_subset)
 
   end # constructor
 end #type
@@ -57,7 +58,7 @@ end
 # evalute objective function
 function evaluateObjective(m::MProb,p::Dict)
 
-    x = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset))
+    x = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset,m.objfunc_opts))
     gc()
     return x
 end
