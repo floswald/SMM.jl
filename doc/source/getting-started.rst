@@ -51,10 +51,5 @@ Example Useage
   # ----------------------
   runMopt(algo)
 
-.. py:function:: MProb(ss)
-  
-  this creates an MProb object
-  
-  :param str ss: some argument to the function
 
   

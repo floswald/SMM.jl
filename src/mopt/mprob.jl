@@ -1,7 +1,9 @@
-# the type MProb describes the optimization
-# problem, it knows about the parameters
-# to estimate, their names and bounds, 
-# but also about the moments and their names.
+#'.. py:class:: MProb
+#'
+#'   the type MProb describes the optimization
+#'   problem, it knows about the parameters
+#'   to estimate, their names and bounds, 
+#'   but also about the moments and their names.
 type MProb
 
   # setup
@@ -43,7 +45,9 @@ type MProb
   end # constructor
 end #type
 
-# returns the list of paramaters to sample
+#'.. py:function:: ps_names
+#'
+#'   returns the list of paramaters to sample
 function ps_names(mprob::MProb)
   return(keys(mprob.initial_value))
 end
@@ -64,7 +68,9 @@ function evaluateObjective(m::MProb,p::Dict)
 end
 
 
-
+#'.. py:function:: slices(m,pad)
+#'
+#'   computes slices for the objective function
 function slices(m::MProb,npoints::Int,pad=0.1)
 
     # make a dict of grids for each param
@@ -90,6 +96,9 @@ function slices(m::MProb,npoints::Int,pad=0.1)
 end
 
 
+#'.. py:function:: computeSlice(m,par,prange)
+#'
+#'   computes slices for the objective function
 function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
 
     npar = length(prange)
