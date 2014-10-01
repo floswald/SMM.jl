@@ -53,6 +53,15 @@ But as well using a DataFrame which is usually how moments are loaded, from a cs
   dd = DataFrame(name= ["m1", "m2"], value=[0.1,0.1], sd=[0.01,0.01])
   addMoment!(mprob, dd, [:name,:value,:sd])
 
+Step 3: set the objective function
+----------------------------------
+
+This is simply giving the function that will evaluate the objective for a given set of parameters. For this example, we use a test objective function defined within the package. See the dedicated section on supplying your own obejective function.
+
+.. code-block:: julia
+
+  addObj!(mprob, objfunc_norm2 )
+
 Done, next is selecting an algorithm
 ------------------------------------
 
@@ -65,12 +74,13 @@ Putting all at once using Lazy.jl
 
   mprob = @> begin
     Mprob()
-    addParam!("c", 0.1)
-    addParam!("d", 0.2)
+    addParam!(       "c", 0.1)
+    addParam!(       "d", 0.2)
     addSampledParam!("a", 0.1, 0, 1)
     addSampledParam!("b", 0.1, 0, 1) 
-    addMoment!("m1", 0.1, 0.001)
-    addMoment!("m2", 0.1, 0.001)
+    addMoment!( "m1", 0.1, 0.001)
+    addMoment!( "m2", 0.1, 0.001)
+    addObj!( objfunc_norm2 )
   end
 
 
