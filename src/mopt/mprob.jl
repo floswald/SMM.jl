@@ -24,6 +24,8 @@ type MProb
     objfunc,moments; 
     moments_subset=moments[:moment],objfunc_opts=Dict())
 
+    this = new()
+
     # assert that moments has two entries for each moment: value and sd
     # @assert all(map(x -> length(x),values(moments)) .== 2)
 
@@ -40,7 +42,15 @@ type MProb
     pdf = DataFrame(param=collect(keys(params_to_sample)),lb=map(x -> x[1], values(params_to_sample)),ub=map(x -> x[2], values(params_to_sample)))
     sort!(pdf,cols=1)
 
-    return new(p0,pdf,par2sample_sym,objfunc,objfunc_opts,moments,moments_subset)
+    this.initial_value       = p0
+    this.params_to_sample_df = pdf
+    this.p2sample_sym        = par2sample_sym
+    this.objfunc             = objfunc
+    this.objfunc_opts        = objfunc_opts
+    this.moments             = moments
+    this.moments_subset      = moments_subset
+
+    return(this)
 
   end # constructor
 end #type
