@@ -1,13 +1,11 @@
 
 
 
+function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::Array{ASCIIString,1})
 
+    if "moments" in facet
 
-function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame;facet="params")
-
-    if facet=="moments"
-
-         # each param has it's own figure
+        # each param has it's own figure
         # within each figure, there are nmoms subplots
         nmoms= length(m.moments_subset)
         nrows = floor(sqrt(nmoms))
@@ -28,6 +26,8 @@ function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame;facet="params")
             suptitle("Parameter: $(m_subdf[1,:p_name]) vs Moments")
         end
 
+    elseif "objective" in facet
+
         # plots of objective function vs parameter value
         figure()
         pid = 0
@@ -40,7 +40,7 @@ function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame;facet="params")
         end
         suptitle("Objective Function vs Parameters")
 
-    elseif facet=="params"
+    elseif "params" in facet
         # each moment has it's own figure
         # within each figure, there are npars subplots
         npars = length(m.p2sample_sym)
@@ -77,6 +77,8 @@ function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame;facet="params")
     else
         error("facet needs to be either params or moments")
     end
-
-    
 end
+
+plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame) = plotSlice(m,val_df,mom_df,"moments")
+plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::ASCIIString) = plotSlice(m,val_df,mom_df,[facet])
+

@@ -53,7 +53,38 @@ type MProb
     return(this)
 
   end # constructor
+
+  # very simple constructor
+  function MProb()
+    this = new()
+    this.initial_value       = Dict()
+    this.params_to_sample_df = DataFrame()
+    this.p2sample_sym        = []
+    this.objfunc             = x -> x
+    this.objfunc_opts        = Dict()
+    this.moments             = DataFrame()
+    this.moments_subset      = []
+    return(this)
+  end
+
 end #type
+
+function addParam!(m::MProb,name::ASCIIString,init)
+  m.initial_value[name] = init
+  return m 
+end
+
+function addSampledParam!(m::MProb,name::ASCIIString,init,lb,ub)
+  m.initial_value[name] = init
+  m.params_to_sample_df = rbind(m.params_to_sample_df,DataFrame(param=name,lb=lb,ub=ub))
+  return m
+end
+
+
+
+
+
+
 
 #'.. py:function:: ps_names
 #'
@@ -141,14 +172,6 @@ function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
     return (val_df,mom_df)
 
 end
-
-
-
-
-
-
-
-
 
 
 function show(io::IO,m::MProb)

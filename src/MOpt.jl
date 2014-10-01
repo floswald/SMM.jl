@@ -29,7 +29,9 @@ export MProb,
        runMOpt!,
        save,
        slices,
-       transpose
+       transpose,
+       addParam!,
+       addSampledParam!
 
 
 # load files

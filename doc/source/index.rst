@@ -14,6 +14,7 @@ Contents:
    :maxdepth: 2
 
    getting-started
+   mprob-setup
    write-obj-func
 
 Indices and tables
