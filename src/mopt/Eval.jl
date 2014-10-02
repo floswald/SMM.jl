@@ -20,5 +20,10 @@ type Eval
 	end
 end
 
+function start(ev::Eval)
+	ev.time = time()
+end
 
-function 
+function finish(ev::Eval)
+	ev.time = ev.time - time()
+end
