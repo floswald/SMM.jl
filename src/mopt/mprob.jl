@@ -81,11 +81,6 @@ function addSampledParam!(m::MProb,name::ASCIIString,init,lb,ub)
 end
 
 
-
-
-
-
-
 #'.. py:function:: ps_names
 #'
 #'   returns the list of paramaters to sample

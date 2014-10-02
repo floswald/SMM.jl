@@ -21,8 +21,6 @@ function getChain(algo::MAlgo, which::Int)
 end
 
 
-
-
 function runMOpt!( algo::MAlgo )
 
 	# tasks
