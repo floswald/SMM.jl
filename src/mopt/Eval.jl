@@ -20,5 +20,3 @@ type Eval
 	end
 end
 
-
-function 
