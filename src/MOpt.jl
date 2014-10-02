@@ -6,6 +6,7 @@ module MOpt
 
 using Distributions, HDF5
 using Reexport
+using Lumberjack
 @reexport using DataFrames
 import Base.show, Base.transpose
 
