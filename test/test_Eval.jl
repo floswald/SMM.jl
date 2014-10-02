@@ -50,6 +50,9 @@ facts("Testing Eval object") do
 		@fact ev.moments[:alpha] => 0.78
 		@fact ev2.moments[:alpha] => 0.78
 
+		setMoment(ev,[ :alpha => 0.78, :beta => 0.81] )	
+		@fact ev.moments[:beta] => 0.81
+
 		setValue(ev,4.2)
 		@fact ev.value => 4.2
 	end
