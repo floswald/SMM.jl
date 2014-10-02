@@ -63,7 +63,7 @@ dataMomentW(ev::Eval,s::Symbol)        = dataMomentW(ev,[s])
 # with the values from ev
 function fill(p::Any,ev::Eval)
 	for k in keys(ev.params)
-		setfield(p,k,ev.params[k])
+		setfield!(p,k,ev.params[k])
 	end
 end
 
