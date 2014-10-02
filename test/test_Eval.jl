@@ -3,47 +3,42 @@ module TestBGPChain
 using FactCheck, DataFrames, MOpt
 
 
-
 # TESTING Chains
 # ==============
-p    = ["a" => 3.1 , "b" => 4.9]
-pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+p    = [:a => 3.1 , :b => 4.9]
+moms = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],sd=rand(3))
 
+p2    = ["a" => 3.1 , "b" => 4.9]
+moms2 = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],sd=[0.1,0.2,0.3])
 
 facts("Testing Eval object") do
-	
-	mprob = MProb(p,pb,Testobj,moms)
-	L = 9
-	temp = 100.0
-	shock = 12.0
-	accept_tol = 1.9
-	dist_tol = 0.001
-	jumpprob = 0.05
-	id = 180
-	chain = BGPChain(id,mprob,L,temp,shock,accept_tol,dist_tol,jumpprob)
 
-	@fact chain.i => 0 
-	@fact chain.id => id
+	ev= Eval(p,moms)
+	ev2= Eval(p2,moms2)	
 
-	context("length of members") do
 
-		# test that all member except i are L long
-		@fact length(chain.infos[:evals])  => L
-		@fact length(chain.infos[:accept]) => L
-		for nm in MOpt.ps_names(mprob)
-			@fact nrow(chain.parameters) => L
-		end
-		for nm in MOpt.ms_names(mprob)
-			@fact nrow(chain.moments) => L
-		end
-		@fact chain.tempering => temp
-		@fact chain.shock_sd => shock
-		@fact chain.jump_prob => jumpprob
-		@fact chain.dist_tol => dist_tol
-		@fact chain.accept_tol => accept_tol
+	context("testing param") do
+		@fact param(ev,:a) => [3.1]
+		@fact param(ev,[:a,:b]) => [3.1,4.9]
+
+		@fact param(ev2,:a) => [3.1]
+		@fact param(ev2,[:a,:b]) => [3.1,4.9]
+		@fact paramd(ev) => [:a => 3.1 , :b => 4.9]
 	end
 
+	context("testing moments") do
+		@fact dataMoment(ev2,:alpha) => [0.8]
+		@fact dataMomentW(ev2,:alpha) => [0.1]	
+
+		setMoment(ev,:alpha,0.78)	
+		setMoment(ev2,DataFrame(name=["alpha"] , value = [0.78]))	
+
+		@fact ev.moments[:alpha] => 0.78
+		@fact ev2.moments[:alpha] => 0.78
+
+		setValue(ev,4.2)
+		@fact ev.value => 4.2
+	end
 
 end
 
