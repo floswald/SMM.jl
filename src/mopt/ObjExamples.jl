@@ -84,37 +84,37 @@ end
 #'.. py:function:: objfunc_norm2
 #'
 #'   define a Test objective function
-function objfunc_norm3(ev::Eval)
+# function objfunc_norm3(ev::Eval)
     
-	start(ev)
-	info("in Test objective function")
+# 	start(ev)
+# 	info("in Test objective function")
 
-	# extract parameters    
-	mu  = param(ev,[:a,:b]) # returns values as a vector, use param to get a Dict
+# 	# extract parameters    
+# 	mu  = param(ev,[:a,:b]) # returns values as a vector, use param to get a Dict
 
-	# compute simulated moments
-	ns = 5000
-	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
-	randMultiNormal = MOpt.MvNormal(mu,sigma) 
-	simMoments      = mean(rand(randMultiNormal,ns),2)
+# 	# compute simulated moments
+# 	ns = 5000
+# 	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
+# 	randMultiNormal = MOpt.MvNormal(mu,sigma) 
+# 	simMoments      = mean(rand(randMultiNormal,ns),2)
 
-	# get data mometns
-	trueMoments = dataMoment(ev,[:m1,:m2]) 
-	# same thing here, and use dataMomentsWeights for sd
-	# second argument can be optional
+# 	# get data mometns
+# 	trueMoments = dataMoment(ev,[:m1,:m2]) 
+# 	# same thing here, and use dataMomentsWeights for sd
+# 	# second argument can be optional
 
-	# value = data - model
-	setValue(ev, mean((simMoments - trueMoments).^2) )
+# 	# value = data - model
+# 	setValue(ev, mean((simMoments - trueMoments).^2) )
 
-	# also return the moments
-	setMoment(ev, {:m1 => moments[1], :m2 => moments[2]})
-	# we would also have a setter that takes a DataFrame
+# 	# also return the moments
+# 	setMoment(ev, {:m1 => moments[1], :m2 => moments[2]})
+# 	# we would also have a setter that takes a DataFrame
 
-	# finish and return
-	finish(ev)
+# 	# finish and return
+# 	finish(ev)
 
-    return ev
-end
+#     return ev
+# end
 
 #'.. py:function:: banana
 #'
