@@ -41,6 +41,7 @@ export MProb,
 include("mopt/mprob.jl")
 include("mopt/chains.jl")
 include("mopt/incmopt.jl")
+include("mopt/slices.jl")
 include("mopt/Eval.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")

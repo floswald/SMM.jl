@@ -70,7 +70,7 @@ type MProb
 end #type
 
 function addParam!(m::MProb,name::ASCIIString,init)
-  m.initial_value[name] = init
+  m.initial_value[symbol(name)] = init
   return m 
 end
 
@@ -94,80 +94,6 @@ end
 function ms_names(mprob::MProb)
   return(mprob.moments[:moment])
 end
-
-# evalute objective function
-function evaluateObjective(m::MProb,p::Dict)
-
-    x = eval(Expr(:call,m.objfunc,p,m.moments,m.moments_subset,m.objfunc_opts))
-    gc()
-    return x
-end
-
-
-#'.. py:function:: slices(m,pad)
-#'
-#'   computes slices for the objective function
-function slices(m::MProb,npoints::Int,pad=0.1)
-
-    # make a dict of grids for each param
-    # loop over params!
-    pdf = m.params_to_sample_df
-    pranges = Dict{ASCIIString,Array{Float64,1}}()
-    for irow in eachrow(pdf)
-        lb = irow[:lb][1]
-        ub = irow[:lb][1]
-        pranges[irow[:param]] = linspace(irow[:lb][1], irow[:ub][1], npoints)  
-    end
-    # return pranges
-    val_df = DataFrame()
-    mom_df = DataFrame()
-    for (k,v) in pranges
-        println("currently computing slices over $k")
-        dtmp = computeSlice(m,k,v)
-        val_df = rbind(val_df,dtmp[1])
-        mom_df = rbind(mom_df,dtmp[2])
-    end
-    return (val_df,mom_df)
-   
-end
-
-
-#'.. py:function:: computeSlice(m,par,prange)
-#'
-#'   computes slices for the objective function
-function computeSlice(m::MProb,par::ASCIIString,prange::Array{Float64,1})
-
-    npar = length(prange)
-    nmom = length(m.moments_subset)
-
-    # make an array of different params
-    # where par varies in prange
-    pp = [deepcopy(m.initial_value) for i=1:npar]
-    for i in 1:length(prange)
-        pp[i][par] = prange[i]
-    end
-
-    v = pmap(x -> evaluateObjective(m,x), pp)
-
-    mom_df = DataFrame(p_name = [par for i=1:(npar*nmom)], m_name=ASCIIString[ i for j=1:npar, i in m.moments_subset][:], p_val = repeat(prange,inner=[1],outer=[nmom]), m_val = zeros(npar*nmom))
-    
-    val_df = DataFrame(p_name = [par for i=1:(npar)], p_val = prange, f_val = zeros(npar), status = zeros(npar))
-
-    for ip in 1:npar
-        # fill in function values
-        val_df[ip, :f_val ] = v[ip]["value"]
-        val_df[ip, :status] = v[ip]["status"]
-
-        for im in 1:nmom
-            # fill in moments values
-            mom_df[(mom_df[:p_val].==prange[ip]) & (mom_df[:m_name].==m.moments_subset[im]), :m_val ] = v[ip]["moments"][1,symbol(m.moments_subset[im])]
-        end
-    end
-
-    return (val_df,mom_df)
-
-end
-
 
 function show(io::IO,m::MProb)
 

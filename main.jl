@@ -5,21 +5,21 @@
 home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
+# load the source of the package
+include("src/MOpt.jl")
+
+# test a full example
 include("src/cluster/examples/example-serial.jl")
 
-
-
-include("src/MOpt.jl")
-	
 # to develop with tests: run this
-
 include("test/test_MProb.jl")
 include("test/test_chains.jl")
 include("test/test_BGPchain.jl")
 include("test/test_algoBGP.jl")
 	
 include("test/runtests.jl")
-	
+		
+
 # to develop in main: run this
 
 # runnign examples:

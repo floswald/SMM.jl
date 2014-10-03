@@ -37,6 +37,31 @@ type Eval
 
 		return this
 	end
+
+	function Eval(mprob::MProb,p::Dict)
+		this = new()
+		this.value = -1
+		this.time = time()
+		this.status = -1
+		this.dataMoments  = Dict{Symbol,Float64}()
+		this.dataMomentsW = Dict{Symbol,Float64}()
+		this.params       = Dict{Symbol,Float64}()
+		this.moments      = Dict{Symbol,Float64}()
+
+		for (i in 1:nrow(mprob.moments))
+			kk = symbol(mom[i,:moment])
+			this.dataMoments[kk] = mom[i,:data_value]
+			this.dataMomentsW[kk] = mom[i,:data_sd]
+		end
+
+		for (k in keys(p))
+			kk = symbol(k)
+			this.params[kk] = p[k]
+		end
+
+		return this
+	end
+
 end
 
 function start(ev::Eval)
