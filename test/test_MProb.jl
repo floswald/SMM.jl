@@ -20,6 +20,7 @@ using FactCheck, MOpt
 # test default constructor type
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
+
 moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
