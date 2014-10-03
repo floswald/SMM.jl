@@ -20,7 +20,7 @@ using FactCheck, MOpt
 # test default constructor type
 p    = ["a" => 3.1 , "b" => 4.9]
 pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
+moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],
@@ -31,7 +31,7 @@ facts("Testing the MProb constructor") do
 
 	context("default constructor") do
 
-		mprob = MProb(p,pb,Testobj,moms)
+		mprob = MProb()
 		@fact isa(mprob, MProb) => true
 
 	end
@@ -73,12 +73,15 @@ facts("testing MProb methods") do
 	# 	"alpha" => [ 0.8 , 0.02 ],
 	# 	"beta"  => [ 0.8 , 0.02 ],
 	# 	"gamma" => [ 0.8 , 0.02 ]
-	# ]
-	mprob = MProb(p,pb,Testobj,moms);
-	@fact collect(MOpt.ps_names(mprob)) == collect(keys(pb)) => true
-	@fact MOpt.ms_names(mprob) == mprob.moments[:moment] => true
+	# ]	
+	mprob = MProb();
+	addSampledParam!(mprob,"a",0.1,0,1)
+	addSampledParam!(mprob,"b",0.1,0,1)
+	addMoment(mprob,moms)
 
-	@fact eltype(mprob.p2sample_sym)==Symbol => true
+
+	@fact sort(collect(MOpt.ps_names(mprob))) == sort({:a,:b}) => true
+	@fact sort(collect(MOpt.ms_names(mprob))) == sort({:alpha,:beta,:gamma}) => true
 
 end
 

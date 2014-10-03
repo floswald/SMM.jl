@@ -1,3 +1,7 @@
+
+export addMoment
+
+
 #'.. py:class:: MProb
 #'
 #'   the type MProb describes the optimization
@@ -7,79 +11,67 @@
 type MProb
 
   # setup
-  initial_value    :: Dict  # initial parameter value as a dict
-  # params_to_sample :: Dict{ASCIIString,Array{Float64,1}}  # a dictionary of upper and lower bound for params we estimate (others are fixed)
-  params_to_sample_df  :: DataFrame
-  p2sample_sym     :: Array{Symbol,1} # column names of params to sample for dataframes
-  objfunc          :: Function # objective function
-  objfunc_opts     :: Dict     # options passed to the objective function, e.g. printlevel
-  # moments          :: Dict  # a dictionary of moments to track
-  moments          :: DataFrame # a dictionary of moments to track
-  moments_subset   :: Array{ASCIIString}  # an array of moment names to subset objective funciton
-
-  # constructor
-  function MProb(
-    initial_value,
-    params_to_sample,
-    objfunc,moments; 
-    moments_subset=moments[:moment],objfunc_opts=Dict())
-
-    this = new()
-
-    # assert that moments has two entries for each moment: value and sd
-    # @assert all(map(x -> length(x),values(moments)) .== 2)
-
-    # assert that params_to_sample are subset of initial_value
-    @assert issubset(keys(params_to_sample),keys(initial_value))
-
-    # assert that params_to_sample has valid bounds: a vector with 2 increasing entries
-    @assert all(map(x -> x[2]-x[1],values(params_to_sample)) .> 0)
-
-    par2sample_name   = sort(collect(keys(params_to_sample)))
-    par2sample_sym    = Symbol[x for x in par2sample_name]
-    p0 = deepcopy(initial_value)
-
-    pdf = DataFrame(param=collect(keys(params_to_sample)),lb=map(x -> x[1], values(params_to_sample)),ub=map(x -> x[2], values(params_to_sample)))
-    sort!(pdf,cols=1)
-
-    this.initial_value       = p0
-    this.params_to_sample_df = pdf
-    this.p2sample_sym        = par2sample_sym
-    this.objfunc             = objfunc
-    this.objfunc_opts        = objfunc_opts
-    this.moments             = moments
-    this.moments_subset      = moments_subset
-
-    return(this)
-
-  end # constructor
+  initial_value       :: Dict           # initial parameter value as a dict
+  params_to_sample    :: Dict           # Dict with lower and upper bounds
+  objfunc             :: Function       # objective function
+  objfunc_opts        :: Dict           # options passed to the objective function, e.g. printlevel
+  moments             :: Dict           # a dictionary of moments to track
+  moments_subset      :: Array{Symbol}  # an array of moment names to subset objective funciton
 
   # very simple constructor
   function MProb()
     this = new()
     this.initial_value       = Dict()
-    this.params_to_sample_df = DataFrame()
-    this.p2sample_sym        = []
+    this.params_to_sample       = Dict()
     this.objfunc             = x -> x
     this.objfunc_opts        = Dict()
-    this.moments             = DataFrame()
+    this.moments             = Dict()
     this.moments_subset      = []
     return(this)
   end
 
 end #type
 
+
+# -------------------- ADDING PARAMS --------------------
 function addParam!(m::MProb,name::ASCIIString,init)
   m.initial_value[symbol(name)] = init
   return m 
 end
 
-function addSampledParam!(m::MProb,name::ASCIIString,init,lb,ub)
-  m.initial_value[name] = init
-  m.params_to_sample_df = rbind(m.params_to_sample_df,DataFrame(param=name,lb=lb,ub=ub))
+function addSampledParam!(m::MProb,name::Any, init::Any, lb::Any, ub::Any)
+  @assert ub>lb
+  m.initial_value[symbol(name)] = init 
+  m.params_to_sample[symbol(name)] = [ :lb => lb , :ub => ub]
   return m
 end
 
+
+# -------------------- ADDING MOMENTS --------------------
+
+function addMoment(m::MProb,name::Symbol,value,weight)
+  m.moments[symbol(name)] = [ :value => value , :weight => weight ]
+  return m 
+end
+addMoment(m::MProb,name::ASCIIString,value,weight) = addMoment(m,symbol(name),value,weight)
+addMoment(m::MProb,name::ASCIIString,value) = addMoment(m,symbol(name),value,1.0)
+addMoment(m::MProb,name::Symbol,value) = addMoment(m,(name),value,1.0)
+
+function addMoment(m::MProb,d::Dict)
+  for k in keys(d)
+    addMoment(m,symbol(k),d[k][:value],d[k][:weight])
+  end
+  return m 
+end
+
+function addMoment(m::MProb,d::DataFrame)
+  for (i in 1:nrow(d))
+    m = addMoment(m,symbol(d[i,:name]),d[i,:value],d[i,:weight])
+  end
+  return m 
+end
+
+# -------------------- GETTERS --------------------
 
 #'.. py:function:: ps_names
 #'
@@ -88,15 +80,14 @@ function ps_names(mprob::MProb)
   return(keys(mprob.initial_value))
 end
 function ps2s_names(mprob::MProb)
-  return(mprob.p2sample_sym)
+  return(keys(mprob.params_to_sample))
 end
 
 function ms_names(mprob::MProb)
-  return(mprob.moments[:moment])
+  return(keys(mprob.moments))
 end
 
 function show(io::IO,m::MProb)
-
 
   print(io,"MProb Object:\n")
   print(io,"==============\n\n")

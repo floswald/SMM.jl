@@ -21,9 +21,7 @@ include("test/runtests.jl")
 		
 
 # to develop in main: run this
-
 # runnign examples:
-	
 # MOpt.save(MA,"algo.h5")
 
 
