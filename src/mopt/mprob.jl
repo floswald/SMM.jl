@@ -83,7 +83,6 @@ function addEvalFunc(m::MProb,f::Function)
   return m 
 end
 
-
 # -------------------- GETTERS --------------------
 
 #'.. py:function:: ps_names

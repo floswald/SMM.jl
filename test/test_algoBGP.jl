@@ -3,13 +3,11 @@
 
 module TestAlgoBGP
 
-using FactCheck, DataFrames, MOpt
+using FactCheck, DataFrames, MOpt, Lazy
 
-p    = ["a" => 3.1 , "b" => 4.9]
-pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
-# objfunc_opts = ["printlevel" => 1]
-mprob = MProb(p,pb,MOpt.Testobj,moms)
+pb   = [ "a" => [0.3, 0,1] , "b" => [0.4,0,1]]
+moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
+mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
 
 facts("testing MAlgoBGP Constructor") do
 
@@ -27,7 +25,7 @@ facts("testing MAlgoBGP Constructor") do
 		@fact length(MA.MChains) => opts["N"]
 
 		for ix = 1:opts["N"]
-			@fact MA.current_param[ix] => p 
+			@fact MA.current_param[ix] => mprob.initial_value
 		end
 
 	end
@@ -74,11 +72,11 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 	context("test fitMirror!(df,dict)") do
 
 		df = DataFrame(a=1.2,b=-1.5)
-		MOpt.fitMirror!(df,mprob.params_to_sample_df)
-		@fact df[1][1] > pb["a"][1] => true
-		@fact df[1][1] < pb["a"][2] => true
-		@fact df[2][1] > pb["b"][1] => true
-		@fact df[2][1] < pb["b"][2] => true
+		MOpt.fitMirror!(df,mprob.params_to_sample)
+		@fact df[1][1] > pb["a"][2] => true
+		@fact df[1][1] < pb["a"][3] => true
+		@fact df[2][1] > pb["b"][2] => true
+		@fact df[2][1] < pb["b"][3] => true
 
 	end
 
@@ -107,10 +105,11 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		# get the last MA["past_iterations"] iterations from each chain
 		# get parameter_to_sample names as symbols 
-		
+		print(pars)
+		print([ k for k in keys(MA.m.params_to_sample)])
 
 		# get covariance matrix of those
-		VV = cov(array(pars[:,MA.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(p)])
+		VV = cov( array(pars[:, ]  )) + 0.0001 * Diagonal([1 for p in pb])
 
 		# get kernel and check VV
 		myVV = MOpt.getParamCovariance(MA)
@@ -134,7 +133,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# fill chains with random values up to iteration ix
 		ix = 5
 		for iter =1:ix
-			# update all chains to index 1
+			# update all chains to index 
 			MOpt.updateIterChain!(MA.MChains)
 
 			# set a parameter vector on all chains using appendEval!

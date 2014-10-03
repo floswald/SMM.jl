@@ -122,6 +122,18 @@ function fitMirror!(x::DataFrame,b::DataFrame)
     end
 end
 
+function fitMirror!(x::DataFrame,b::Dict)
+    for col in names(x)
+        x[1,col] = fitMirror( 
+                convert(Float64,x[1,col]),
+                convert(Float64,b[col][:lb]),
+                convert(Float64,b[col][:ub]))
+    end
+end
+
+
+
+
 
             
 
