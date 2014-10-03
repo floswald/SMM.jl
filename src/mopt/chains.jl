@@ -104,6 +104,24 @@ function appendEval!(chain::AbstractChain, val::Float64, par::DataFrame, mom::Da
     # end
     return nothing
 end
+
+# same for 
+function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, status::Int, prob::Float64)
+    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
+    chain.infos[chain.i,:evals]  = ev.value
+    chain.infos[chain.i,:prob]   = prob
+    chain.infos[chain.i,:accept] = ACC
+    chain.infos[chain.i,:status] = ev.status
+    for im in chain.moments_nms
+        chain.moments[chain.i,im] = ev.moments[im]
+    end
+    for ip in chain.params_nms
+        chain.parameters[chain.i,ip] = ev.params[ip]
+    end
+    return nothing
+end
+
+
 # methods for an array of chains
 # ==============================
 

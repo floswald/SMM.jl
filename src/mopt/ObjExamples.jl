@@ -41,6 +41,20 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
 
 end
 
+function Testobj2(ev::Eval)
+
+    start(ev)
+    info("in Test objective function")
+
+    val = 0.0
+    for (k,v) in dataMoment(ev)
+        setMoment(ev,k,v+2.2)
+        val += (2.2)^2
+    end
+
+    setValue(ev,val)
+    return ev
+end
 
 #'.. py:function:: objfunc_norm2
 #'

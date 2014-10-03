@@ -1,5 +1,5 @@
 
-export addMoment
+export addMoment,addEvalFunc
 
 
 #'.. py:class:: MProb
@@ -46,6 +46,12 @@ function addSampledParam!(m::MProb,name::Any, init::Any, lb::Any, ub::Any)
   return m
 end
 
+function addSampledParam!(m::MProb,d=Dict{Any,Array{Any,1}})
+  for k in keys(d)
+    addSampledParam!(m,symbol(k),d[k][1],d[k][2],d[k][3])
+  end
+  return m
+end
 
 # -------------------- ADDING MOMENTS --------------------
 
@@ -70,6 +76,13 @@ function addMoment(m::MProb,d::DataFrame)
   end
   return m 
 end
+
+# -------------------- ADDING OBJ FUNCTION --------------------
+function addEvalFunc(m::MProb,f::Function)
+  m.objfunc = f
+  return m 
+end
+
 
 # -------------------- GETTERS --------------------
 

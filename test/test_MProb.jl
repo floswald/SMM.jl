@@ -68,12 +68,18 @@ end
 
 facts("testing MProb methods") do
 
-	pb   = (ASCIIString=>Array{Float64,1})[ "a" => [0,1] , "b" => [0,1] ]
+	pb   = [ 
+		"a" => [0.1, 0, 1] , 
+		"b" => [0.2, 0, 1] ]
 	# moms = [
 	# 	"alpha" => [ 0.8 , 0.02 ],
 	# 	"beta"  => [ 0.8 , 0.02 ],
 	# 	"gamma" => [ 0.8 , 0.02 ]
 	# ]	
+	mprob = MProb();
+	addSampledParam!(mprob,pb)	
+	@fact sort(collect(MOpt.ps_names(mprob))) == sort({:a,:b}) => true
+
 	mprob = MProb();
 	addSampledParam!(mprob,"a",0.1,0,1)
 	addSampledParam!(mprob,"b",0.1,0,1)

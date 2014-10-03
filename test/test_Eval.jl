@@ -6,10 +6,10 @@ using FactCheck, DataFrames, MOpt
 # TESTING Chains
 # ==============
 p    = [:a => 3.1 , :b => 4.9]
-moms = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],sd=rand(3))
+moms = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],weight=rand(3))
 
 p2    = ["a" => 3.1 , "b" => 4.9]
-moms2 = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],sd=[0.1,0.2,0.3])
+moms2 = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],weight=[0.1,0.2,0.3])
 
 type MyP
 	a :: Float64 
@@ -23,9 +23,8 @@ end
 
 facts("Testing Eval object") do
 
-	ev= Eval(p,moms)
+	ev = Eval(p,moms)
 	ev2= Eval(p2,moms2)	
-
 
 	context("testing param") do
 		@fact param(ev,:a) => [3.1]

@@ -27,12 +27,12 @@ type Eval
 		for (i in 1:nrow(mom))
 			kk = symbol(mom[i,:name])
 			this.dataMoments[kk] = mom[i,:value]
-			this.dataMomentsW[kk] = mom[i,:sd]
+			this.dataMomentsW[kk] = mom[i,:weight]
 		end
 
 		for (k in keys(p))
 			kk = symbol(k)
-			this.params[kk] = p[k]
+			this.params[kk] = p[k][1] # we take the first one, in case there are several values per param
 		end
 
 		return this
@@ -78,11 +78,12 @@ param(ev::Eval)                        = param(ev,collect(keys(ev.params)))
 param(ev::Eval,s::Symbol)              = param(ev,[s])
 paramd(ev::Eval)                       = ev.params
 dataMoment(ev::Eval,ll::Array{Symbol,1})  = [ ev.dataMoments[i] for i in ll]
-dataMoment(ev::Eval)                   = dataMoment(ev,keys(ev.dataMoments))
+dataMoment(ev::Eval)                      = ev.dataMoments
 dataMomentW(ev::Eval,ll::Array{Symbol,1}) = [ ev.dataMomentsW[i] for i in ll]
 dataMomentW(ev::Eval)                  = dataMoment(ev,keys(ev.dataMomentsW))
 dataMoment(ev::Eval,s::Symbol)         = dataMoment(ev,[s])
 dataMomentW(ev::Eval,s::Symbol)        = dataMomentW(ev,[s])
+zippedMoments(ev::Eval)                = ev.dataMoments
 
 # this allows to fill the values of a given structure
 # with the values from ev
