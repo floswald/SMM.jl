@@ -14,6 +14,18 @@ type Eval
 	status ::Int64
 	options :: Dict
 
+	function Eval()
+		this = new()
+		this.value = -1
+		this.time = time()
+		this.status = -1
+		this.dataMoments  = Dict{Symbol,Float64}()
+		this.dataMomentsW = Dict{Symbol,Float64}()
+		this.params       = Dict{Symbol,Float64}()
+		this.moments      = Dict{Symbol,Float64}()
+		return this
+	end
+
 	function Eval(p::Dict,mom::DataFrame)
 		this = new()
 		this.value = -1

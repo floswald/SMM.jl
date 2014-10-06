@@ -8,7 +8,7 @@
 # Baragatti, Grimaud and Pommeret (BGP)
 # 
 # Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov Chains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
-
+export getEval,jumpParams!,getLastEval
 
 # Define a Chain Type for BGP
 type BGPChain <: AbstractChain
@@ -73,6 +73,25 @@ type MAlgoBGP <: MAlgo
     end
 end
 
+function getEval(chain::BGPChain, i::Int64)
+	ev = Eval()
+	ev.value  = chain.infos[i,:evals]
+	ev.time   = chain.infos[i,:eval_time]
+	ev.status = chain.infos[i,:status]
+
+	for k in names(chain.parameters)
+		if !(k in [:chain_id,:iter])
+        	ev.params[k] = chain.parameters[i,k]
+        end
+    end
+	for k in names(chain.moments)
+        ev.moments[k] = chain.moments[i,k]
+    end
+
+    return (ev)
+end
+
+getLastEval(chain::BGPChain) = getEval(chain::BGPChain, chain.i - 1 )
 
 function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
     # push!(chain.infos,[chain.i,val,ACC,status,0,prob]) if want to grow dataframe
@@ -112,9 +131,9 @@ function appendEval!(chain::BGPChain, val::Float64, par::DataFrame, mom::DataFra
 end
 
 # same for 
-function appendEval!(chain::BGPChain,val::Float64, ev:: Eval, ACC::Bool, status::Int, prob::Float64)
+function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
-    chain.infos[chain.i,:evals]  = val
+    chain.infos[chain.i,:evals]  = ev.value
     chain.infos[chain.i,:prob]   = prob
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = ev.status
@@ -188,52 +207,48 @@ end
 # but accepts lower function values with lower probability
 function localMovesMCMC!(algo::MAlgoBGP,v::Array)
 	for ch in 1:algo["N"]
+		chain = algo.MChains[ch]
+		eval_new  = v[ch]
+
 		xold = -99.0
 		if algo.i == 1
 			# accept all
-			ACC = true
-	  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch])
-	  		status = 1
-	  		prob = 1.0
-			xnew = v[ch].value
-			xold = v[ch].value
-			algo.MChains[ch].infos[algo.i,:accept_rate] = 0.1
-		    # append values to MChains at index ch
-		    # appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
-			appendEval!(algo.MChains[ch],xnew,v[ch],ACC,status,prob)
+			ACC = true; prob = 1.0
+			chain.infos[algo.i,:accept_rate] = 0.1
+			eval_new.status = 1
+			appendEval!(chain,eval_new,ACC,prob)
 		else
-			xold = evals(algo.MChains[ch],algo.i-1)[1]
-			pold = parameters(algo.MChains[ch],algo.i-1)	# all=false: only get p2sample here!
-			mold = moments(algo.MChains[ch],algo.i-1)
-			xnew = v[ch].value
-			prob = minimum([1.0, exp(algo.MChains[ch].tempering *(xold - xnew))])
-			prob = prob * (xnew < algo.MChains[ch].accept_tol)
+			eval_old = getEval(chain,algo.i-1)
+
+			prob = minimum([1.0, exp(chain.tempering *(eval_old.value - eval_new.value))])
+			prob = prob * (eval_new.value < chain.accept_tol)
+
 			if isna(prob)
 				prob = 0.0
-				status = -1
+				eval_old.status = -1
 				ACC = false
-				appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob)
+				appendEval!(chain,eval_old,ACC,prob)
+
 			elseif !isfinite(xold)
 				prob = 1.0
-				status = -2
+				eval_new.status = -2
 				ACC = false
-				appendEval!(algo.MChains[ch],xnew,v[ch],ACC,status,prob)
+				appendEval!(chain,eval_new,ACC,prob)
 			else 
 				status = 1
 				if prob > rand()
 					ACC = true
-			  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
-					appendEval!(algo.MChains[ch],xnew,v[ch],ACC,status,prob)
+					appendEval!(chain,eval_new,ACC,prob)
 				else
 					ACC = false
-					appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob,v[ch].time)
+					appendEval!(chain,eval_old,ACC,prob)
 				end
 			end 
 		    # update sampling variances
-		    algo.MChains[ch].infos[algo.i,:accept_rate]   = 0.9 * algo.MChains[ch].infos[algo.i-1,:accept_rate] + 0.1 * ACC
-		    algo.MChains[ch].shock_sd                     = algo.MChains[ch].shock_sd * (1+ 0.05*( 2*(algo.MChains[ch].infos[algo.i,:accept_rate]>0.234) -1) )
-		    algo.MChains[ch].infos[algo.i,:shock_sd]      = algo.MChains[ch].shock_sd
-		    algo.MChains[ch].infos[algo.i,:perc_new_old] = (xnew - xold) / abs(xold)
+		    chain.infos[algo.i,:accept_rate]   = 0.9 * chain.infos[algo.i-1,:accept_rate] + 0.1 * ACC
+		    chain.shock_sd                     = chain.shock_sd * (1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) )
+		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
+		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
 		end
 	end
 end
@@ -394,23 +409,13 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 end
 
 
-function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
-
-	# get last param on that particular chain
-	# as dataframe row
-	oldpar = parameters(algo.MChains[ch],algo.MChains[ch].i-1)
-
-	# add shock to each column of newpar
-	newpar = copy(oldpar[ps2s_names(algo)])	# algo.m.p2sample_sym are in alphabetical order
-	for c in 1:ncol(newpar)
-		newpar[1,c] += shock[c]
+function jumpParams!(algo::MAlgoBGP,ch::Int,shock::Dict)
+	eval_old = getLastEval(algo.MChains[ch])
+	for k in keys(eval_old.params)
+		algo.current_param[ch][k] = fitMirror(eval_old.params[k] + shock[k] , 
+												algo.m.params_to_sample[k][:lb],
+												algo.m.params_to_sample[k][:ub])
 	end
-
-	# do bounds checking on newpar
-	fitMirror!(newpar,algo.m.params_to_sample)
-
-	# set as dict on algo.current_param
-	fillinFields!(algo.current_param[ch],newpar)
 end
 
 

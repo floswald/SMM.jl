@@ -1,4 +1,4 @@
-
+export fitMirror
 
 # evalute objective function
 function evaluateObjective(m::MProb,p::Dict)
@@ -115,6 +115,8 @@ function fitMirror(x,lb,ub)
     end
     return x2 
 end
+
+fitMirror(x::Float64,d::Dict) = fitMirror(x,d[:lb],d[:ub])
 
 function fitMirror!(x::DataFrame,b::DataFrame)
     for i in 1:length(x)

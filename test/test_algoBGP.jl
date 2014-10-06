@@ -80,25 +80,24 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	end
 
-	context("test getParamCovariance") do
+	opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
+	MA = MAlgoBGP(mprob,opts)
 
-		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MAlgoBGP(mprob,opts)
+	# fill chains with random values
+	for iter =1:(MA["maxiter"]-1)
+		# update all chains to index 1
+		MOpt.updateIterChain!(MA.MChains)
 
-		# fill chains with random values
-		for iter =1:(MA["maxiter"]-1)
-			# update all chains to index 1
-			MOpt.updateIterChain!(MA.MChains)
-
-			# set a parameter vector on all chains using appendEval!
-			myp = ["a" => rand() , "b" => rand()]
-			mym = DataFrame(alpha = rand(), beta = rand(), gamma = rand())
-			ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
-			for ich in 1:MA["N"]
-				MOpt.appendEval!(MA.MChains[ich],ret["value"],ret["params"],ret["moments"],true,1,rand())
-			end
+		# set a parameter vector on all chains using appendEval!
+		myp = ["a" => rand() , "b" => rand()]
+		mym = DataFrame(alpha = rand(), beta = rand(), gamma = rand())
+		ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
+		for ich in 1:MA["N"]
+			MOpt.appendEval!(MA.MChains[ich],ret["value"],ret["params"],ret["moments"],true,1,rand())
 		end
+	end
 
+	context("test getParamCovariance") do  
 		# get all parameters
 		lower_bound_index = maximum([1,MA.MChains[1].i-MA["past_iterations"]])
 		pars = parameters(MA.MChains,lower_bound_index:MA.MChains[1].i)
@@ -116,32 +115,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 	end
 
-
 	context("test updateCandidateParam!") do
-
-		# taking a specific MvNormal instance, 
-		# I can know exactly how parameters should change when shocked
-
-		# I'm interested in how algo.candidate_param changes on chain ch
-
-		# setup an Algo
-		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MAlgoBGP(mprob,opts)
-
-		# fill chains with random values up to iteration ix
-		ix = 5
-		for iter =1:ix
-			# update all chains to index 
-			MOpt.updateIterChain!(MA.MChains)
-
-			# set a parameter vector on all chains using appendEval!
-			for ich in 1:MA["N"]
-				myp = ["a" => rand() , "b" => rand()]
-				mym = DataFrame(alpha = rand(), beta = rand(), gamma = rand())
-				ret = ["value" => 1.1, "params" => myp, "time" => 0, "status" => 1, "moments" => mym]
-				MOpt.appendEval!(MA.MChains[ich],ret["value"],ret["params"],ret["moments"],true,1,rand())
-			end
-		end
 
 		# get a "kernel"/Covariance matrix
 		# pos def matrix:
@@ -151,42 +125,23 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# manually create next parameter guess on
 		# each chain
 		newp = Array(DataFrame,MA["N"])
-		shock = {i=>Array{Float64,1} for i=1:MA["N"]}
 
 		# on all chains, the parameter entry number ix+1 
 		# must correspond to entry number ix plus a shock from the kernel
-		for ich in 1:MA["N"]
+		ich = 1; ix = 10
+		MVN = MOpt.MvNormal( myVV.*MA.MChains[ich].tempering )
+		shockd = Dict(ps2s_names(MA.m),rand(MVN) )
 
-			MVN = MOpt.MvNormal( myVV.*MA.MChains[ich].tempering )
-			shock[ich] = rand(MVN)
+		eval_before = getLastEval(MA.MChains[ich]).params # get a dataframe of row ix-1
+		MOpt.jumpParams!(MA,ich,shockd)
 
-			oldp = parameters(MA.MChains[ich],ix-1)	# get a dataframe of row ix-1
-			newp[ich] = copy(oldp[ps2s_names(MA)])	# get just those you wish to sample
-
-			# add shock
-			for i in 1:length(newp[ich])
-				newp[ich][i] = newp[ich][i] .+ shock[ich][i]
-			end			
-
-			# adjust for bounds
-			MOpt.fitMirror!(newp[ich],MA.m.params_to_sample)
+		for (k,v) in eval_before
+			print(" $k $v $(shockd[k]) $(MA.current_param[ich][k]) $(MA.m.params_to_sample[k])\n")
+			@fact MA.current_param[ich][k] => fitMirror(v + shockd[k], MA.m.params_to_sample[k])
 		end
-
-
-		# check on algo.candidate_param
-		for ich in 1:MA["N"]
-			# call library funciton
-			MOpt.updateCandidateParam!(MA,ich,shock[ich])
-			for (k,v) in MA.current_param[ich]
-				@fact v == newp[ich][symbol(k)][1] => true
-			end
-
-		end
-
-
 	end
-
 end
+
 
 facts("testing swaprows") do
 
@@ -272,7 +227,7 @@ facts("testing localMovesMCMC") do
 		@fact all(infos(MA.MChains,1)[:status] .== 1) => true
 		# all params equal to initial value
 		for nm in 1:length(MA.MChains[1].params_nms)
-			@fact parameters(MA.MChains[1],1)[MA.MChains[1].params_nms[nm]][1] == p[string(MA.MChains[1].params_nms[nm])] => true
+			@fact parameters(MA.MChains[1],1)[MA.MChains[1].params_nms[nm]][1] == pb[string(MA.MChains[1].params_nms[nm])][1] => true
 		end
 
 		# next iteration
@@ -301,7 +256,7 @@ facts("testing localMovesMCMC") do
 		"max_disttol"     => 1.0,		# maximum tol criterion to assess "similar" chains for jumps
 		"min_jump_prob"   => 0.00,		# minimum probability with which a given chain jumps, if similar chains found
 		"max_jump_prob"   => 0.0,		# maximum probability with which a given chain jumps, if similar chains found
-		"min_accept_tol"  => 1000.05,		# minimum acceptance level for local moves. Set for ABC-like estimation. For chain_i, accept param_x with probability rho iff value(param_x) < accept_tol_i. In practice, moves with only minor improvement are rejected.
+		"min_accept_tol"  => 1000.05,	# minimum acceptance level for local moves. Set for ABC-like estimation. For chain_i, accept param_x with probability rho iff value(param_x) < accept_tol_i. In practice, moves with only minor improvement are rejected.
 		"max_accept_tol"  => 1000.1]
 		
 		MA = MAlgoBGP(mprob,opts)
@@ -361,7 +316,7 @@ facts("testing localMovesMCMC") do
 				# if accepted, moments(MA.MChains[ch],MA.i) != moments(MA.MChains[ch],MA.i-1)
 				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != moments(MA.MChains[ch],MA.i-1)[MA.MChains[ch].moments_nms] => true
 				# if accepted, moments(MA.MChains[ch],MA.i) == moments(MA.MChains[ch],MA.i-1)
-				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == v[ch]["moments"][MA.MChains[ch].moments_nms] => true
+				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == v[ch].moments[MA.MChains[ch].moments_nms] => true
 			else
 				# if not, parameters(MA.MChains[ch],MA.i) == parameters(MA.MChains[ch],MA.i-1)
 
@@ -374,13 +329,15 @@ facts("testing localMovesMCMC") do
 				# if not accepted, moments(MA.MChains[ch],MA.i) == moments(MA.MChains[ch],MA.i-1)
 				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] == moments(MA.MChains[ch],MA.i-1)[MA.MChains[ch].moments_nms] => true
 				# if not accepted, moments(MA.MChains[ch],MA.i) != moments(MA.MChains[ch],MA.i)
-				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != v[ch]["moments"][MA.MChains[ch].moments_nms] => true
+				@fact moments(MA.MChains[ch],MA.i)[MA.MChains[ch].moments_nms] != v[ch].moments[MA.MChains[ch].moments_nms] => true
 
 			end
 		end
 
 	end
 end
+
+bla()
 
 facts("testing exchangeMoves") do
 
@@ -395,7 +352,7 @@ facts("testing exchangeMoves") do
 		MA.i = 1
 		MOpt.updateIterChain!(MA.MChains)
 		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
-		for ch in 1:MA["N"] MOpt.appendEval!(MA.MChains[ch],v[ch]["value"],v[ch]["params"],v[ch]["moments"],true,1,rand()) end
+		for ch in 1:MA["N"] MOpt.appendEval!(MA.MChains[ch],v[ch],true,1,rand()) end
 
 		MA.i = 2
 		MOpt.updateIterChain!(MA.MChains)
