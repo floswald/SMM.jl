@@ -1,5 +1,5 @@
 
-export addMoment,addEvalFunc
+export addMoment,addEvalFunc,ps2s_names
 
 
 #'.. py:class:: MProb
@@ -92,7 +92,7 @@ function ps_names(mprob::MProb)
   return(keys(mprob.initial_value))
 end
 function ps2s_names(mprob::MProb)
-  return(keys(mprob.params_to_sample))
+  return convert(Array{Symbol,1},[k for k in keys(mprob.params_to_sample)])
 end
 
 function ms_names(mprob::MProb)

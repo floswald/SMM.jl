@@ -84,7 +84,9 @@ function runMOpt!( algo::MAlgo )
 end
 
 
-
+function ps2s_names(algo::MAlgo)
+	return ps2s_names(algo.m)
+end
 
 
 

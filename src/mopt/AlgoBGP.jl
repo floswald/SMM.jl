@@ -111,6 +111,21 @@ function appendEval!(chain::BGPChain, val::Float64, par::DataFrame, mom::DataFra
   return nothing
 end
 
+# same for 
+function appendEval!(chain::BGPChain,val::Float64, ev:: Eval, ACC::Bool, status::Int, prob::Float64)
+    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
+    chain.infos[chain.i,:evals]  = val
+    chain.infos[chain.i,:prob]   = prob
+    chain.infos[chain.i,:accept] = ACC
+    chain.infos[chain.i,:status] = ev.status
+    for im in chain.moments_nms
+        chain.moments[chain.i,im] = ev.moments[im]
+    end
+    for ip in chain.params_nms
+        chain.parameters[chain.i,ip] = ev.params[ip]
+    end
+    return nothing
+end
 
 
 
@@ -180,38 +195,38 @@ function localMovesMCMC!(algo::MAlgoBGP,v::Array)
 	  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch])
 	  		status = 1
 	  		prob = 1.0
-			xnew = v[ch]["value"][1]
-			xold = v[ch]["value"][1]
+			xnew = v[ch].value
+			xold = v[ch].value
 			algo.MChains[ch].infos[algo.i,:accept_rate] = 0.1
 		    # append values to MChains at index ch
 		    # appendEval!(algo.MChains[ch],v[ch],ACC,status,prob)
-			appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob,v[ch]["time"])
+			appendEval!(algo.MChains[ch],xnew,v[ch],ACC,status,prob)
 		else
 			xold = evals(algo.MChains[ch],algo.i-1)[1]
 			pold = parameters(algo.MChains[ch],algo.i-1)	# all=false: only get p2sample here!
 			mold = moments(algo.MChains[ch],algo.i-1)
-			xnew = v[ch]["value"][1]
+			xnew = v[ch].value
 			prob = minimum([1.0, exp(algo.MChains[ch].tempering *(xold - xnew))])
 			prob = prob * (xnew < algo.MChains[ch].accept_tol)
 			if isna(prob)
 				prob = 0.0
 				status = -1
 				ACC = false
-				appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob,v[ch]["time"])
+				appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob)
 			elseif !isfinite(xold)
 				prob = 1.0
 				status = -2
 				ACC = false
-				appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob,v[ch]["time"])
+				appendEval!(algo.MChains[ch],xnew,v[ch],ACC,status,prob)
 			else 
 				status = 1
 				if prob > rand()
 					ACC = true
 			  		# algo.current_param[ch] = deepcopy(algo.candidate_param[ch] )
-					appendEval!(algo.MChains[ch],xnew,v[ch]["params"],v[ch]["moments"],ACC,status,prob,v[ch]["time"])
+					appendEval!(algo.MChains[ch],xnew,v[ch],ACC,status,prob)
 				else
 					ACC = false
-					appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob,v[ch]["time"])
+					appendEval!(algo.MChains[ch],xold,pold,mold,ACC,status,prob,v[ch].time)
 				end
 			end 
 		    # update sampling variances
@@ -337,7 +352,7 @@ function getParamCovariance(algo::MAlgoBGP)
 
 	# compute Var-Cov matrix of parameters_to_sample
 	# plus some small random noise
-	VV = cov(array(pardf[:, algo.m.p2sample_sym])) + 0.0001 * Diagonal([1 for i=1:length(algo.m.p2sample_sym)])
+	VV = cov(array(pardf[:, ps2s_names(algo.m)])) + 0.0001 * Diagonal([1 for i=1:length(ps2s_names(algo.m))])
 	return VV
 
 	# setup a MvNormal
@@ -386,13 +401,13 @@ function updateCandidateParam!(algo::MAlgoBGP,ch::Int,shock::Array{Float64,1})
 	oldpar = parameters(algo.MChains[ch],algo.MChains[ch].i-1)
 
 	# add shock to each column of newpar
-	newpar = copy(oldpar[algo.m.p2sample_sym])	# algo.m.p2sample_sym are in alphabetical order
+	newpar = copy(oldpar[ps2s_names(algo)])	# algo.m.p2sample_sym are in alphabetical order
 	for c in 1:ncol(newpar)
 		newpar[1,c] += shock[c]
 	end
 
 	# do bounds checking on newpar
-	fitMirror!(newpar,algo.m.params_to_sample_df)
+	fitMirror!(newpar,algo.m.params_to_sample)
 
 	# set as dict on algo.current_param
 	fillinFields!(algo.current_param[ch],newpar)

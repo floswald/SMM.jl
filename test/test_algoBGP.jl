@@ -7,7 +7,7 @@ using FactCheck, DataFrames, MOpt, Lazy
 
 pb   = [ "a" => [0.3, 0,1] , "b" => [0.4,0,1]]
 moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
-mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
+mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
 
 facts("testing MAlgoBGP Constructor") do
 
@@ -147,7 +147,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		# get a "kernel"/Covariance matrix
 		# pos def matrix:
-		myVV = rand(length(MA.m.params_to_sample_df),length(MA.m.params_to_sample_df))
+		myVV = rand(length( ps2s_names(MA.m)),length(ps2s_names(MA.m)))
 		myVV = myVV * myVV'
 
 		# manually create next parameter guess on
@@ -163,7 +163,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 			shock[ich] = rand(MVN)
 
 			oldp = parameters(MA.MChains[ich],ix-1)	# get a dataframe of row ix-1
-			newp[ich] = copy(oldp[MA.m.p2sample_sym])	# get just those you wish to sample
+			newp[ich] = copy(oldp[ps2s_names(MA)])	# get just those you wish to sample
 
 			# add shock
 			for i in 1:length(newp[ich])
@@ -171,7 +171,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 			end			
 
 			# adjust for bounds
-			MOpt.fitMirror!(newp[ich],MA.m.params_to_sample_df)
+			MOpt.fitMirror!(newp[ich],MA.m.params_to_sample)
 		end
 
 
@@ -290,12 +290,6 @@ facts("testing localMovesMCMC") do
 
 	context("testing whether params get accept/rejected") do
 		
-		p    = ["a" => 3.1 , "b" => 4.9]
-		pb   = [ "a" => [0,1] , "b" => [0,1] ]
-		moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
-
-		mprob = MProb(p,pb,Testobj,moms)
-
 		# impose zero exchange by setting jump_prob to 0.0
 		opts =["N"        => 20,		# number of chains
 		"mode"            => "serial",	# mode: serial or mpi
@@ -314,7 +308,6 @@ facts("testing localMovesMCMC") do
 		
 		MA = MAlgoBGP(mprob,opts)
 		v=0
-
 
 		# first iteration
 		MA.i = 1
@@ -340,8 +333,8 @@ facts("testing localMovesMCMC") do
 
 		v0 = deepcopy(v)
 		for i in 1:length(v) 
-			v[i]["value"] = v[i]["value"] - log(0.9)
-			v[i]["moments"] = DataFrame(alpha = rand(), beta = rand(), gamma=rand())
+			v[i].value = v[i].value - log(0.9)
+			setMoment(v[i],  [ :alpha => rand(), :beta => rand(), :gamma => rand() ] )
 		end
 		MOpt.localMovesMCMC!(MA,v)
 
@@ -349,13 +342,13 @@ facts("testing localMovesMCMC") do
 		# acceptance prob is exactly 0.5
 		@fact all(abs(infos(MA.MChains,MA.i)[:prob] .- exp(temps.*log(0.9))) .< 0.000000001) => true
 		vv = infos(MA.MChains,MA.i)
-		xx = v0[1]["value"] .- log(0.9)
+		xx = v0[1].value .- log(0.9)
 		# if !all(abs(vv[vv[:accept] .== true,:evals]  .- xx) .<0.000001)
 		# 	println("v0[1][value] .+ log(0.5) = $xx")
 		# 	println("vv[vv[:accept] .== true,:evals] = $(vv[vv[:accept] .== true,:evals])")
 		# end
 		@fact all(abs(vv[vv[:accept] .== true,:evals]  .- xx) .<0.000001) => true
-		@fact all(abs(vv[vv[:accept] .== false,:evals]  .- v0[1]["value"]) .< 1.0e-6 ) => true
+		@fact all(abs(vv[vv[:accept] .== false,:evals]  .- v0[1].value) .< 1.0e-6 ) => true
 
 		# check that where not accepted, params and moments are previous ones
 		for ch in 1:MA["N"]
