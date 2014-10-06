@@ -14,15 +14,15 @@ export getEval,jumpParams!,getLastEval
 type BGPChain <: AbstractChain
 	id::Int             # chain id
 	i::Int              # current index
-	infos      ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
-	parameters ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
-	moments    ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
-	accept_tol ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
-	dist_tol   ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
-	jump_prob  ::Float64 # probability of swapping with "close" chain
+	infos        ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
+	parameters   ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
+	moments      ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
+	accept_tol   ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
+	dist_tol     ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
+	jump_prob    ::Float64 # probability of swapping with "close" chain
 
-	params_nms ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
-	moments_nms::Array{Symbol,1}	# names of moments
+	params_nms   ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
+	moments_nms  ::Array{Symbol,1}	# names of moments
 	params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
 
 	# TODO need either of those not both
@@ -93,44 +93,6 @@ end
 
 getLastEval(chain::BGPChain) = getEval(chain::BGPChain, chain.i - 1 )
 
-function appendEval!(chain::BGPChain, val::Float64, par::Dict, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob]) if want to grow dataframe
-    chain.infos[chain.i,:evals]              = val
-    chain.infos[chain.i,:prob]               = prob
-    chain.infos[chain.i,:accept]             = ACC
-    chain.infos[chain.i,:status]             = status
-    chain.infos[chain.i,:eval_time]          = time
-    chain.infos[chain.i,:shock_sd]           = chain.shock_sd
-    chain.infos[chain.i,:tempering]          = chain.tempering
-    chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
-    for (k,v) in par
-        chain.parameters[chain.i,symbol(k)] = v
-    end
-  return nothing
-end
-
-# same for 
-function appendEval!(chain::BGPChain, val::Float64, par::DataFrame, mom::DataFrame, ACC::Bool, status::Int, prob::Float64, time::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
-    chain.infos[chain.i,:evals]              = val
-    chain.infos[chain.i,:prob]               = prob
-    chain.infos[chain.i,:accept]             = ACC
-    chain.infos[chain.i,:status]             = status
-    chain.infos[chain.i,:eval_time]          = time
-    chain.infos[chain.i,:shock_sd]           = chain.shock_sd
-    chain.infos[chain.i,:tempering]          = chain.tempering
-    chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
-    # for im in chain.moments_nms
-    #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
-    # end
-    chain.parameters[chain.i,names(par)] = par  # just exchange the cols in par
-    # for ip in chain.params_nms
-    #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
-    # end
-  return nothing
-end
-
-# same for 
 function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
     chain.infos[chain.i,:evals]  = ev.value
@@ -145,8 +107,6 @@ function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     end
     return nothing
 end
-
-
 
 # computes new candidate vectors for each chain
 # accepts/rejects that vector on each chain, according to some rule
@@ -198,10 +158,6 @@ function computeNextIteration!( algo::MAlgoBGP )
 		# Part 3) update sampling variances
 	end
 end
-
-
-
-
 
 # notice: higher tempering draws candiates further spread out,
 # but accepts lower function values with lower probability
@@ -282,41 +238,6 @@ function exchangeMoves!(algo::MAlgoBGP)
 
 end
 
-function findInterval{T<:Number}(x::T,vec::Array{T})
-
-    out = zeros(Int,length(x))
-    vec = unique(vec)
-    sort!(vec)
-
-    for j in 1:length(x)
-        if x[j] < vec[1]
-            out[1] = 0
-        elseif x[j] > vec[end]
-            out[end] = 0
-        else
-            out[j] = searchsortedfirst(vec,x[j])-1 
-        end
-    end
-    return out
-end
-function findInterval{T<:Number}(x::T,vec::Array{T})
-
-	out = zeros(Int,length(x))
-	sort!(vec)
-
-	for j in 1:length(x)
-		if x[j] < vec[1]
-			out[1] = 0
-		elseif x[j] > vec[end]
-			out[end] = 0
-		else
-			out[j] = searchsortedfirst(vec,x[j])-1 
-		end
-	end
-	return out
-end
-
-
 function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 
 	mnames = algo.MChains[pair[1]].moments_nms
@@ -344,7 +265,6 @@ function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 	algo.MChains[pair[2]].infos[i,:evals] = v1[1]
 
 end
-
 
 # get past parameter values to compute new candidates
 # we draw new candidates for each chain from a joint normal
@@ -421,8 +341,6 @@ end
 
 # save algo chains component-wise to HDF5 file
 function save(algo::MAlgoBGP, filename::ASCIIString)
-
-
     # step 1, create the file if it does not exist
     ff5 = h5open(filename, "w")
 
@@ -463,21 +381,4 @@ function show(io::IO,MA::MAlgoBGP)
 	print(io,"Tempering range: [$(MA.MChains[1].tempering),$(MA.MChains[end].tempering)]\n")
 	print(io,"Jump probability range: [$(MA.MChains[1].jump_prob),$(MA.MChains[end].jump_prob)]\n")
 end
-
-
-
-
-# # save algo entirely to jdl file
-# function saveJLD(algo::MAlgoBGP,filename::ASCIIString)
-# 	file = jldopen(filename,"w") 
-# 	addrequire(file, "MOpt")
-# 	@write file algo
-# 	close(file)
-# end
-
-# function saveAlgoToHDF5(algo:MAlgoBGP,ff5::::HDF5File)
-#             HDF5.write(ff5,joinpath(path,string(nn)),array(dd[:nn]))
-#             HDF5.write(ff,"algo/opts",algo.opts)
-
-
-
+ß
