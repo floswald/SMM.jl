@@ -48,7 +48,6 @@ type BGPChains
 	MChains :: Array{BGPChain,1}
 end
 
-# ---------------------------  BGP ALGORITHM ----------------------------
 
 
 type MAlgoBGP <: MAlgo
@@ -72,6 +71,10 @@ type MAlgoBGP <: MAlgo
 	    return new(m,opts,0,cpar,chains)
     end
 end
+
+
+# ---------------------------  BGP GETTERS / SETTERS ----------------------------
+
 
 function getEval(chain::BGPChain, i::Int64)
 	ev = Eval()
@@ -107,6 +110,11 @@ function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     end
     return nothing
 end
+
+
+# ---------------------------  BGP ALGORITHM ----------------------------
+
+
 
 # computes new candidate vectors for each chain
 # accepts/rejects that vector on each chain, according to some rule
