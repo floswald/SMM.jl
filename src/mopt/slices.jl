@@ -5,9 +5,8 @@ function slices(m::MProb,npoints::Int,pad=0.1)
 
     # make a dict of grids for each param
     # loop over params!
-    pdf = m.params_to_sample_df
     pranges = Dict{Symbol,Array{Float64,1}}()
-    for irow in eachrow(pdf)
+    for bd in m.params_to_sample
         lb = irow[:lb][1]
         ub = irow[:lb][1]
         pranges[irow[:param]] = linspace(irow[:lb][1], irow[:ub][1], npoints)  

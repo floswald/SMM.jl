@@ -25,9 +25,9 @@ include("test/runtests.jl")
 # MOpt.save(MA,"algo.h5")
 
 
-p    = ["a" => 1.9 , "b" => -0.9]
-pb   = [ "a" => [-2,2] , "b" => [-1,1] ]
-moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+pb    = ["a" => [1.9,-2,2] , "b" => [-0.9,-1,1] ] 
+moms = DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))
+mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],

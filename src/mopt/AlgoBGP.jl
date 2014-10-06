@@ -381,4 +381,3 @@ function show(io::IO,MA::MAlgoBGP)
 	print(io,"Tempering range: [$(MA.MChains[1].tempering),$(MA.MChains[end].tempering)]\n")
 	print(io,"Jump probability range: [$(MA.MChains[1].jump_prob),$(MA.MChains[end].jump_prob)]\n")
 end
-ß
