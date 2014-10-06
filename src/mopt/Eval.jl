@@ -48,10 +48,9 @@ type Eval
 		this.params       = Dict{Symbol,Float64}()
 		this.moments      = Dict{Symbol,Float64}()
 
-		for (i in 1:nrow(mprob.moments))
-			kk = symbol(mom[i,:moment])
-			this.dataMoments[kk] = mom[i,:data_value]
-			this.dataMomentsW[kk] = mom[i,:data_sd]
+		for (kk in keys(mprob.moments) )
+			this.dataMoments[kk]  = mprob.moments[kk][:value]
+			this.dataMomentsW[kk] = mprob.moments[kk][:weight]
 		end
 
 		for (k in keys(p))
