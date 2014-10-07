@@ -65,48 +65,30 @@ evals(c::AbstractChain, i::Int)                 = evals(c, i:i)
 allstats(c::AbstractChain,i::UnitRange{Int})    = cbind(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
 allstats(c::AbstractChain,i::Int)               = cbind(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
 
-# appends values from objective function
-# at CURRENT iteration
-# function appendEval!(chain::AbstractChain, vals::Dict, ACC::Bool, status::Int, prob::Float64)
-function appendEval!(chain::AbstractChain, val::Float64, par::Dict, mom::DataFrame, ACC::Bool, status::Int, prob::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
-    chain.infos[chain.i,:evals] = val
-    chain.infos[chain.i,:prob] = prob
-    chain.infos[chain.i,:accept] = ACC
-    chain.infos[chain.i,:status] = status
-    chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
-    # for im in chain.moments_nms
-    #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
-    # end
-    for (k,v) in par
-        chain.parameters[chain.i,symbol(k)] = v
+# ---------------------------  BGP GETTERS / SETTERS ----------------------------
+export getEval, getLastEval, appendEval
+
+function getEval(chain::AbstractChain, i::Int64)
+    ev = Eval()
+    ev.value  = chain.infos[i,:evals]
+    ev.time   = chain.infos[i,:eval_time]
+    ev.status = chain.infos[i,:status]
+
+    for k in names(chain.parameters)
+        if !(k in [:chain_id,:iter])
+            ev.params[k] = chain.parameters[i,k]
+        end
     end
-    # for ip in chain.params_nms
-    #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
-    # end
-    return nothing
+    for k in names(chain.moments)
+        ev.moments[k] = chain.moments[i,k]
+    end
+
+    return (ev)
 end
 
-# same for 
-function appendEval!(chain::AbstractChain, val::Float64, par::DataFrame, mom::DataFrame, ACC::Bool, status::Int, prob::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
-    chain.infos[chain.i,:evals] = val
-    chain.infos[chain.i,:prob] = prob
-    chain.infos[chain.i,:accept] = ACC
-    chain.infos[chain.i,:status] = status
-    chain.moments[chain.i,chain.moments_nms] = mom[chain.moments_nms]
-    # for im in chain.moments_nms
-    #     chain.moments[chain.i,im] = vals["moments"][string(im)][1]
-    # end
-    chain.parameters[chain.i,names(par)] = par  # just exchange the cols in par
-    # for ip in chain.params_nms
-    #     chain.parameters[chain.i,ip] = vals["params"][string(ip)][1]
-    # end
-    return nothing
-end
+getLastEval(chain :: AbstractChain) = getEval(chain::AbstractChain, chain.i - 1 )
 
-# same for 
-function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, status::Int, prob::Float64)
+function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, prob::Float64)
     # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
     chain.infos[chain.i,:evals]  = ev.value
     chain.infos[chain.i,:prob]   = prob
@@ -120,7 +102,6 @@ function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, status::Int, pr
     end
     return nothing
 end
-
 
 # methods for an array of chains
 # ==============================
@@ -146,6 +127,7 @@ end
 function parameters(MC::Array,all::Bool)
     parameters(MC,1:MC[1].i,allp=all)
 end
+
 
 function moments(MC::Array,i::Union(Integer, UnitRange{Int}))
     if !isa(MC[1],AbstractChain)
@@ -214,7 +196,7 @@ end
 
 
 # update the iteration count on each chain
-function updateIterChain!(MC::Array)
+function incrementChainIter!(MC::Array)
     for ix in 1:length(MC)
         MC[ix].i += 1
     end 

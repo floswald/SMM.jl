@@ -110,7 +110,7 @@ facts("testing Chain/MChain methods") do
 		end
 
 		# update chain with v
-		MOpt.appendEval!(chain,ev,true,1,rand())
+		MOpt.appendEval!(chain,ev,true,1.0)
 
 		# verify new values on chain
 		@fact chain.infos[:evals][1] => ev.value

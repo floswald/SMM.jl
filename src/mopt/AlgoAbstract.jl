@@ -83,11 +83,23 @@ function runMOpt!( algo::MAlgo )
 	info("Done with estimation loop.")
 end
 
-
 function ps2s_names(algo::MAlgo)
 	return ps2s_names(algo.m)
 end
 
+function ms_names(algo::MAlgo)
+	return ms_names(algo.m)
+end
 
+function parameters(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
+	return m.MChains[ch].parameters[iter,p]
+end
 
+function moments(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
+	return m.MChains[ch].moments[iter,p]
+end
+
+function moments(m::MAlgo, ch :: Int64, iter:: Int64)
+	return [ m.MChains[ch].moments[iter,p] for p in ms_names(m)]
+end
 

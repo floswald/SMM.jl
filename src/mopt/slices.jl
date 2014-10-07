@@ -16,7 +16,6 @@ type Slice
 end
 
 function add!(s::Slice, p::Symbol, ev::Eval)
-    print("$p $(ev.params[p])" )
     s.res[p][ ev.params[p] ] = [:moments => ev.moments, :value => ev.value ]
 end
 
@@ -32,6 +31,18 @@ function get(s::Slice, p::Symbol, m::Symbol)
     return [ :x => convert(Array{Float64,1},x) , :y => convert(Array{Float64,1},y) ]
 end
 
+# function get(s::Slice, p::Symbol)
+#     rr = Dict()
+
+#     rr[:x]     = [ k for (k,v) in s.res[p] ]
+#     rr[:value] = [ v[:value] for (k,v) in s.res[p] ]
+#     rr[:moment]
+#     for (k,v) in s.res[p][:moment]
+#         rr[:moment][k] = v
+#     end
+
+#     return [ :x => convert(Array{Float64,1},x) , :y => convert(Array{Float64,1},y) ]
+# end
 
 
 #'.. py:function:: slices(m,pad)

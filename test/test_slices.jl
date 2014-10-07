@@ -1,7 +1,7 @@
 module TestSlices
 
-	using FactCheck,DataFrames,Lazy
-    include("src/MOpt.jl")
+	using FactCheck,DataFrames,Lazy,MOpt
+
 	# initial value
 	pb    = ["m1" => [0.0,-2,2] , "m2" => [0.0,-2,2] ] 
 	moms = DataFrame(name=["m1","m2"],value=[0.0,0.0],weight=rand(2))
