@@ -83,6 +83,20 @@ function addEvalFunc(m::MProb,f::Function)
   return m 
 end
 
+# evalute objective function
+function evaluateObjective(m::MProb,p::Dict)
+    ev = Eval(m,p)
+    ev = eval(Expr(:call,m.objfunc,ev))
+    gc()
+    return ev
+end
+
+function evaluateObjective(m::MProb,ev)
+    ev = eval(Expr(:call,m.objfunc,ev))
+    gc()
+    return ev
+end
+
 # -------------------- GETTERS --------------------
 
 #'.. py:function:: ps_names
@@ -104,7 +118,7 @@ function show(io::IO,m::MProb)
   print(io,"MProb Object:\n")
   print(io,"==============\n\n")
   print(io,"Parameters to sample:\n")
-  print(io,m.params_to_sample_df)
+  print(io,m.params_to_sample)
   print(io,"\nMoment Table:\n")
   print(io,m.moments)
   print(io,"Moment to use:\n")

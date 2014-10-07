@@ -1,13 +1,5 @@
 export fitMirror
 
-# evalute objective function
-function evaluateObjective(m::MProb,p::Dict)
-    ev = Eval(m,p)
-    ev = eval(Expr(:call,m.objfunc,ev))
-    gc()
-    return ev
-end
-
 
 # transpose a 2-column dataframe to a one-row dataframe, so that 
 # col x become new column names

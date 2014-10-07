@@ -41,6 +41,9 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
 
 end
 
+
+export Testobj2
+
 function Testobj2(ev::Eval)
 
     start(ev)
