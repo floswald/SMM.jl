@@ -42,55 +42,33 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
 end
 
 
-#'.. py:function:: objfunc_norm2
-#'
-#'   define a Test objective function
-function objfunc_norm2(p::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
-    
-    # println("I am worker number: $(myid())")
+export Testobj2,Testobj3,objfunc_norm
 
-    t0 = time()
-    if length(vargs) > 0
-        if get(vargs[1],"printlevel",0) > 0
-            info("in Test objective function")
-        end
+function Testobj2(ev::Eval)
+
+    start(ev)
+    info("in Test objective function")
+
+    val = 0.0
+    for (k,v) in dataMoment(ev)
+        setMoment(ev,k,v+2.2)
+        val += (2.2)^2
     end
-    
-    sigma = convert(Matrix,Diagonal([1.0,1.0]))
-    ns = 5000
 
-    # compute simulated moments
-    mu = [p["a"],p["b"]]
-    MVN = MOpt.MvNormal(mu,sigma) 
-
-    # get data mometns
-    muD = array(transpose(mom[:,[1,2]],1))'
-
-    # simulate model moments 
-    moments = mean(rand(MVN,ns),2)
-        
-    # value = data - model
-    value = mean((muD - moments).^2)
-
-    momout = DataFrame(alpha = moments[1],beta = moments[2])
-
-    t0 = time() - t0
-
-        ret = ["value"=>value, "params" =>p, "time" =>t0 , "status" => 1, "moments" => momout]
-    return ret
+    setValue(ev,val)
+    return ev
 end
 
-
 #'.. py:function:: objfunc_norm2
 #'
 #'   define a Test objective function
-function objfunc_norm3(ev::Eval)
+function objfunc_norm(ev::Eval)
     
 	start(ev)
 	info("in Test objective function")
 
 	# extract parameters    
-	mu  = param(ev,[:a,:b]) # returns values as a vector, use param to get a Dict
+	mu  = convert(Array{Float64,1},param(ev,[:m1,:m2])) # returns values as a vector, use param to get a Dict
 
 	# compute simulated moments
 	ns = 5000
@@ -107,8 +85,10 @@ function objfunc_norm3(ev::Eval)
 	setValue(ev, mean((simMoments - trueMoments).^2) )
 
 	# also return the moments
-	setMoment(ev, {:m1 => moments[1], :m2 => moments[2]})
+	setMoment(ev, {:m1 => simMoments[1], :m2 => simMoments[2]})
 	# we would also have a setter that takes a DataFrame
+
+	ev.status = 1
 
 	# finish and return
 	finish(ev)

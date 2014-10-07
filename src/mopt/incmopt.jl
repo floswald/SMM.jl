@@ -1,3 +1,5 @@
+export fitMirror
+
 
 # transpose a 2-column dataframe to a one-row dataframe, so that 
 # col x become new column names
@@ -106,12 +108,58 @@ function fitMirror(x,lb,ub)
     return x2 
 end
 
+fitMirror(x::Float64,d::Dict) = fitMirror(x,d[:lb],d[:ub])
+
 function fitMirror!(x::DataFrame,b::DataFrame)
     for i in 1:length(x)
         x[i] = fitMirror(convert(Float64,x[i][1]),convert(Float64,b[i,:lb][1]),convert(Float64,b[i,:ub][1]))
     end
 end
 
+function fitMirror!(x::DataFrame,b::Dict)
+    for col in names(x)
+        x[1,col] = fitMirror( 
+                convert(Float64,x[1,col]),
+                convert(Float64,b[col][:lb]),
+                convert(Float64,b[col][:ub]))
+    end
+end
+
+
+
+function findInterval{T<:Number}(x::T,vec::Array{T})
+
+    out = zeros(Int,length(x))
+    vec = unique(vec)
+    sort!(vec)
+
+    for j in 1:length(x)
+        if x[j] < vec[1]
+            out[1] = 0
+        elseif x[j] > vec[end]
+            out[end] = 0
+        else
+            out[j] = searchsortedfirst(vec,x[j])-1 
+        end
+    end
+    return out
+end
+function findInterval{T<:Number}(x::T,vec::Array{T})
+
+    out = zeros(Int,length(x))
+    sort!(vec)
+
+    for j in 1:length(x)
+        if x[j] < vec[1]
+            out[1] = 0
+        elseif x[j] > vec[end]
+            out[end] = 0
+        else
+            out[j] = searchsortedfirst(vec,x[j])-1 
+        end
+    end
+    return out
+end
 
             
 

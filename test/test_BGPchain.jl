@@ -1,21 +1,17 @@
 module TestBGPChain
 
-using FactCheck, DataFrames, MOpt
+using FactCheck, DataFrames, MOpt, Lazy
 
 
 
 # TESTING Chains
 # ==============
-p    = ["a" => 3.1 , "b" => 4.9]
-pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
-
-
-
+pb   = [ "a" => [3.1, 0,4] , "b" => [4.9,0,5,1] ]
+moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
 
 facts("Testing BGPChain constructor") do
 	
-	mprob = MProb(p,pb,Testobj,moms)
+	mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
 	L = 9
 	temp = 100.0
 	shock = 12.0
@@ -45,7 +41,6 @@ facts("Testing BGPChain constructor") do
 		@fact chain.dist_tol => dist_tol
 		@fact chain.accept_tol => accept_tol
 	end
-
 
 end
 

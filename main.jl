@@ -5,31 +5,29 @@
 home = ENV["HOME"]
 cd("$home/git/MOpt.jl")
 
+# load the source of the package
+include("src/MOpt.jl")
+
+# test a full example
 include("src/cluster/examples/example-serial.jl")
 
-
-
-include("src/MOpt.jl")
-	
 # to develop with tests: run this
-
 include("test/test_MProb.jl")
 include("test/test_chains.jl")
 include("test/test_BGPchain.jl")
 include("test/test_algoBGP.jl")
-	
+include("test/test_slices.jl")
 include("test/runtests.jl")
-	
-# to develop in main: run this
+		
 
+# to develop in main: run this
 # runnign examples:
-	
 # MOpt.save(MA,"algo.h5")
 
 
-p    = ["a" => 1.9 , "b" => -0.9]
-pb   = [ "a" => [-2,2] , "b" => [-1,1] ]
-moms = MOpt.DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+pb    = ["a" => [1.9,-2,2] , "b" => [-0.9,-1,1] ] 
+moms = DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))
+mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],

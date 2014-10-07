@@ -1,20 +1,21 @@
 module TestChain
 
-using FactCheck,DataFrames,MOpt
+using FactCheck,DataFrames,MOpt,Lazy
 
 
 
 # TESTING Chains
 # ==============
-p    = ["a" => 3.1 , "b" => 4.9]
-pb   = [ "a" => [0,1] , "b" => [0,1] ]
-moms = DataFrame(moment=["alpha","beta","gamma"],data_value=[0.8,0.7,0.5],data_sd=rand(3))
-
-
+pb   = [ 
+  "a" => [0.6,0,1] , 
+  "b" => [0.8,0,1] 
+]
+moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
 
 facts("Testing Default Chains constructor") do
 	
-	mprob = MProb(p,pb,MOpt.Testobj,moms)
+	mprob = @> MProb() addSampledParam!(pb) addMoment(moms)
+
 	L = 9
 	chain = Chain(mprob,L)
 
@@ -56,8 +57,8 @@ facts("testing Chain/MChain methods") do
 
 	context("testing getindex(chain,i)") do
 
-		mprob = MProb(p,pb,MOpt.Testobj,moms)
-		v = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
+		mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
+
 		L = 9	# length of chain
 		chain = Chain(mprob,L)
 
@@ -73,8 +74,8 @@ facts("testing Chain/MChain methods") do
 
 	context("testing getindex(chain,i::Range)") do
 
-		mprob = MProb(p,pb,MOpt.Testobj,moms)
-		v     = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
+		mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
+
 		L     = 9	# length of chain
 		chain = Chain(mprob,L)
 
@@ -88,15 +89,16 @@ facts("testing Chain/MChain methods") do
 	
 	context("test appendEval!(chain)") do
 
-		mprob = MProb(p,pb,MOpt.Testobj,moms)
-		v = MOpt.Testobj(p,moms,["alpha","beta","gamma"])
-		for (k,va) in v["params"]
-			v["params"][k] = va + 1.1
+		mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+		ev = Eval(pb,moms)
+		ev = MOpt.Testobj2(ev)
+
+		for (k,va) in ev.params
+			ev.params[k] = va + 1.1
 		end
 
 		L = 9
 		chain = Chain(mprob,L)
-
 		# set i to 1 to test this:
 		chain.i = 1
 
@@ -108,62 +110,21 @@ facts("testing Chain/MChain methods") do
 		end
 
 		# update chain with v
-		MOpt.appendEval!(chain,v["value"],v["params"],v["moments"],true,1,rand())
+		MOpt.appendEval!(chain,ev,true,1.0)
 
 		# verify new values on chain
-		@fact chain.infos[:evals][1] => v["value"]
+		@fact chain.infos[:evals][1] => ev.value
 		@fact chain.infos[:accept][1] => true
 		for nm in MOpt.ps_names(mprob)
-			@fact chain.parameters[chain.i,symbol(nm)][1] => v["params"][nm]
+			@fact chain.parameters[chain.i,symbol(nm)][1] => ev.params[nm]
 		end
-			@fact chain.moments[chain.i,chain.moments_nms] => v["moments"]
 	end
-
-	context("test appendEval!(chain) if par is a dataframe") do
-
-		mprob = MProb(p,pb,Testobj,moms)
-		v = Testobj(p,moms,["alpha","beta","gamma"])
-		for (k,va) in v["params"]
-			v["params"][k] = va + 1.1
-		end
-
-		L = 9
-		chain = Chain(mprob,L)
-
-		# set i to 1 to test this:
-		chain.i = 1
-
-		# verify values are zero:
-		@fact all(chain.infos[chain.i,:evals] == 0.0) => true
-		# verify params are zero
-		for ic in 1:ncol(chain.parameters)
-			@fact chain.parameters[chain.i,ic][1] => 0.0
-			# and set random
-		end
-
-		oldpar = parameters(chain,chain.i)
-		for i in chain.params_nms
-			oldpar[i] = rand()
-		end
-
-		# update chain with v
-		MOpt.appendEval!(chain,v["value"],oldpar,v["moments"],true,1,rand())
-
-		# verify new values on chain
-		@fact chain.infos[:evals][1] => v["value"]
-		@fact chain.infos[:accept][1] => true
-		for nm in MOpt.ps_names(mprob)
-			@fact chain.parameters[chain.i,symbol(nm)][1] - oldpar[symbol(nm)][1] < 1e-6 => true
-		end
-			@fact chain.moments[chain.i,chain.moments_nms] => v["moments"]
-	end
-
 end
 
 
 facts("testing collectFields and fillinFields functions") do
 	
-	mprob = MProb(p,pb,Testobj,moms)
+	mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
 	chain = Chain(mprob,10)
 
 	context("collectFields") do

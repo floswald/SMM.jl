@@ -6,6 +6,7 @@ module MOpt
 
 using Distributions, HDF5
 using Reexport
+using Lumberjack
 @reexport using DataFrames
 import Base.show, Base.transpose
 
@@ -38,11 +39,14 @@ export MProb,
 # ############
 
 include("mopt/mprob.jl")
-include("mopt/chains.jl")
 include("mopt/incmopt.jl")
+include("mopt/Eval.jl")
+include("mopt/chains.jl")
+include("mopt/slices.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
+
 
 # for now plotting only on my box because
 # installing matplotlib on unix hpc is tricky.

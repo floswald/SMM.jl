@@ -62,17 +62,17 @@ function runMOpt!( algo::MAlgo )
 
 		# printing progress
 		t1 = round(time()-t0,2)
-		if get(algo.opts,"print_level",0) > 2 
+		if Base.get(algo.opts,"print_level",0) > 2 
 			info("iteration $i took $t1 seconds")
 			println()
 			println(infos(algo.MChains,algo.i))
-		elseif get(algo.opts,"print_level",0) > 1
+		elseif Base.get(algo.opts,"print_level",0) > 1
 			if mod(algo.i,10) == 0
 				info("iteration $i took $t1 seconds")
 				println()
 				println(infos(algo.MChains,algo.i))
 			end
-		elseif get(algo.opts,"print_level",0) > 0
+		elseif Base.get(algo.opts,"print_level",0) > 0
 			if mod(algo.i,100) == 0
 				info("iteration $i took $t1 seconds")
 				println()
@@ -83,9 +83,23 @@ function runMOpt!( algo::MAlgo )
 	info("Done with estimation loop.")
 end
 
+function ps2s_names(algo::MAlgo)
+	return ps2s_names(algo.m)
+end
 
+function ms_names(algo::MAlgo)
+	return ms_names(algo.m)
+end
 
+function parameters(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
+	return m.MChains[ch].parameters[iter,p]
+end
 
+function moments(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
+	return m.MChains[ch].moments[iter,p]
+end
 
-
+function moments(m::MAlgo, ch :: Int64, iter:: Int64)
+	return [ m.MChains[ch].moments[iter,p] for p in ms_names(m)]
+end
 

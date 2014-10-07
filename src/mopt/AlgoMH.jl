@@ -11,7 +11,7 @@
 export jumpParams!
 
 # Define a Chain Type for BGP
-type BGPChain <: AbstractChain
+type MHChain <: Chain
 	id::Int             # chain id
 	i::Int              # current index
 	infos        ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
@@ -19,7 +19,6 @@ type BGPChain <: AbstractChain
 	moments      ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
 	accept_tol   ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
 	dist_tol     ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
-	jump_prob    ::Float64 # probability of swapping with "close" chain
 
 	params_nms   ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
 	moments_nms  ::Array{Symbol,1}	# names of moments
@@ -28,63 +27,41 @@ type BGPChain <: AbstractChain
 	# TODO need either of those not both
 	# the paper uses tempering to set up the kernel,
 	# tibo uses shock_sd to amplify the shocks. expect small difference.
-	tempering  ::Float64 # tempering in update probability
 	shock_sd   ::Float64 # sd of shock to 
 
-	function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
-		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
-		parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
-		moments    = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
-		par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
-		par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
-		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
-		names!(parameters,[:chain_id,:iter, par_nms])
-		names!(moments   ,[:chain_id,:iter, mom_nms])
-		return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
+	function MHChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
+		this       = Chain(MProb,L)
+		return this
     end
 end
 
-type BGPChains
-	MChains :: Array{BGPChain,1}
+type MHChains
+	MChains :: Array{MHChain,1}
 end
 
-type MAlgoBGP <: MAlgo
+type MAlgoMH <: MAlgo
     m               :: MProb # an MProb
     opts            :: Dict	# list of options
     i               :: Int 	# iteration
     current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
     MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
   
-    function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
+    function MAlgoMH(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
 
-		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
-		acctol    = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
-		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
-		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
-		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
-	  	# current param values
-	  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
+    	this      = new()
+    	this.m    = m 
+    	this.opts = opts
+    	this.i    = 0
+    	this.current_param = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
 
-	    return new(m,opts,0,cpar,chains)
+		acctol       = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
+		shocksd      = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
+		disttol      = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
+		jump_prob    = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
+	  	this.MChains = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+
+	  	return this
     end
-end
-
-
-function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
-    chain.infos[chain.i,:evals]  = ev.value
-    chain.infos[chain.i,:prob]   = prob
-    chain.infos[chain.i,:accept] = ACC
-    chain.infos[chain.i,:status] = ev.status
-    chain.infos[chain.i,:eval_time] = ev.time
-    chain.infos[chain.i,:tempering] = chain.tempering
-    for im in chain.moments_nms
-        chain.moments[chain.i,im] = ev.moments[im]
-    end
-    for ip in chain.params_nms
-        chain.parameters[chain.i,ip] = ev.params[ip]
-    end
-    return nothing
 end
 
 # ---------------------------  BGP ALGORITHM ----------------------------
@@ -98,7 +75,6 @@ function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-    debug("computing next iteration")
 
     # check if we reached end of chain
 	if algo.i == algo["maxiter"]
@@ -106,7 +82,7 @@ function computeNextIteration!( algo::MAlgoBGP )
 	    return true
 	else
 		# else update iteration count on all chains
-		incrementChainIter!(algo.MChains)
+		updateIterChain!(algo.MChains)
 
 		# check algo index is the same on all chains
 		for ic in 1:algo["N"]
@@ -128,12 +104,12 @@ function computeNextIteration!( algo::MAlgoBGP )
 
 		# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
 		# -----------------------------------------------------------
-		doAcceptRecject!(algo,v)
+		localMovesMCMC!(algo,v)
 
 		# Part 2) EXCHANGE MOVES 
 		# ----------------------
 		# starting mixing in period 4
-		if algo.i>=2 && algo["N"] > 1 
+		if algo.i>2 && algo["N"] > 1 
 			exchangeMoves!(algo)
 		end
 
@@ -143,7 +119,7 @@ end
 
 # notice: higher tempering draws candiates further spread out,
 # but accepts lower function values with lower probability
-function doAcceptRecject!(algo::MAlgoBGP,v::Array)
+function localMovesMCMC!(algo::MAlgoBGP,v::Array)
 	for ch in 1:algo["N"]
 		chain = algo.MChains[ch]
 		eval_new  = v[ch]
@@ -191,89 +167,6 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 	end
 end
 
-function exchangeMoves!(algo::MAlgoBGP)
-	# for all chains
-	for ch in 1:algo["N"]
-		oldval = evals(algo.MChains[ch],algo.MChains[ch].i)[1]
-		# 1) find all other chains with value +/- x% of chain ch
-		close = Int64[]  # vector of indices of "close" chains
-		for ch2 in 1:algo["N"]
-			if ch != ch2
-				tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
-				if tmp < algo.MChains[ch].dist_tol
-					push!(close,ch2)
-				end
-			end
-		end
-		# 2) with y% probability exchange with a randomly chosen chain from close
-		if length(close) > 0
-			if rand() < algo.MChains[ch].jump_prob
-				ex_with =sample(close)
-				debug("making an exchange move for chain $ch with chain $ex_with set:$close")
-				swapRows!(algo,(ch,ex_with),algo.i)
-			end
-		end
-	end
-
-end
-
-function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
-
-	mnames = algo.MChains[pair[1]].moments_nms
-	pnames = algo.MChains[pair[1]].params2s_nms
-	# pars, moms and value from 1
-	p1 = parameters(algo.MChains[pair[1]],i,false) 	# false: only get params to sample
-	m1 = algo.MChains[pair[1]].moments[i,mnames]
-	v1 = evals(algo.MChains[pair[1]],i)
-
-	# same for 2
-	p2 = parameters(algo.MChains[pair[2]],i,false) 	# false: only get params to sample
-	m2 = algo.MChains[pair[2]].moments[i,mnames]
-	v2 = evals(algo.MChains[pair[2]],i)
-
-	# make a note in infos
-	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
-	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
-
-	# swap
-	algo.MChains[pair[1]].parameters[i,pnames] = p2
-	algo.MChains[pair[2]].parameters[i,pnames] = p1
-	algo.MChains[pair[1]].moments[i,mnames] = m2
-	algo.MChains[pair[2]].moments[i,mnames] = m1
-	algo.MChains[pair[1]].infos[i,:evals] = v2[1]
-	algo.MChains[pair[2]].infos[i,:evals] = v1[1]
-
-end
-
-# get past parameter values to compute new candidates
-# we draw new candidates for each chain from a joint normal
-# that depends on parameter vectors on ALL chains
-# pardf = Dataframe with stacked parameter df for each chain
-# function getParamKernel(algo::MAlgoBGP)
-function getParamCovariance(algo::MAlgoBGP)
-
-	# select the last algo["past_iterations"] iterations from each chain
-	lower_bound_index = maximum([1,algo.MChains[1].i-algo["past_iterations"]])
-
-	# get all params from all chains 
-	pardf = parameters(algo.MChains,lower_bound_index:algo.MChains[1].i)
-	# |-------|----|------|----------|-----------|
-	# | Row # | id | iter | a        | b         |
-	# | 1     | 1  | 1    | 0.901685 | 0.983013  |
-	# | 2     | 1  | 2    | 0.282522 | 0.763859  |
-	# | 3     | 1  | 3    | 0.817773 | 0.268273  |
-	# ...
-
-	# compute Var-Cov matrix of parameters_to_sample
-	# plus some small random noise
-	VV = cov(array(pardf[:, ps2s_names(algo.m)])) + 0.0001 * Diagonal([1 for i=1:length(ps2s_names(algo.m))])
-	return VV
-
-	# setup a MvNormal
-	# MVN = MvNormal(VV)
-	# return MVN
-end
-
 
 # function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
@@ -290,18 +183,19 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		MVN = MvNormal(VV2)
 
 		# constraint the shock_sd: 95% conf interval should not exceed overall param interval width
-		shock_list = [ (algo.m.params_to_sample[p][:ub] - algo.m.params_to_sample[p][:lb]) for p in ps2s_names(algo) ] ./ (1.96 * 2 *diag(VV2))
-		shock_ub  = minimum(   shock_list  )
+		shock_ub  = minimum(  (algo.m.params_to_sample_df[:ub] - algo.m.params_to_sample_df[:lb]) ./ (1.96 * 2 *diag(VV2) ))
 		algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
-		shock = Dict(ps2s_names(algo) , shock)
 
-		debug("shock to parameters on chain $ch :")
-		debug("$shock")
+		if get(algo.opts,"print_level",0) > 3
+			info("shock to parameters on chain $ch :")
+			info(shock)
+		end
 
-		jumpParams!(algo,ch,shock)
+		updateCandidateParam!(algo,ch,shock)
+
 	end
 
 end
