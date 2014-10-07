@@ -88,6 +88,8 @@ function objfunc_norm(ev::Eval)
 	setMoment(ev, {:m1 => simMoments[1], :m2 => simMoments[2]})
 	# we would also have a setter that takes a DataFrame
 
+	ev.status = 1
+
 	# finish and return
 	finish(ev)
 

@@ -94,6 +94,7 @@ function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, prob::Float64)
     chain.infos[chain.i,:prob]   = prob
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = ev.status
+    chain.infos[chain.i,:eval_time] = ev.time
     for im in chain.moments_nms
         chain.moments[chain.i,im] = ev.moments[im]
     end

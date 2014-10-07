@@ -93,7 +93,7 @@ function start(ev::Eval)
 end
 
 function finish(ev::Eval)
-	ev.time = ev.time - time()
+	ev.time =  time() - ev.time
 end
 
 param(ev::Eval,ll::Array{Symbol,1})    = [ ev.params[i] for i in ll]

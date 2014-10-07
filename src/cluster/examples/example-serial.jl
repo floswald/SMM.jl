@@ -1,6 +1,6 @@
 	
 
-using MOpt, Lazy
+using Lazy, DataFrames
 
 # data are generated from a bivariate normal
 # with mu = [a,b] = [0,0]
@@ -11,16 +11,14 @@ using MOpt, Lazy
 # 3) S([a,b]) returns a summary of features of the data
 
 # initial value
-pb    = ["a" => [1.9,-2,2] , "b" => [-0.9,-1,1] ] 
-moms = DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))
-mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+pb    = ["m1" => [0.2,-2,2] , "m2" => [-0.2,-2,2] ] 
+moms = DataFrame(name=["m2","m1"],value=[0.0,0.0],weight=rand(2))
+mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm)
 
 # look at slice of the model: 
 # how does the objective function behave 
 # if we vary each parameter one by one, holding 
 # the others fixed?
-
-obj_slices = slices(mprob,30)
 
 opts =[
 	"N"               => 6,							# number of MCMC chains
@@ -39,12 +37,11 @@ opts =[
 	"max_jump_prob"   => 0.2]						# prob of jumps from hottest chain
 
 # setup the BGP algorithm
-MA = MAlgoBGP(mprob,opts)
+MA = MOpt.MAlgoBGP(mprob,opts)
 
-
+Lumberjack.add_truck(Lumberjack.LumberjackTruck(STDOUT, "warn"), "console")
 # run the estimation
-runMOpt!(MA)
-
+MOpt.runMOpt!(MA)
 
 # save results
 # save(MA,MA["savefile"])

@@ -70,6 +70,23 @@ type MAlgoBGP <: MAlgo
     end
 end
 
+
+function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
+    chain.infos[chain.i,:evals]  = ev.value
+    chain.infos[chain.i,:prob]   = prob
+    chain.infos[chain.i,:accept] = ACC
+    chain.infos[chain.i,:status] = ev.status
+    chain.infos[chain.i,:eval_time] = ev.time
+    chain.infos[chain.i,:tempering] = chain.tempering
+    for im in chain.moments_nms
+        chain.moments[chain.i,im] = ev.moments[im]
+    end
+    for ip in chain.params_nms
+        chain.parameters[chain.i,ip] = ev.params[ip]
+    end
+    return nothing
+end
+
 # ---------------------------  BGP ALGORITHM ----------------------------
 
 # computes new candidate vectors for each chain
@@ -273,19 +290,18 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		MVN = MvNormal(VV2)
 
 		# constraint the shock_sd: 95% conf interval should not exceed overall param interval width
-		shock_ub  = minimum(  (algo.m.params_to_sample_df[:ub] - algo.m.params_to_sample_df[:lb]) ./ (1.96 * 2 *diag(VV2) ))
+		shock_list = [ (algo.m.params_to_sample[p][:ub] - algo.m.params_to_sample[p][:lb]) for p in ps2s_names(algo) ] ./ (1.96 * 2 *diag(VV2))
+		shock_ub  = minimum(   shock_list  )
 		algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
+		shock = Dict(ps2s_names(algo) , shock)
 
-		if get(algo.opts,"print_level",0) > 3
-			info("shock to parameters on chain $ch :")
-			info(shock)
-		end
+		debug("shock to parameters on chain $ch :")
+		debug("$shock")
 
-		updateCandidateParam!(algo,ch,shock)
-
+		jumpParams!(algo,ch,shock)
 	end
 
 end
