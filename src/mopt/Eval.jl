@@ -92,8 +92,6 @@ function start(ev::Eval)
 	ev.time = time()
 end
 
-<<<<<<< HEAD
-=======
 function finish(ev::Eval)
 	ev.time =  time() - ev.time
 end
@@ -146,4 +144,3 @@ function show(io::IO,ev::Eval)
   print(io,"Eval: val:$(ev.value) status:$(ev.status)\n")
 end
 
->>>>>>> bfdc0fa1b5b3fc4c5949dd5c28ff14d881ba25f7
