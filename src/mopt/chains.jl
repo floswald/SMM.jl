@@ -21,7 +21,7 @@ type Chain <: AbstractChain
   
     function Chain(MProb,L)
         # infos      = DataFrame(iter=0, evals = 0.0, accept = true, status = 0, exhanged_with=0, prob=0.0)
-        infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L))
+        infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L), eval_time=zeros(Float64,L))
         par_nms    = Symbol[ symbol(x) for x in ps_names(MProb) ]
         par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
         mom_nms    = Symbol[ symbol(x) for x in ms_names(MProb) ]

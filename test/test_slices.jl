@@ -10,20 +10,20 @@ module TestSlices
 	# compute the slices
 	sl = MOpt.slices(mprob,30);
 
-	using PyPlot
+	# using PyPlot
 
-	subplot(231)
-	r = MOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
-	subplot(232)
-	r = MOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
-	subplot(233)
-	r = MOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
-	subplot(234)
-	r = MOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
-	subplot(235)
-	r = MOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
-	subplot(236)
-	r = MOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
+	# subplot(231)
+	# r = MOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
+	# subplot(232)
+	# r = MOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
+	# subplot(233)
+	# r = MOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
+	# subplot(234)
+	# r = MOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
+	# subplot(235)
+	# r = MOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
+	# subplot(236)
+	# r = MOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
 
 end # module 
 
