@@ -1,19 +1,29 @@
 module TestSlices
 
-using FactCheck,DataFrames,MOpt,Lazy
-
+	using FactCheck,DataFrames,Lazy
+    include("src/MOpt.jl")
 	# initial value
-	pb    = ["a" => [1.9,-2,2] , "b" => [-0.9,-1,1] ] 
-	moms = DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))
-	mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+	pb    = ["m1" => [0.0,-2,2] , "m2" => [0.0,-2,2] ] 
+	moms = DataFrame(name=["m1","m2"],value=[0.0,0.0],weight=rand(2))
+	mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm);
 
-	# look at slice of the model: 
-	# how does the objective function behave 
-	# if we vary each parameter one by one, holding 
-	# the others fixed?
+	# compute the slices
+	sl = MOpt.slices(mprob,30);
 
-	obj_slices = slices(mprob,30)
+	using PyPlot
 
+	subplot(231)
+	r = MOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
+	subplot(232)
+	r = MOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
+	subplot(233)
+	r = MOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
+	subplot(234)
+	r = MOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
+	subplot(235)
+	r = MOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
+	subplot(236)
+	r = MOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
 
 end # module 
 

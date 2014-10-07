@@ -5,20 +5,20 @@ export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMom
 
 type Eval
 
-	value  ::Float64
-	time   ::Float64
-	params ::Dict
-	moments::Dict
-	dataMoments::Dict
-	dataMomentsW::Dict
-	status ::Int64
-	options :: Dict
+	value        :: Float64
+	time         :: Float64
+	params       :: Dict
+	moments      :: Dict
+	dataMoments  :: Dict
+	dataMomentsW :: Dict
+	status       :: Int64
+	options      :: Dict
 
 	function Eval()
-		this = new()
-		this.value = -1
-		this.time = time()
-		this.status = -1
+		this              = new()
+		this.value        = -1
+		this.time         = time()
+		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
@@ -28,9 +28,9 @@ type Eval
 
 	function Eval(p::Dict,mom::DataFrame)
 		this = new()
-		this.value = -1
-		this.time = time()
-		this.status = -1
+		this.value        = -1
+		this.time         = time()
+		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
@@ -38,7 +38,7 @@ type Eval
 
 		for (i in 1:nrow(mom))
 			kk = symbol(mom[i,:name])
-			this.dataMoments[kk] = mom[i,:value]
+			this.dataMoments[kk]  = mom[i,:value]
 			this.dataMomentsW[kk] = mom[i,:weight]
 		end
 
@@ -51,10 +51,10 @@ type Eval
 	end
 
 	function Eval(mprob::MProb,p::Dict)
-		this = new()
-		this.value = -1
-		this.time = time()
-		this.status = -1
+		this              = new()
+		this.value        = -1
+		this.time         = time()
+		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
@@ -69,6 +69,19 @@ type Eval
 			kk = symbol(k)
 			this.params[kk] = p[k]
 		end
+
+		return this
+	end
+
+	function Eval(p::Dict{Symbol,Float64},m::Dict{Symbol,Float64})
+		this              = Eval()
+		this.value        = -1
+		this.time         = time()
+		this.status       = -1
+		this.dataMoments  = m
+		this.dataMomentsW = Dict{Symbol,Float64}()
+		this.params       = p
+		this.moments      = Dict{Symbol,Float64}()
 
 		return this
 	end
@@ -126,4 +139,8 @@ function setMoment(ev::Eval,d::DataFrame)
 	end
 end
 
+
+function show(io::IO,ev::Eval)
+  print(io,"Eval: val:$(ev.value) status:$(ev.status)\n")
+end
 
