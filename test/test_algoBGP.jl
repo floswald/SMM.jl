@@ -327,79 +327,7 @@ facts("testing exchangeMoves") do
 
 	end
 
-
-	context("testing exchange Moves: 0 chains exchange") do
-	println("this test sets min_jump_prob=0 to rule out any jump")
-	
-		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>0.0,"max_jump_prob"=>0.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-
-		MA = MAlgoBGP(mprob,opts)
-		MA.i = 1
-
-		MOpt.incrementChainIter!(MA.MChains)
-		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
-		for ch in 1:MA["N"] MOpt.appendEval!(MA.MChains[ch],v[ch],true,1,rand()) end
-
-		MA.i = 2
-		MOpt.incrementChainIter!(MA.MChains)
-
-		# index we want to fix: ch
-		ch = 1
-		ch2 = 2
-		v[ch2]["value"] = v[ch2]["value"] + randn()*0.01
-		MOpt.appendEval!(MA.MChains[ch],v[ch]["value"],v[ch]["params"],v[ch]["moments"],false,1,1.0) 
-		MOpt.appendEval!(MA.MChains[ch2],v[ch2]["value"],v[ch2]["params"],v[ch2]["moments"],false,1,1.0) 
-		for i in 1:length(v) 
-			if ((i != ch) & (i != ch2))
-				v[i]["value"] = v[i]["value"]+100
-				MOpt.appendEval!(MA.MChains[i],v[i]["value"],v[i]["params"],v[i]["moments"],false,1,1.0) 
-			end
-		end
-
-		MOpt.exchangeMoves!(MA)
-
-		for i in 1:length(v) 
-			@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] .== 0 =>true
-		end
-	end
-
-	
-
 end
-
-
-facts("testing MAlgo methods") do
-	
-	p    = ["a" => 0.1 , "b" => 0.9]
-	pb   = [ "a" => [0,1] , "b" => [0,1] ]
-	moms = DataFrame(moment=["alpha","beta"],data_value=[0.8,0.7],data_sd=rand(2))
-	objfunc_opts = ["printlevel" => 1]
-	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms,objfunc_opts=objfunc_opts)
-
-	context("testing evaluateObjective(algo)") do
-
-		opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
-		MA = MAlgoBGP(mprob,opts)
-
-		which_chain = 1
-		x = MOpt.evaluateObjective(MA.m,MA.current_param[which_chain])
-
-		@fact haskey(x,"value") => true
-		@fact x["params"] => p
-		@fact haskey(x,"moments") => true
-
-		# change p on MA:
-		newp = ["a" => 103.1 , "b" => -2.2]
-		MA.current_param[which_chain] = newp
-		x = MOpt.evaluateObjective(MA.m,newp)
-		# x = MOpt.evaluateObjective(MA,1)
-		@fact x["params"] => newp
-	end
-
-
-	
-end
-
 
 
 # facts("testing saving of algo") do
