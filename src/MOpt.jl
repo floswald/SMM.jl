@@ -46,6 +46,7 @@ include("mopt/slices.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
+include("mopt/sobolsearch.jl")
 
 
 # for now plotting only on my box because
