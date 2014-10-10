@@ -89,6 +89,7 @@ function evaluateObjective(m::MProb,p::Dict)
     try
        ev = eval(Expr(:call,m.objfunc,ev))
     catch
+      info("caught excpetion")
       ev.status = -2
     end
     gc()
@@ -100,6 +101,7 @@ function evaluateObjective(m::MProb,ev)
     try
        ev = eval(Expr(:call,m.objfunc,ev))
     catch
+      info("caught excpetion")
       ev.status = -2
     end
     gc()
