@@ -86,13 +86,22 @@ end
 # evalute objective function
 function evaluateObjective(m::MProb,p::Dict)
     ev = Eval(m,p)
-    ev = eval(Expr(:call,m.objfunc,ev))
+    try:
+       ev = eval(Expr(:call,m.objfunc,ev))
+    catch:
+      ev.status = -2
+    end
     gc()
     return ev
 end
 
 function evaluateObjective(m::MProb,ev)
-    ev = eval(Expr(:call,m.objfunc,ev))
+    # catching errors
+    try:
+       ev = eval(Expr(:call,m.objfunc,ev))
+    catch:
+      ev.status = -2
+    end
     gc()
     return ev
 end
