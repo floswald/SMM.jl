@@ -2,9 +2,12 @@ export sobolsearch
 
 using Sobol
 
-#'.. py:function:: slices(m,pad)
+#'.. py:function:: sobolsearch(m,pad)
 #'
-#'   computes slices for the objective function
+#'   This is an helping function that just evaluates the
+#'   the objective function over a Sobol sequence in the 
+#'   multidimensional space of parameters. This can be useful
+#'   as a first pass.
 function sobolsearch(m::MProb,Ntot::Int64)
 
     ranges = m.params_to_sample
@@ -40,12 +43,12 @@ function sobolsearch(m::MProb,Ntot::Int64)
 
         # showing some info
         for e in vv
-            if (e.status>0) & (e.value < best.value)
-                best=e
+            if (e.status>0) & (e.value < best_ev.value)
+                best_ev=e
             end
         end
 
-        info(" iter left:$(Ntot - N) bestval:$(best.value) bestpar:$(best.params)")
+        info( string(@sprintf( "iter:%3i bestval:%4.2f " , Ntot - N, best_ev.value), "bestpar:$(best_ev.params)" ))
 
     end
 

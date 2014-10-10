@@ -34,6 +34,9 @@ export MProb,
        addParam!,
        addSampledParam!
 
+if !haskey(ENV,"IGNORE_HDF5")
+       using HDF5
+end
 
 # load files
 # ############
@@ -57,9 +60,7 @@ if Sys.OS_NAME == :Darwin
        include("mopt/plotting.jl")
 end
 
-if !haskey(ENV,"IGNORE_HDF5")
-       using HDF5
-end
+
 
 
 

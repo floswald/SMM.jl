@@ -86,9 +86,9 @@ end
 # evalute objective function
 function evaluateObjective(m::MProb,p::Dict)
     ev = Eval(m,p)
-    try:
+    try
        ev = eval(Expr(:call,m.objfunc,ev))
-    catch:
+    catch
       ev.status = -2
     end
     gc()
@@ -97,9 +97,9 @@ end
 
 function evaluateObjective(m::MProb,ev)
     # catching errors
-    try:
+    try
        ev = eval(Expr(:call,m.objfunc,ev))
-    catch:
+    catch
       ev.status = -2
     end
     gc()
