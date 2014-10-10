@@ -4,7 +4,7 @@ module MOpt
 # Dependencies
 # ############
 
-using Distributions, HDF5
+using Distributions 
 using Reexport
 using Lumberjack
 @reexport using DataFrames
@@ -56,6 +56,11 @@ if Sys.OS_NAME == :Darwin
        using PyPlot
        include("mopt/plotting.jl")
 end
+
+if !haskey(ENV,"IGNORE_HDF5")
+       using HDF5
+end
+
 
 
 end 	# module
