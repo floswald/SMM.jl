@@ -18,6 +18,7 @@ include("test/test_BGPchain.jl")
 include("test/test_algoBGP.jl")
 include("test/test_slices.jl")
 include("test/test_sobol.jl")
+include("test/test_eval.jl")
 include("test/runtests.jl")
 		
 

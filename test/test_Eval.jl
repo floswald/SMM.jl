@@ -1,6 +1,7 @@
 module TestBGPChain
 
-using FactCheck, DataFrames, MOpt
+using FactCheck, DataFrames, MOpt, HDF5
+
 
 
 # TESTING Chains
@@ -56,6 +57,17 @@ facts("Testing Eval object") do
 		@fact ev.value => 4.2
 	end
 
+	context("testing saving") do
+		h5open("test5.h5", "w") do ff
+			print("$ev")
+			write(ff,"eval_test",ev)
+		end
+		h5open("test5.h5", "w") do ff
+			print("$ev")
+			write(ff,"eval_test",ev)
+		end
+
+	end
 end
 
 

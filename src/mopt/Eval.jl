@@ -144,3 +144,54 @@ function show(io::IO,ev::Eval)
   print(io,"Eval: val:$(ev.value) status:$(ev.status)\n")
 end
 
+if !haskey(ENV,"IGNORE_HDF5")
+
+	import Base.write
+
+
+    function write(ff5::HDF5File, path::ASCIIString, ev::Eval)
+
+    	# saving value time and status
+    	HDF5.write(ff5, joinpath(path,"value")  , ev.value )
+    	HDF5.write(ff5, joinpath(path,"status") , ev.status )
+    	HDF5.write(ff5, joinpath(path,"time")   , ev.time )
+
+		# saving parameters 
+		write(ff5, joinpath(path,"params")  , ev.params )
+		write(ff5, joinpath(path,"moments") , ev.moments )
+
+    end
+
+    function readEval( ff5::HDF5File, path::ASCIIString)
+    	ev = Eval()
+
+    	# saving value time and status
+    	ev.value  = HDF5.read(ff5, joinpath(path,"value")
+    	ev.status = HDF5.read(ff5, joinpath(path,"status")
+    	ev.time   = HDF5.read(ff5, joinpath(path,"time")
+
+		# saving parameters 
+		write(ff5, joinpath(path,"params")  , ev.params )
+		write(ff5, joinpath(path,"moments") , ev.moments )
+
+    end
+
+    function write(ff5::HDF5File, path::ASCIIString, dd::Dict{Symbol,Float64})
+		for (k,v) in dd
+			HDF5.write(ff5, joinpath(path,string(k)), v)
+		end
+    end
+
+    function readDict(ff5::HDF5File, path::ASCIIString)
+    	dd
+		for (k,v) in dd
+			HDF5.read(ff5, joinpath(path,string(k)), v)
+		end
+    end
+
+
+end
+
+
+
+
