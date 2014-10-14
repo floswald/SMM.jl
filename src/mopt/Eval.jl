@@ -198,9 +198,9 @@ if !haskey(ENV,"IGNORE_HDF5")
 		end
 
     	# saving value time and status
-    	HDF5.write(ff5, joinpath(path,"values")     , V )
-    	HDF5.write(ff5, joinpath(path,"parameters") , P )
-    	HDF5.write(ff5, joinpath(path,"moments")    , M )
+    	HDF5.write(ff5, joinpath(path,"values")     , transpose(V) )
+    	HDF5.write(ff5, joinpath(path,"parameters") , transpose(P) )
+    	HDF5.write(ff5, joinpath(path,"moments")    , transpose(M) )
 
     end
 
@@ -210,9 +210,9 @@ if !haskey(ENV,"IGNORE_HDF5")
     	p_names = [ symbol(s) for s in HDF5.read(ff5, joinpath(path,"params_keys")) ]
     	m_names = [ symbol(s) for s in HDF5.read(ff5, joinpath(path,"moments_keys")) ]
 
-    	V = HDF5.read(ff5, joinpath(path,"values"))
-    	P = HDF5.read(ff5, joinpath(path,"parameters"))
-    	M = HDF5.read(ff5, joinpath(path,"moments"))
+    	V = transpose(HDF5.read(ff5, joinpath(path,"values")))
+    	P = transpose(HDF5.read(ff5, joinpath(path,"parameters")))
+    	M = transpose(HDF5.read(ff5, joinpath(path,"moments")))
 
     	n   = size(P,1)
     	evs = [ Eval() for i in 1:n]
