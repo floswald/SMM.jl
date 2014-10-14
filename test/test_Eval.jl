@@ -25,7 +25,9 @@ end
 facts("Testing Eval object") do
 
 	ev = Eval(p,moms)
+	setMoment(ev,moms)
 	ev2= Eval(p2,moms2)	
+	setMoment(ev2,moms2)
 
 	context("testing param") do
 		@fact param(ev,:a) => [3.1]
@@ -61,10 +63,13 @@ facts("Testing Eval object") do
 		h5open("test5.h5", "w") do ff
 			print("$ev")
 			write(ff,"eval_test",ev)
+			write(ff,"eval_list",[ev,ev2])
 		end
 		h5open("test5.h5", "r") do ff
 			ev2 = readEval(ff,"eval_test")
 			@fact ev2.status => ev.status
+			evs = readEvalArray(ff,"eval_list")
+			@fact evs[1].moments[:alpha] => ev.moments[:alpha]
 			# readEval(ff,"eval_test",ev)
 		end
 

@@ -1,7 +1,7 @@
 # We introduce two bojects to facilitate the interfacing
 # with the objective function: Eval and Opts.
 
-export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMoment, setValue, readEval
+export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMoment, setValue, readEval, readEvalArray
 
 type Eval
 
@@ -161,6 +161,86 @@ if !haskey(ENV,"IGNORE_HDF5")
 		HDF5.write(ff5, joinpath(path,"params_vals")    , convert(Array{Float64,1}, [v for v in values(ev.params)]))	 	 
 		HDF5.write(ff5, joinpath(path,"moments_keys")   , convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.moments)]))	 
 		HDF5.write(ff5, joinpath(path,"moments_vals")   , convert(Array{Float64,1}, [v for v in values(ev.moments)]))	 	 
+    end
+
+    function write(ff5::HDF5File, path::ASCIIString, evs::Array{Eval,1})
+
+    	ev = evs[1]
+    	p_names = convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.params) ])
+    	m_names = convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.moments)])
+		HDF5.write(ff5, joinpath(path,"params_keys")    , p_names)
+		HDF5.write(ff5, joinpath(path,"moments_keys")    , m_names)	 	 
+
+		# build a matrix for parameters
+		V = zeros(length(evs),4)
+		P = zeros(length(evs),length(p_names))
+		M = zeros(length(evs),length(m_names))
+
+		i = 0
+		for ev in evs 
+			i = i+1
+
+			V[i,1] = ev.value
+			V[i,2] = ev.status
+			V[i,3] = ev.time
+
+			j = 0
+			for (n in p_names)
+				j = j+1
+				P[i,j] = ev.params[symbol(n)]
+			end
+
+			j = 0
+			for (n in m_names)
+				j = j+1
+				M[i,j] = ev.moments[symbol(n)]
+			end
+		end
+
+    	# saving value time and status
+    	HDF5.write(ff5, joinpath(path,"values")     , V )
+    	HDF5.write(ff5, joinpath(path,"parameters") , P )
+    	HDF5.write(ff5, joinpath(path,"moments")    , M )
+
+    end
+
+    function readEvalArray( ff5::HDF5File, path::ASCIIString)
+
+    	# get list of moments
+    	p_names = [ symbol(s) for s in HDF5.read(ff5, joinpath(path,"params_keys")) ]
+    	m_names = [ symbol(s) for s in HDF5.read(ff5, joinpath(path,"moments_keys")) ]
+
+    	V = HDF5.read(ff5, joinpath(path,"values"))
+    	P = HDF5.read(ff5, joinpath(path,"parameters"))
+    	M = HDF5.read(ff5, joinpath(path,"moments"))
+
+    	n   = size(P,1)
+    	evs = [ Eval() for i in 1:n]
+
+    	for i in 1:n 
+    		ev = evs[i]
+    		ev.value  = V[i,1] 
+    		ev.status = V[i,2] 
+    		ev.time   = V[i,3] 
+
+			V[i,1] = ev.value
+			V[i,2] = ev.status
+			V[i,3] = ev.time
+
+			j = 0
+			for (n in p_names)
+				j = j+1
+				ev.params[p_names[j]] = P[i,j]
+			end
+
+			j = 0
+			for (n in m_names)
+				j = j+1
+				ev.moments[m_names[j]] = M[i,j]
+			end
+    	end
+
+    	return(evs)
     end
 
     function readEval( ff5::HDF5File, path::ASCIIString)
