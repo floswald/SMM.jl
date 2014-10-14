@@ -62,9 +62,10 @@ facts("Testing Eval object") do
 			print("$ev")
 			write(ff,"eval_test",ev)
 		end
-		h5open("test5.h5", "w") do ff
-			print("$ev")
-			write(ff,"eval_test",ev)
+		h5open("test5.h5", "r") do ff
+			ev2 = readEval(ff,"eval_test")
+			@fact ev2.status => ev.status
+			# readEval(ff,"eval_test",ev)
 		end
 
 	end

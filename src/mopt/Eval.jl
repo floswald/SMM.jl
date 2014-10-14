@@ -1,7 +1,7 @@
 # We introduce two bojects to facilitate the interfacing
 # with the objective function: Eval and Opts.
 
-export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMoment, setValue
+export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMoment, setValue, readEval
 
 type Eval
 
@@ -156,24 +156,30 @@ if !haskey(ENV,"IGNORE_HDF5")
     	HDF5.write(ff5, joinpath(path,"status") , ev.status )
     	HDF5.write(ff5, joinpath(path,"time")   , ev.time )
 
-		# saving parameters 
-		write(ff5, joinpath(path,"params")  , ev.params )
-		write(ff5, joinpath(path,"moments") , ev.moments )
-
+		# saving parameters and moments
+		HDF5.write(ff5, joinpath(path,"params_keys")    , convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.params)]))
+		HDF5.write(ff5, joinpath(path,"params_vals")    , convert(Array{Float64,1}, [v for v in values(ev.params)]))	 	 
+		HDF5.write(ff5, joinpath(path,"moments_keys")   , convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.moments)]))	 
+		HDF5.write(ff5, joinpath(path,"moments_vals")   , convert(Array{Float64,1}, [v for v in values(ev.moments)]))	 	 
     end
 
     function readEval( ff5::HDF5File, path::ASCIIString)
     	ev = Eval()
 
     	# saving value time and status
-    	ev.value  = HDF5.read(ff5, joinpath(path,"value")
-    	ev.status = HDF5.read(ff5, joinpath(path,"status")
-    	ev.time   = HDF5.read(ff5, joinpath(path,"time")
+    	ev.value  = HDF5.read(ff5, joinpath(path,"value"))
+    	ev.status = HDF5.read(ff5, joinpath(path,"status"))
+    	ev.time   = HDF5.read(ff5, joinpath(path,"time"))
 
 		# saving parameters 
-		write(ff5, joinpath(path,"params")  , ev.params )
-		write(ff5, joinpath(path,"moments") , ev.moments )
+    	kk         = HDF5.read(ff5, joinpath(path,"params_keys"))
+    	vv         = HDF5.read(ff5, joinpath(path,"params_vals"))
+    	ev.params  = Dict( [ symbol(k) for k in kk] , vv)
+    	kk         = HDF5.read(ff5, joinpath(path,"moments_keys"))
+    	vv         = HDF5.read(ff5, joinpath(path,"moments_vals"))
+    	ev.moments = Dict( [ symbol(k) for k in kk] , vv)
 
+    	return(ev)
     end
 
     function write(ff5::HDF5File, path::ASCIIString, dd::Dict{Symbol,Float64})
@@ -181,14 +187,6 @@ if !haskey(ENV,"IGNORE_HDF5")
 			HDF5.write(ff5, joinpath(path,string(k)), v)
 		end
     end
-
-    function readDict(ff5::HDF5File, path::ASCIIString)
-    	dd
-		for (k,v) in dd
-			HDF5.read(ff5, joinpath(path,string(k)), v)
-		end
-    end
-
 
 end
 
