@@ -190,10 +190,12 @@ if !haskey(ENV,"IGNORE_HDF5")
 				P[i,j] = ev.params[symbol(n)]
 			end
 
-			j = 0
-			for (n in m_names)
-				j = j+1
-				M[i,j] = ev.moments[symbol(n)]
+			if (ev.status>0)
+				j = 0
+				for (n in m_names)
+					j = j+1
+					M[i,j] = ev.moments[symbol(n)]
+				end
 			end
 		end
 
@@ -233,10 +235,12 @@ if !haskey(ENV,"IGNORE_HDF5")
 				ev.params[p_names[j]] = P[i,j]
 			end
 
-			j = 0
-			for (n in m_names)
-				j = j+1
-				ev.moments[m_names[j]] = M[i,j]
+			if (ev.status>0)
+				j = 0
+				for (n in m_names)
+					j = j+1
+					ev.moments[m_names[j]] = M[i,j]
+				end
 			end
     	end
 
