@@ -4,11 +4,11 @@ module TestSobol
 
 	# initial value
 	pb    = ["m1" => [0.0,-2,2] , "m2" => [0.0,-2,2] ] 
-	moms = DataFrame(name=["m1","m2"],value=[0.2,-0.6],weight=rand(2))
+	moms = DataFrame(name=["m1","m2"],value=[0.0,0.0],weight=rand(2))
 	mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm);
 
 	# compute the slices
-	sl = MOpt.sobolsearch(mprob,30);
+	sl = MOpt.sobolsearch(mprob,500);
 
 	# find the min value
 
@@ -21,7 +21,13 @@ module TestSobol
 
 	print(best.params)
 
-	# using PyPlot
+
+	sl = MOpt.sobolWeightedSearch(mprob,500);
+
+	using PyPlot
+
+	plot(sl[:X][:,1],sl[:X][:,2],"o")
+
 
 	# subplot(231)
 	# r = MOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
