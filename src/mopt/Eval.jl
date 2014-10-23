@@ -1,7 +1,7 @@
 # We introduce two bojects to facilitate the interfacing
 # with the objective function: Eval and Opts.
 
-export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMoment, setValue, readEval, readEvalArray
+export Eval, start, finish, param, paramd, fill, dataMoment, dataMomentW, setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote
 
 type Eval
 
@@ -139,6 +139,17 @@ function setMoment(ev::Eval,d::DataFrame)
 	end
 end
 
+function getBest(evs::Array{Eval,1}) 
+  best_val = Inf
+  best = None
+  for ev in evs
+  	if (ev.status>0) & (ev.value<best_val)
+  		best = ev
+  		best_val = ev.value
+  	end
+  end
+  return best
+end
 
 function show(io::IO,ev::Eval)
   print(io,"Eval: val:$(ev.value) status:$(ev.status)\n")
@@ -245,6 +256,15 @@ if !haskey(ENV,"IGNORE_HDF5")
     	end
 
     	return(evs)
+    end
+
+    function readEvalArrayRemote(remote::ASCIIString, path::ASCIIString)
+    	a = tempname()
+    	run(`scp $remote $a`)
+    	println("saving locally to $a")
+    	h5open(a, "r") do ff
+			return readEvalArray(ff,path)
+		end
     end
 
     function readEval( ff5::HDF5File, path::ASCIIString)
