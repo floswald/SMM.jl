@@ -26,8 +26,10 @@ facts("Testing Eval object") do
 
 	ev = Eval(p,moms)
 	setMoment(ev,moms)
+	ev.status=1
 	ev2= Eval(p2,moms2)	
 	setMoment(ev2,moms2)
+	ev2.status=1
 
 	context("testing param") do
 		@fact param(ev,:a) => [3.1]
