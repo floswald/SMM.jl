@@ -53,11 +53,11 @@ module TestSobol
 	# define a simple objective function
 	mu = [1.0,1.0]
 	C  = [0.5 0.3; 0.1 0.8]
-	R = MvNormal(mu, C)
+	R = MOpt.MvNormal(mu, C)
 	function f(x)
-	 x1 = quantile(Normal(),x[1])
-	 x2 = quantile(Normal(),x[2]) 
-	 return pdf(R,[x1,x2])
+	 x1 = quantile(MOpt.Normal(),x[1])
+	 x2 = quantile(MOpt.Normal(),x[2]) 
+	 return MOpt.pdf(R,[x1,x2])
 	end
 
 	V = map(f,S)
