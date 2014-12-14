@@ -16,7 +16,6 @@ type MProb
   objfunc             :: Function       # objective function
   objfunc_opts        :: Dict           # options passed to the objective function, e.g. printlevel
   moments             :: Dict           # a dictionary of moments to track
-  moments_subset      :: Array{Symbol}  # an array of moment names to subset objective funciton
 
   # very simple constructor
   function MProb()
@@ -26,7 +25,6 @@ type MProb
     this.objfunc             = x -> x
     this.objfunc_opts        = Dict()
     this.moments             = Dict()
-    this.moments_subset      = []
     return(this)
   end
 
@@ -36,7 +34,12 @@ end #type
 # -------------------- ADDING PARAMS --------------------
 function addParam!(m::MProb,name::ASCIIString,init)
   m.initial_value[symbol(name)] = init
-  return m 
+end
+
+function addParam!(m::MProb,p::Dict{ASCIIString,Any})
+  for k in keys(p)
+    m.initial_value[symbol(k)] = p[k]
+  end
 end
 
 function addSampledParam!(m::MProb,name::Any, init::Any, lb::Any, ub::Any)
@@ -133,7 +136,6 @@ function show(io::IO,m::MProb)
   print(io,"\nMoment Table:\n")
   print(io,m.moments)
   print(io,"Moment to use:\n")
-  print(io,m.moments_subset)
   print(io,"\n")
   print(io,"\nobjective function: $(m.objfunc)\n\n")
   # print(io,"\nobjective function call: $(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))\n")

@@ -11,7 +11,7 @@ using Lazy, DataFrames
 # 3) S([a,b]) returns a summary of features of the data
 
 # initial value
-pb    = ["m1" => [0.2,-2,2] , "m2" => [-0.2,-2,2] ] 
+pb    = ["p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] ] 
 moms = DataFrame(name=["m2","m1"],value=[0.0,0.0],weight=rand(2))
 mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm)
 

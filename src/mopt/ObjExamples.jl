@@ -68,7 +68,8 @@ function objfunc_norm(ev::Eval)
 	info("in Test objective function")
 
 	# extract parameters    
-	mu  = convert(Array{Float64,1},param(ev,[:m1,:m2])) # returns values as a vector, use param to get a Dict
+	mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
+	# use paramd(ev) to get as a dict.
 
 	# compute simulated moments
 	ns = 5000
@@ -85,7 +86,9 @@ function objfunc_norm(ev::Eval)
 	setValue(ev, mean((simMoments - trueMoments).^2) )
 
 	# also return the moments
-	setMoment(ev, {:m1 => simMoments[1], :m2 => simMoments[2]})
+	# setMoment(ev, [:m1 => simMoments[1], :m2 => simMoments[2]])
+	mdf = DataFrame(name=["m1","m2"],value=simMoments[:])
+	setMoment(ev, mdf)
 	# we would also have a setter that takes a DataFrame
 
 	ev.status = 1
