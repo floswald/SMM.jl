@@ -3,7 +3,7 @@ compiler:
     - gcc
 notifications:
     email: false
-    env:
+env:
     - JULIAVERSION="juliareleases" 
 before_install:
     - sudo add-apt-repository ppa:staticfloat/julia-deps -y
@@ -14,7 +14,6 @@ before_install:
     - git config --global user.name "Travis User"
     - git config --global user.email "travis@example.net"
     - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-script:
 script:
     - julia -e 'Pkg.init(); Pkg.clone(pwd())'
     - julia -e 'Pkg.test("MOpt", coverage=true)'
