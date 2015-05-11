@@ -1,9 +1,9 @@
 
 
-"
-Eval type for managing function evaluations 
+@doc """
+`Eval` type for managing function evaluations 
 
-**fields:**
+## fields 
 
 *`value`: current function value
 *`time`: initial timing
@@ -13,7 +13,7 @@ Eval type for managing function evaluations
 *`dataMomentsW`: Dict of weights for data moments
 *`status`: Int error status
 *`options`: Dict of options
-"
+""" ->
 type Eval
 
 	value        :: Float64

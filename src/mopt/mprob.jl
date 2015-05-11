@@ -7,6 +7,7 @@
 #'   problem, it knows about the parameters
 #'   to estimate, their names and bounds, 
 #'   but also about the moments and their names.
+"This package implements several MCMC algorithms to optimize a non-differentiable objective function. The main application are **likelihood-free estimators**, which requires evaluating the objective at many regions. In general, this implements *Simulated Method of Moments*. The library is targeted to run MCMC on an SGE cluster, where each node is a chain."
 type MProb
 
   # setup
