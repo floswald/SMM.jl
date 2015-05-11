@@ -8,7 +8,13 @@ using Distributions
 using Reexport
 using Lumberjack
 @reexport using DataFrames
-import Base.show, Base.transpose
+import Base.show
+if VERSION < v"0.4.0-dev"
+    using Docile
+end
+@document
+
+"This package implements several MCMC algorithms to optimize a non-differentiable objective function. The main application are **likelihood-free estimators**, which requires evaluating the objective at many regions. In general, this implements *Simulated Method of Moments*. The library is targeted to run MCMC on an SGE cluster, where each node is a chain."
 
 # exports
 # ############
@@ -32,7 +38,22 @@ export MProb,
        slices,
        transpose,
        addParam!,
-       addSampledParam!
+       addSampledParam!,
+       addMoment!,
+       Eval,
+       start,
+       finish,
+       param,
+       paramd,
+       fill,
+       dataMoment,
+       dataMomentW,
+       setMoment,
+       setValue,
+       readEval,
+       readEvalArray,
+       readEvalArrayRemote,
+       write
 
 if !haskey(ENV,"IGNORE_HDF5")
        using HDF5
@@ -59,10 +80,6 @@ if Sys.OS_NAME == :Darwin
        using PyPlot
        include("mopt/plotting.jl")
 end
-
-
-
-
 
 end 	# module
 

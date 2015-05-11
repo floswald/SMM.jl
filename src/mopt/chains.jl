@@ -62,8 +62,8 @@ infos(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:]
 infos(c::AbstractChain, i::Int)                 = infos(c, i:i)
 evals(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:evals]
 evals(c::AbstractChain, i::Int)                 = evals(c, i:i)
-allstats(c::AbstractChain,i::UnitRange{Int})    = cbind(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
-allstats(c::AbstractChain,i::Int)               = cbind(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
+allstats(c::AbstractChain,i::UnitRange{Int})    = hcat(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
+allstats(c::AbstractChain,i::Int)               = hcat(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
 
 # ---------------------------  BGP GETTERS / SETTERS ----------------------------
 export getEval, getLastEval, appendEval
@@ -188,7 +188,7 @@ end
 
 
 function allstats(MC::Array) 
-    cbind(infos(MC),parameters(MC)[MC[1].params_nms],moments(MC)[MC[1].moments_nms])
+    hcat(infos(MC),parameters(MC)[MC[1].params_nms],moments(MC)[MC[1].moments_nms])
 end
 
 

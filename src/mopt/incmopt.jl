@@ -3,22 +3,22 @@ export fitMirror
 
 # transpose a 2-column dataframe to a one-row dataframe, so that 
 # col x become new column names
-function transpose(x::DataFrame,newNames::Int)
-    if ncol(x) != 2
-        throw(ArgumentError("x must have 2 columns"))
-    end
-    if !in(newNames,[1,2])
-        throw(ArgumentError("newNames indexes col with new names: either 1 or 2"))
-    end
-    newrows = setdiff([1,2],newNames)[1]
-    # make new column names out of col index newNames
-    z = DataFrame(Float64,1,nrow(x))
-    names!(z,Symbol[y for y in x[:,newNames]])
-    for i in 1:nrow(x)
-        z[1,i] = x[i,newrows]
-    end
-    return z
-end
+# function transpose(x::DataFrame,newNames::Int)
+#     if ncol(x) != 2
+#         throw(ArgumentError("x must have 2 columns"))
+#     end
+#     if !in(newNames,[1,2])
+#         throw(ArgumentError("newNames indexes col with new names: either 1 or 2"))
+#     end
+#     newrows = setdiff([1,2],newNames)[1]
+#     # make new column names out of col index newNames
+#     z = DataFrame(Float64,1,nrow(x))
+#     names!(z,Symbol[y for y in x[:,newNames]])
+#     for i in 1:nrow(x)
+#         z[1,i] = x[i,newrows]
+#     end
+#     return z
+# end
 
 
 

@@ -1,5 +1,4 @@
 
-export addMoment,addEvalFunc,ps2s_names
 
 
 #'.. py:class:: MProb
@@ -42,7 +41,7 @@ function addParam!(m::MProb,p::Dict{ASCIIString,Any})
   end
 end
 
-function addSampledParam!(m::MProb,name::Any, init::Any, lb::Any, ub::Any)
+function addSampledParam!(m::MProb,name::ASCIIString,init::Any, lb::Any, ub::Any)
   @assert ub>lb
   m.initial_value[symbol(name)] = init 
   m.params_to_sample[symbol(name)] = [ :lb => lb , :ub => ub]
@@ -58,24 +57,24 @@ end
 
 # -------------------- ADDING MOMENTS --------------------
 
-function addMoment(m::MProb,name::Symbol,value,weight)
+function addMoment!(m::MProb,name::Symbol,value,weight)
   m.moments[symbol(name)] = [ :value => value , :weight => weight ]
   return m 
 end
-addMoment(m::MProb,name::ASCIIString,value,weight) = addMoment(m,symbol(name),value,weight)
-addMoment(m::MProb,name::ASCIIString,value) = addMoment(m,symbol(name),value,1.0)
-addMoment(m::MProb,name::Symbol,value) = addMoment(m,(name),value,1.0)
+addMoment!(m::MProb,name::ASCIIString,value,weight) = addMoment(m,symbol(name),value,weight)
+addMoment!(m::MProb,name::ASCIIString,value) = addMoment(m,symbol(name),value,1.0)
+addMoment!(m::MProb,name::Symbol,value) = addMoment(m,(name),value,1.0)
 
-function addMoment(m::MProb,d::Dict)
+function addMoment!(m::MProb,d::Dict)
   for k in keys(d)
-    addMoment(m,symbol(k),d[k][:value],d[k][:weight])
+    addMoment!(m,symbol(k),d[k][:value],d[k][:weight])
   end
   return m 
 end
 
-function addMoment(m::MProb,d::DataFrame)
+function addMoment!(m::MProb,d::DataFrame)
   for (i in 1:nrow(d))
-    m = addMoment(m,symbol(d[i,:name]),d[i,:value],d[i,:weight])
+    m = addMoment!(m,symbol(d[i,:name]),d[i,:value],d[i,:weight])
   end
   return m 
 end
@@ -135,7 +134,6 @@ function show(io::IO,m::MProb)
   print(io,m.params_to_sample)
   print(io,"\nMoment Table:\n")
   print(io,m.moments)
-  print(io,"Moment to use:\n")
   print(io,"\n")
   print(io,"\nobjective function: $(m.objfunc)\n\n")
   # print(io,"\nobjective function call: $(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))\n")

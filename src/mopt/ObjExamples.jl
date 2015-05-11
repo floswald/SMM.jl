@@ -75,21 +75,35 @@ function objfunc_norm(ev::Eval)
 	ns = 5000
 	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
 	randMultiNormal = MOpt.MvNormal(mu,sigma) 
-	simMoments      = mean(rand(randMultiNormal,ns),2)
+	simM            = mean(rand(randMultiNormal,ns),2)
+	simMoments = [:m1 => simM[1], :m2 => simM[2]]
+
 
 	# get data mometns
 	trueMoments = dataMoment(ev,[:m1,:m2]) 
 	# same thing here, and use dataMomentsWeights for sd
 	# second argument can be optional
 
+	# get objective value: (data[i] - model[i]) / weight[i]
+	v = Dict{Symbol,Float64}()
+	for k in collect(keys(dataMoment(ev)))
+		if length(dataMomentW(ev,k)) > 0
+			v[k] = ((simMoments[k] .- dataMoment(ev,k)[1]) ./ dataMomentW(ev,k)[1]) .^2
+		else
+			v[k] = ((simMoments[k] .- dataMoment(ev,k)[1]) ) .^2
+		end
+	end
+	setValue(ev, mean(collect(values(v))))
+
+
+
 	# value = data - model
-	setValue(ev, mean((simMoments - trueMoments).^2) )
+	# setValue(ev, mean((simMoments - trueMoments).^2) )
 
 	# also return the moments
 	# setMoment(ev, [:m1 => simMoments[1], :m2 => simMoments[2]])
 	mdf = DataFrame(name=["m1","m2"],value=simMoments[:])
 	setMoment(ev, mdf)
-	# we would also have a setter that takes a DataFrame
 
 	ev.status = 1
 

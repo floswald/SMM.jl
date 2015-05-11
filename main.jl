@@ -50,10 +50,10 @@ MOpt.plotSlices(mprob,x[1],x[2])
 using MOpt
 
 mprob = @> begin
- MProb()
- addParam!("c",-1)
- addSampledParam!("a",1.9,-2,2)
- addSampledParam!("b",-0.9,-1,1)
+ m = MProb()
+ addParam!(m,"c",-1)
+ addSampledParam!(m,"a")
+ addSampledParam!(m,"b",-0.9,-1,1)
 end
 
 
