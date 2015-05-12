@@ -1,1 +1,7 @@
 site_name: MOpt.jl Documentation
+site_author: Florian Oswald and Thibaut Lamadon
+markdown_extensions: [tables, fenced_code]
+theme: readthedocs
+pages:
+- ['index.md', 'Home']
+

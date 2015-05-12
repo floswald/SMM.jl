@@ -9,6 +9,7 @@ using Reexport
 using Lumberjack
 @reexport using DataFrames
 import Base.show
+# using Debug
 
 
 # exports: Types
@@ -16,7 +17,7 @@ export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval
 
 # exports: methods
 export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
-       runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, start, finish, param, paramd, fill, 
+       runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, fill, 
        dataMoment, dataMomentW, setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
 
 if !haskey(ENV,"IGNORE_HDF5")
@@ -40,6 +41,7 @@ include("mopt/slices.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
+include("mopt/Examples.jl")
 include("mopt/sobolsearch.jl")
 
 

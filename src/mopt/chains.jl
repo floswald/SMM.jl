@@ -111,7 +111,7 @@ end
 # but that doesn't work. errors with
 # no method for parameters(BGPChain)
 #
-# return an rbind of params from all chains
+# return an vcat of params from all chains
 function parameters(MC::Array,i::Union(Integer, UnitRange{Int});allp=false)
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
@@ -119,7 +119,7 @@ function parameters(MC::Array,i::Union(Integer, UnitRange{Int});allp=false)
     r = parameters(MC[1],i,allp) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,parameters(MC[ix],i,allp))
+            r = vcat(r,parameters(MC[ix],i,allp))
         end
     end
     return r
@@ -137,7 +137,7 @@ function moments(MC::Array,i::Union(Integer, UnitRange{Int}))
     r = moments(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,moments(MC[ix],i))
+            r = vcat(r,moments(MC[ix],i))
         end
     end
     return r
@@ -158,7 +158,7 @@ function infos(MC::Array,i::UnitRange{Int})
     r = infos(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,infos(MC[ix],i))
+            r = vcat(r,infos(MC[ix],i))
         end
     end
     return r
@@ -175,7 +175,7 @@ function evals(MC::Array,i::UnitRange{Int})
     r = infos(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,evals(MC[ix],i))
+            r = vcat(r,evals(MC[ix],i))
         end
     end
     return r

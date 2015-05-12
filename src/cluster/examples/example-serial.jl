@@ -1,6 +1,6 @@
 	
 
-using Lazy, DataFrames
+using Lazy, MOpt 
 
 # data are generated from a bivariate normal
 # with mu = [a,b] = [0,0]
@@ -12,8 +12,8 @@ using Lazy, DataFrames
 
 # initial value
 pb    = ["p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] ] 
-moms = DataFrame(name=["m2","m1"],value=[0.0,0.0],weight=rand(2))
-mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm)
+moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=rand(2))
+mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment!(moms) MOpt.addEvalFunc!(MOpt.objfunc_norm)
 
 # look at slice of the model: 
 # how does the objective function behave 
@@ -21,7 +21,7 @@ mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addE
 # the others fixed?
 
 opts =[
-	"N"               => 6,							# number of MCMC chains
+	"N"               => 1,							# number of MCMC chains
 	"maxiter"         => 500,						# max number of iterations
 	"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
 	"print_level"     => 1,							# increasing verbosity level of output
@@ -29,8 +29,8 @@ opts =[
 	"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
 	"max_shock_sd"    => 1,							# initial sd of shock on hottest chain
 	"past_iterations" => 30,						# num of periods used to compute Cov(p)
-	"min_accept_tol"  => 100,						# ABC-MCMC cutoff for rejecting small improvements
-	"max_accept_tol"  => 100,						# ABC-MCMC cutoff for rejecting small improvements
+	"min_accept_tol"  => 100000,						# ABC-MCMC cutoff for rejecting small improvements
+	"max_accept_tol"  => 100000,						# ABC-MCMC cutoff for rejecting small improvements
 	"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
 	"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
 	"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
@@ -39,7 +39,12 @@ opts =[
 # setup the BGP algorithm
 MA = MOpt.MAlgoBGP(mprob,opts)
 
-Lumberjack.add_truck(Lumberjack.LumberjackTruck(STDOUT, "warn"), "console")
+MOpt.remove_truck("console")
+
+mt = MOpt.LumberjackTruck("serial-log.log")
+MOpt.configure(mt;mode="debug")
+MOpt.add_truck(mt,"debuglogger")
+
 # run the estimation
 MOpt.runMOpt!(MA)
 

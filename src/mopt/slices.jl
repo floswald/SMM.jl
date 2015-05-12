@@ -1,4 +1,8 @@
 
+# TODO
+# add plot slices
+
+
 export Slice,slices,add!,get
 
 type Slice

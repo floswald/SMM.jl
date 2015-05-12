@@ -33,8 +33,8 @@ type BGPChain <: AbstractChain
 
 	function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
 		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
-		parameters = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
-		moments    = cbind(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
+		parameters = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
+		moments    = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
 		par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
 		par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
 		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
@@ -70,7 +70,8 @@ type MAlgoBGP <: MAlgo
     end
 end
 
-
+# this appends ACCEPTED values only.
+# i.e. we don't append reject values. for debugging it might be useful to do so.
 function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     chain.infos[chain.i,:evals]  = ev.value
     chain.infos[chain.i,:prob]   = prob
@@ -98,7 +99,7 @@ function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-    debug("computing next iteration")
+    info("computing next iteration")
 
     # check if we reached end of chain
 	if algo.i == algo["maxiter"]
@@ -167,7 +168,7 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 				ACC = false
 				appendEval!(chain,eval_old,ACC,prob)
 
-			elseif !isfinite(xold)
+			elseif !isfinite(eval_old.value)
 				prob = 1.0
 				eval_new.status = -2
 				ACC = false
@@ -187,6 +188,9 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 		    chain.shock_sd                     = chain.shock_sd * (1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) )
 		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
 		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
+		    debug("ACCEPTED: $ACC")
+		    debug("old value: $(eval_old.value)")
+		    debug("new value: $(eval_new.value)")
 		end
 	end
 end
@@ -301,7 +305,10 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		debug("shock to parameters on chain $ch :")
 		debug("$shock")
 
+		debug("current params: $(getLastEval(algo.MChains[ch]).params)")
+
 		jumpParams!(algo,ch,shock)
+		debug("new params: $(algo.current_param)")
 	end
 
 end
@@ -346,14 +353,16 @@ end
 
 
 function show(io::IO,MA::MAlgoBGP)
+	print(io,"\n")
 	print(io,"BGP Algorithm with $(MA["N"]) chains\n")
-	print(io,"====================================\n")
+	print(io,"============================\n")
 	print(io,"\n")
 	print(io,"Algorithm\n")
 	print(io,"---------\n")
 	print(io,"Current iteration: $(MA.i)\n")
-	print(io,"Number of params to estimate: $(length(MA.m.p2sample_sym))\n")
-	print(io,"Number of moments to match: $(length(MA.m.moments_subset))\n")
+	print(io,"Number of params to estimate: $(length(MA.m.params_to_sample))\n")
+	print(io,"Number of moments to match: $(length(MA.m.moments))\n")
+	print(io,"\n")
 	print(io,"Chains\n")
 	print(io,"------\n")
 	print(io,"Tempering range: [$(MA.MChains[1].tempering),$(MA.MChains[end].tempering)]\n")

@@ -1,13 +1,20 @@
 
+"""
 
+# Minimisation Problem: `MProb`
 
-#'.. py:class:: MProb
-#'
-#'   the type MProb describes the optimization
-#'   problem, it knows about the parameters
-#'   to estimate, their names and bounds, 
-#'   but also about the moments and their names.
-"This package implements several MCMC algorithms to optimize a non-differentiable objective function. The main application are **likelihood-free estimators**, which requires evaluating the objective at many regions. In general, this implements *Simulated Method of Moments*. The library is targeted to run MCMC on an SGE cluster, where each node is a chain."
+A moment minimsation problem is defined by an objective function that
+depends on a vector of unknown parameters `params_to_sample`, and a set
+of datamoments `moments`. 
+
+## Fields:
+
+* `initial_value`: initial parameter value as a dict
+* `params_to_sample`: Dict with lower and upper bounds
+* `objfunc`: objective function
+* `objfunc_opts`: options passed to the objective function, e.g. printlevel
+* `moments`: a dictionary of moments to track
+"""
 type MProb
 
   # setup
@@ -21,7 +28,7 @@ type MProb
   function MProb()
     this = new()
     this.initial_value       = Dict()
-    this.params_to_sample       = Dict()
+    this.params_to_sample    = Dict()
     this.objfunc             = x -> x
     this.objfunc_opts        = Dict()
     this.moments             = Dict()
@@ -32,23 +39,37 @@ end #type
 
 
 # -------------------- ADDING PARAMS --------------------
+"""
+Add initial parameter values to an `MProb` minimsation problem.
+"""
 function addParam!(m::MProb,name::ASCIIString,init)
   m.initial_value[symbol(name)] = init
 end
 
+"""
+Add initial parameter values to an `MProb` minimsation problem.
+"""
 function addParam!(m::MProb,p::Dict{ASCIIString,Any})
   for k in keys(p)
     m.initial_value[symbol(k)] = p[k]
   end
 end
 
-function addSampledParam!(m::MProb,name::ASCIIString,init::Any, lb::Any, ub::Any)
+"""
+Add parameters to be sampled to an `MProb`.
+"""
+function addSampledParam!(m::MProb,name::Any,init::Any, lb::Any, ub::Any)
   @assert ub>lb
   m.initial_value[symbol(name)] = init 
   m.params_to_sample[symbol(name)] = [ :lb => lb , :ub => ub]
   return m
 end
 
+"""
+Add parameters to be sampled to an `MProb`.
+
+`d`: a Dict with a triple (init,lb,ub) as value for each key.
+"""
 function addSampledParam!(m::MProb,d=Dict{Any,Array{Any,1}})
   for k in keys(d)
     addSampledParam!(m,symbol(k),d[k][1],d[k][2],d[k][3])
@@ -58,10 +79,21 @@ end
 
 # -------------------- ADDING MOMENTS --------------------
 
+"""
+Add Moments to an `MProb`.
+
+add a single moment to the mprob.
+
+`name`: the name of the moment as a symbol
+`value`: value of the moment
+`weight`: weight in the objective function
+"""
 function addMoment!(m::MProb,name::Symbol,value,weight)
   m.moments[symbol(name)] = [ :value => value , :weight => weight ]
   return m 
 end
+
+
 addMoment!(m::MProb,name::ASCIIString,value,weight) = addMoment(m,symbol(name),value,weight)
 addMoment!(m::MProb,name::ASCIIString,value) = addMoment(m,symbol(name),value,1.0)
 addMoment!(m::MProb,name::Symbol,value) = addMoment(m,(name),value,1.0)
@@ -80,8 +112,11 @@ function addMoment!(m::MProb,d::DataFrame)
   return m 
 end
 
+"Add moments to an MProb"
+(addMoment!,MProb,Any...)
+
 # -------------------- ADDING OBJ FUNCTION --------------------
-function addEvalFunc(m::MProb,f::Function)
+function addEvalFunc!(m::MProb,f::Function)
   m.objfunc = f
   return m 
 end
@@ -92,7 +127,7 @@ function evaluateObjective(m::MProb,p::Dict)
     try
        ev = eval(Expr(:call,m.objfunc,ev))
     catch ex
-      info("caught excpetion $ex")
+      info("caught exception $ex")
       ev.status = -2
     end
     gc()
@@ -113,16 +148,23 @@ end
 
 # -------------------- GETTERS --------------------
 
-#'.. py:function:: ps_names
-#'
-#'   returns the list of paramaters to sample
+"""
+Get all parameter names from the `MProb`
+"""
 function ps_names(mprob::MProb)
   return(keys(mprob.initial_value))
 end
+
+"""
+Get sampled parameter names from the `MProb`
+"""
 function ps2s_names(mprob::MProb)
   return convert(Array{Symbol,1},[k for k in keys(mprob.params_to_sample)])
 end
 
+"""
+Get the name of moments
+"""
 function ms_names(mprob::MProb)
   return(keys(mprob.moments))
 end
