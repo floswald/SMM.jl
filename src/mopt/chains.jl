@@ -15,12 +15,11 @@ type Chain <: AbstractChain
     infos        :: DataFrame
     parameters   :: DataFrame
     moments      :: DataFrame
-    params_nms   :: Array{Symbol,1}  # DataFrame names of parameters (i.e. exclusive of "id" or "iter", etc)
-    params2s_nms :: Array{Symbol,1}  # DataFrame names of parameters to sample
-    moments_nms  :: Array{Symbol,1}  # DataFrame names of moments
+    params_nms   :: Array{Symbol,1}  # names of parameters (i.e. exclusive of "id" or "iter", etc)
+    params2s_nms :: Array{Symbol,1}  # names of parameters to sample
+    moments_nms  :: Array{Symbol,1}  # names of moments
   
     function Chain(MProb,L)
-        # infos      = DataFrame(iter=0, evals = 0.0, accept = true, status = 0, exhanged_with=0, prob=0.0)
         infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L), eval_time=zeros(Float64,L))
         par_nms    = Symbol[ symbol(x) for x in ps_names(MProb) ]
         par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
@@ -65,7 +64,7 @@ evals(c::AbstractChain, i::Int)                 = evals(c, i:i)
 allstats(c::AbstractChain,i::UnitRange{Int})    = hcat(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
 allstats(c::AbstractChain,i::Int)               = hcat(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
 
-# ---------------------------  BGP GETTERS / SETTERS ----------------------------
+# ---------------------------  CHAIN GETTERS / SETTERS ----------------------------
 export getEval, getLastEval, appendEval
 
 function getEval(chain::AbstractChain, i::Int64)
@@ -80,7 +79,9 @@ function getEval(chain::AbstractChain, i::Int64)
         end
     end
     for k in names(chain.moments)
-        ev.moments[k] = chain.moments[i,k]
+        if !(k in [:chain_id,:iter])
+            ev.simMoments[k] = chain.moments[i,k]
+        end
     end
 
     return (ev)
@@ -95,11 +96,15 @@ function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, prob::Float64)
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = ev.status
     chain.infos[chain.i,:eval_time] = ev.time
-    for im in chain.moments_nms
-        chain.moments[chain.i,im] = ev.moments[im]
+    for k in names(chain.moments)
+        if !(k in [:chain_id,:iter])
+            chain.moments[chain.i,k] = ev.simMoments[k]
+        end
     end
-    for ip in chain.params_nms
-        chain.parameters[chain.i,ip] = ev.params[ip]
+    for k in names(chain.parameters)
+        if !(k in [:chain_id,:iter])
+            chain.parameters[chain.i,k] = ev.params[k]
+        end
     end
     return nothing
 end

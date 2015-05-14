@@ -7,7 +7,7 @@ using FactCheck, DataFrames, MOpt, Lazy
 
 pb   = [ "a" => [0.3, 0,1] , "b" => [0.4,0,1]]
 moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
-mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
 opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
 
 facts("testing MAlgoBGP Constructor") do
@@ -118,7 +118,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		# get a "kernel"/Covariance matrix
 		# pos def matrix:
-		myVV = rand(length( ps2s_names(MA.m)),length(ps2s_names(MA.m)))
+		myVV = rand(length( MOpt.ps2s_names(MA.m)),length(MOpt.ps2s_names(MA.m)))
 		myVV = myVV * myVV'
 
 		# manually create next parameter guess on
@@ -129,7 +129,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# must correspond to entry number ix plus a shock from the kernel
 		ich = 1; ix = 10
 		MVN = MOpt.MvNormal( myVV.*MA.MChains[ich].tempering )
-		shockd = Dict(ps2s_names(MA.m),rand(MVN) )
+		shockd = Dict(MOpt.ps2s_names(MA.m),rand(MVN) )
 
 		eval_before = getLastEval(MA.MChains[ich]).params # get a dataframe of row ix-1
 		MOpt.jumpParams!(MA,ich,shockd)
@@ -211,7 +211,7 @@ facts("testing accept reject") do
 		@fact all(infos(MA.MChains,1)[:status] .== 1.0) => true
 
 		# all params equal to initial value
-		for nm in ps2s_names(MA)
+		for nm in MOpt.ps2s_names(MA)
 			#print( " $nm $(parameters(MA,1,1,nm)) $(pb[string(nm)][1] ) ")
 			@fact parameters(MA,1,1,nm) => roughly(pb[string(nm)][1])
 		end
@@ -256,7 +256,7 @@ facts("testing accept reject") do
 		for ch in 1:MA["N"]
 			if infos(MA.MChains[ch],MA.i)[:accept][1]
 				# if accepted, parameters(MA.MChains[ch],MA.i) == current_param
-				for nm in ps2s_names(MA)
+				for nm in MOpt.ps2s_names(MA)
 					print( "$nm $(parameters(MA,ch,MA.i,nm)) $(MA.current_param[ch][nm])\n" )
 					@fact parameters(MA,ch,MA.i,nm) => MA.current_param[ch][nm]
 				end
@@ -264,7 +264,7 @@ facts("testing accept reject") do
 				@fact moments(MA,ch,MA.i) != moments(MA,ch,MA.i-1) => true
 			else
 				# if not, parameters(MA.MChains[ch],MA.i) == parameters(MA.MChains[ch],MA.i-1)
-				for nm in ps2s_names(MA)
+				for nm in MOpt.ps2s_names(MA)
 					@fact parameters(MA,ch,MA.i,nm) => parameters(MA,ch,MA.i-1,nm)
 				end
 				# if not accepted, moments(MA.MChains[ch],MA.i) == moments(MA.MChains[ch],MA.i-1)

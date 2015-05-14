@@ -13,7 +13,19 @@ of datamoments `moments`.
 * `params_to_sample`: Dict with lower and upper bounds
 * `objfunc`: objective function
 * `objfunc_opts`: options passed to the objective function, e.g. printlevel
-* `moments`: a dictionary of moments to track
+* `moments`: a dictionary of data moments to track
+
+## Example:
+
+    ```julia
+    pb    = ["p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] ] 
+    moms  = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=rand(2))
+    m     = MProb() 
+    addSampledParam!(m,pb) 
+    addMoment!(m,moms) 
+    addEvalFunc!(m.MOpt.objfunc_norm)
+    ```
+    
 """
 type MProb
 
@@ -22,7 +34,7 @@ type MProb
   params_to_sample    :: Dict           # Dict with lower and upper bounds
   objfunc             :: Function       # objective function
   objfunc_opts        :: Dict           # options passed to the objective function, e.g. printlevel
-  moments             :: Dict           # a dictionary of moments to track
+  moments             :: Dict           # a dictionary of data moments to track
 
   # very simple constructor
   function MProb()

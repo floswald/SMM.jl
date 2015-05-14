@@ -14,7 +14,7 @@ moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3
 
 facts("Testing Default Chains constructor") do
 	
-	mprob = @> MProb() addSampledParam!(pb) addMoment(moms)
+	mprob = @> MProb() addSampledParam!(pb) addMoment!(moms)
 
 	L = 9
 	chain = Chain(mprob,L)
@@ -35,29 +35,11 @@ facts("Testing Default Chains constructor") do
 	end
 end
 
-# facts("testing MChain constructor") do
-	
-
-# 	mprob = MProb(p,pb,Testobj,moms)
-# 	L = 9
-# 	chain = Chain(mprob,L)
-
-# 	n = 14
-# 	chains = MChain(n,mprob,L)
-
-# 	@fact isa(chains,MChain) => true
-# 	@fact isa(chains.chains,Array) => true
-# 	@fact length(chains.chains) => n
-# 	for ch in 1:n
-# 		@fact length(chains.chains[ch].infos["evals"]) => L
-# 	end
-# end
-
 facts("testing Chain/MChain methods") do
 
 	context("testing getindex(chain,i)") do
 
-		mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
+		mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
 
 		L = 9	# length of chain
 		chain = Chain(mprob,L)

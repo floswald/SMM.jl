@@ -25,9 +25,6 @@ type BGPChain <: AbstractChain
 	moments_nms  ::Array{Symbol,1}	# names of moments
 	params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
 
-	# TODO need either of those not both
-	# the paper uses tempering to set up the kernel,
-	# tibo uses shock_sd to amplify the shocks. expect small difference.
 	tempering  ::Float64 # tempering in update probability
 	shock_sd   ::Float64 # sd of shock to 
 
@@ -71,7 +68,6 @@ type MAlgoBGP <: MAlgo
 end
 
 # this appends ACCEPTED values only.
-# i.e. we don't append reject values. for debugging it might be useful to do so.
 function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     chain.infos[chain.i,:evals]  = ev.value
     chain.infos[chain.i,:prob]   = prob
@@ -79,14 +75,38 @@ function appendEval!(chain::BGPChain, ev:: Eval, ACC::Bool, prob::Float64)
     chain.infos[chain.i,:status] = ev.status
     chain.infos[chain.i,:eval_time] = ev.time
     chain.infos[chain.i,:tempering] = chain.tempering
-    for im in chain.moments_nms
-        chain.moments[chain.i,im] = ev.moments[im]
+    for k in names(chain.moments)
+        if !(k in [:chain_id,:iter])
+            chain.moments[chain.i,k] = ev.simMoments[k]
+        end
     end
-    for ip in chain.params_nms
-        chain.parameters[chain.i,ip] = ev.params[ip]
+    for k in names(chain.parameters)
+        if !(k in [:chain_id,:iter])
+            chain.parameters[chain.i,k] = ev.params[k]
+        end
     end
     return nothing
 end
+
+# changing only the eval fields. used in swapRows!
+function appendEval!(chain::BGPChain, ev:: Eval)
+    chain.infos[chain.i,:evals]  = ev.value
+    chain.infos[chain.i,:status] = ev.status
+    chain.infos[chain.i,:eval_time] = ev.time
+    for k in names(chain.moments)
+        if !(k in [:chain_id,:iter])
+            chain.moments[chain.i,k] = ev.simMoments[k]
+        end
+    end
+    for k in names(chain.parameters)
+        if !(k in [:chain_id,:iter])
+            chain.parameters[chain.i,k] = ev.params[k]
+        end
+    end
+    return nothing
+end
+
+# getEval(c::BGPChain,i::Int64) = getEval
 
 # ---------------------------  BGP ALGORITHM ----------------------------
 
@@ -133,7 +153,7 @@ function computeNextIteration!( algo::MAlgoBGP )
 
 		# Part 2) EXCHANGE MOVES 
 		# ----------------------
-		# starting mixing in period 4
+		# starting mixing in period 3
 		if algo.i>=2 && algo["N"] > 1 
 			exchangeMoves!(algo)
 		end
@@ -223,29 +243,16 @@ end
 
 function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
 
-	mnames = algo.MChains[pair[1]].moments_nms
-	pnames = algo.MChains[pair[1]].params2s_nms
-	# pars, moms and value from 1
-	p1 = parameters(algo.MChains[pair[1]],i,false) 	# false: only get params to sample
-	m1 = algo.MChains[pair[1]].moments[i,mnames]
-	v1 = evals(algo.MChains[pair[1]],i)
+	e1 = getEval(algo.MChains[pair[1]],i)
+	e2 = getEval(algo.MChains[pair[2]],i)
 
-	# same for 2
-	p2 = parameters(algo.MChains[pair[2]],i,false) 	# false: only get params to sample
-	m2 = algo.MChains[pair[2]].moments[i,mnames]
-	v2 = evals(algo.MChains[pair[2]],i)
+	# swap
+	appendEval!(algo.MChains[pair[1]],e2)
+	appendEval!(algo.MChains[pair[2]],e1)
 
 	# make a note in infos
 	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
 	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
-
-	# swap
-	algo.MChains[pair[1]].parameters[i,pnames] = p2
-	algo.MChains[pair[2]].parameters[i,pnames] = p1
-	algo.MChains[pair[1]].moments[i,mnames] = m2
-	algo.MChains[pair[2]].moments[i,mnames] = m1
-	algo.MChains[pair[1]].infos[i,:evals] = v2[1]
-	algo.MChains[pair[2]].infos[i,:evals] = v1[1]
 
 end
 
