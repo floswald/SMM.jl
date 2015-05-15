@@ -8,7 +8,7 @@ using FactCheck, DataFrames, MOpt, Lazy
 pb   = [ "a" => [0.3, 0,1] , "b" => [0.4,0,1]]
 moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
 mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
-opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1] 
+opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1,"min_accept_tol"=>10000,"max_accept_tol"=>10000] 
 
 facts("testing MAlgoBGP Constructor") do
 
@@ -194,9 +194,9 @@ end
 
 facts("testing accept reject") do
 
-	MA = MAlgoBGP(mprob,opts)
 
 	context("testing initial period") do
+		MA = MAlgoBGP(mprob,opts)
 
 		# get a return value
 		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
@@ -224,54 +224,64 @@ facts("testing accept reject") do
 	end
 
 	context("testing whether params get accept/rejected") do
-		
+
 		# first iteration
+		MA = MAlgoBGP(mprob,opts)
 		MA.i = 1
 		MOpt.incrementChainIter!(MA.MChains)
 		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
+
 		MOpt.doAcceptRecject!(MA,v)
 
 		# second iteration
 		MA.i = 2
 		MOpt.incrementChainIter!(MA.MChains)
 
-		# perturb parameters
+		# get randome parameters
 		for i in 1:length(v) 
 			for (k,va) in MA.current_param[i]
 				MA.current_param[i][k] = va + rand()
 			end
 		end
 
-		# get a return value
-		v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
+		# get 2 return values
+		v1 = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
+		v2 = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
 
-		v0 = deepcopy(v)
+		# assign a very good bad value on each chain: 
 		for i in 1:length(v) 
-			v[i].value = v[i].value - log(0.9)
-			setMoment(v[i],  [ :alpha => rand(), :beta => rand(), :gamma => rand() ] )
+			v1[i].value = v1[i].value - 100.0
+			setMoment(v1[i],  [ :alpha => rand(), :beta => rand(), :gamma => rand() ] )
+			v2[i].value = v2[i].value + 100.0
+			setMoment(v2[i],  [ :alpha => rand(), :beta => rand(), :gamma => rand() ] )
 		end
-		MOpt.doAcceptRecject!(MA,v)
+		MAs = MAlgo[]
+		push!(MAs,deepcopy(MA),deepcopy(MA))
+		MOpt.doAcceptRecject!(MAs[1],v1)
+		MOpt.doAcceptRecject!(MAs[1],v2)
 
-		# check that where not accepted, params and moments are previous ones
-		for ch in 1:MA["N"]
-			if infos(MA.MChains[ch],MA.i)[:accept][1]
-				# if accepted, parameters(MA.MChains[ch],MA.i) == current_param
-				for nm in MOpt.ps2s_names(MA)
-					print( "$nm $(parameters(MA,ch,MA.i,nm)) $(MA.current_param[ch][nm])\n" )
-					@fact parameters(MA,ch,MA.i,nm) => MA.current_param[ch][nm]
+		for ma in MAs
+			for ch in 1:ma["N"]
+				ev= getEval(ma.MChains[ch],ma.i)
+				Last_ev= getEval(ma.MChains[ch],ma.i-1)
+
+				if infos(ma.MChains[ch],ma.i)[:accept][1]
+					# if accepted, the parameter vector in ev is equal to current_param on that chain
+					ev_p = paramd(ev)
+					ev_m = ev.simMoments
+					for (k,v) in ev_p
+						@fact v => ma.current_param[ch][k]
+					end
+				else
+					# if not, parameters(ma.MChains[ch],ma.i) == parameters(ma.MChains[ch],ma.i-1)
+					ev_p = paramd(Last_ev)
+					ev_m = Last_ev.simMoments
+					for (k,v) in ev_p
+						@fact v => not(ma.current_param[ch][k])
+					end
 				end
-				# if accepted, moments(MA.MChains[ch],MA.i) != moments(MA.MChains[ch],MA.i-1)
-				@fact moments(MA,ch,MA.i) != moments(MA,ch,MA.i-1) => true
-			else
-				# if not, parameters(MA.MChains[ch],MA.i) == parameters(MA.MChains[ch],MA.i-1)
-				for nm in MOpt.ps2s_names(MA)
-					@fact parameters(MA,ch,MA.i,nm) => parameters(MA,ch,MA.i-1,nm)
-				end
-				# if not accepted, moments(MA.MChains[ch],MA.i) == moments(MA.MChains[ch],MA.i-1)
-				@fact moments(MA,ch,MA.i) == moments(MA,ch,MA.i-1) => true
 			end
 		end
-
 	end
 end
 
