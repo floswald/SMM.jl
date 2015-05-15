@@ -4,8 +4,8 @@ module TestSobol
 
 	# initial value
 	pb    = ["m1" => [0.0,-2,2] , "m2" => [0.0,-2,2] ] 
-	moms = DataFrame(name=["m1","m2"],value=[0.0,0.0],weight=rand(2))
-	mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm);
+	moms = DataFrame(name=["mu1","mu2"],value=[0.0,0.0],weight=rand(2))
+	mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment!(moms) MOpt.addEvalFunc!(MOpt.objfunc_norm);
 
 	# compute the slices
 	sl = MOpt.sobolsearch(mprob,500);
@@ -75,6 +75,7 @@ module TestSobol
 	E[1:100] = 1
 
 	# given the evaluated set, compute the local level and densities
+	dim = 2 # ?
 	N = sum(E)^(1/dim)
     h = 1/N # distance between points
 
@@ -98,7 +99,7 @@ module TestSobol
     P0 = [ [ :p => next(sq) , :value => 0] for k in 1:10]
 
     # evaluate 10 points:
-    P1 = map(Pt0) do p
+    P1 = map(P0) do p
     	p[:value] = f(p[:p])
     	p
     end

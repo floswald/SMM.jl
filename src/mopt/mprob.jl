@@ -60,12 +60,17 @@ end
 
 """
 Add initial parameter values to an `MProb` minimsation problem.
+
+### Arguments:
+
+* `p`: A Dict with (ASCIIString,Number) pairs
 """
-function addParam!(m::MProb,p::Dict{ASCIIString,Any})
+function addParam!(m::MProb,p::Dict)
   for k in keys(p)
     m.initial_value[symbol(k)] = p[k]
   end
 end
+
 
 """
 Add parameters to be sampled to an `MProb`.
@@ -106,9 +111,9 @@ function addMoment!(m::MProb,name::Symbol,value,weight)
 end
 
 
-addMoment!(m::MProb,name::ASCIIString,value,weight) = addMoment(m,symbol(name),value,weight)
-addMoment!(m::MProb,name::ASCIIString,value) = addMoment(m,symbol(name),value,1.0)
-addMoment!(m::MProb,name::Symbol,value) = addMoment(m,(name),value,1.0)
+addMoment!(m::MProb,name::ASCIIString,value,weight) = addMoment!(m,symbol(name),value,weight)
+addMoment!(m::MProb,name::ASCIIString,value) = addMoment!(m,symbol(name),value,1.0)
+addMoment!(m::MProb,name::Symbol,value) = addMoment!(m,(name),value,1.0)
 
 function addMoment!(m::MProb,d::Dict)
   for k in keys(d)

@@ -32,12 +32,23 @@ end
 
 facts("testing MProb methods") do
 
+	p   = [ 
+		"a" => 0.1 , 
+		"b" => 0.2 ,
+		"c" => 0.5 ]
 	pb   = [ 
 		"a" => [0.1, 0, 1] , 
 		"b" => [0.2, 0, 1] ]
 	mprob = MProb();
+
+	addParam!(mprob,p)	
+	@fact sort(collect(MOpt.ps_names(mprob))) == sort({:a,:b,:c}) => true
+	@fact length(mprob.params_to_sample) => 0
+
+	mprob = MProb();
 	addSampledParam!(mprob,pb)	
 	@fact sort(collect(MOpt.ps_names(mprob))) == sort({:a,:b}) => true
+	@fact sort(collect(MOpt.ps2s_names(mprob))) == sort({:a,:b}) => true
 
 	mprob = MProb();
 	addSampledParam!(mprob,"a",0.1,0,1)

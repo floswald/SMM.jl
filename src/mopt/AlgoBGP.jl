@@ -30,12 +30,12 @@ type BGPChain <: AbstractChain
 
 	function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
 		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
-		parameters = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps_names(MProb)))))
+		parameters = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps2s_names(MProb)))))
 		moments    = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
 		par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
 		par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
 		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
-		names!(parameters,[:chain_id,:iter, par_nms])
+		names!(parameters,[:chain_id,:iter, par2s_nms])
 		names!(moments   ,[:chain_id,:iter, mom_nms])
 		return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
     end
@@ -119,7 +119,7 @@ function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-    info("computing next iteration")
+    # info("computing next iteration")
 
     # check if we reached end of chain
 	if algo.i == algo["maxiter"]
@@ -145,6 +145,7 @@ function computeNextIteration!( algo::MAlgoBGP )
 		# evaluate objective on all chains
 		# --------------------------------
 		v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
+
 
 
 		# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
@@ -208,9 +209,9 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 		    chain.shock_sd                     = chain.shock_sd * (1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) )
 		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
 		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
-		    debug("ACCEPTED: $ACC")
-		    debug("old value: $(eval_old.value)")
-		    debug("new value: $(eval_new.value)")
+		    # debug("ACCEPTED: $ACC")
+		    # debug("old value: $(eval_old.value)")
+		    # debug("new value: $(eval_new.value)")
 		end
 	end
 end
@@ -233,7 +234,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 		if length(close) > 0
 			if rand() < algo.MChains[ch].jump_prob
 				ex_with =sample(close)
-				debug("making an exchange move for chain $ch with chain $ex_with set:$close")
+			#	debug("making an exchange move for chain $ch with chain $ex_with set:$close")
 				swapRows!(algo,(ch,ex_with),algo.i)
 			end
 		end
@@ -309,13 +310,13 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
 		shock = Dict(ps2s_names(algo) , shock)
 
-		debug("shock to parameters on chain $ch :")
-		debug("$shock")
+		# debug("shock to parameters on chain $ch :")
+		# debug("shock = $shock")
 
-		debug("current params: $(getLastEval(algo.MChains[ch]).params)")
+		# debug("current params: $(getLastEval(algo.MChains[ch]).params)")
 
 		jumpParams!(algo,ch,shock)
-		debug("new params: $(algo.current_param)")
+		# debug("new params: $(algo.current_param)")
 	end
 
 end

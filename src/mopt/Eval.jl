@@ -157,9 +157,9 @@ end
 param(ev::Eval,ll::Array{Symbol,1})    = Float64[ ev.params[i] for i in ll]
 param(ev::Eval,ll::Array{Any,1})       = Float64[ ev.params[i] for i in ll]
 param(ev::Eval)                        = param(ev,collect(keys(ev.params)))
-param(ev::Eval,s::Symbol)              = param(ev,[s])
+param(ev::Eval,s::Symbol)              = ev.params[s]
 
-"Obtain value(s) of selected parameter(s) as an array"
+"Obtain value(s) of selected parameter(s)"
 (param,Eval,Any...)
 
 
@@ -171,7 +171,7 @@ dataMoment(ev::Eval,ll::Array{Symbol,1})  = Float64[ ev.dataMoments[i] for i in 
 dataMoment(ev::Eval,s::Symbol)         = ev.dataMoments[s]
 dataMoment(ev::Eval)                      = dataMoment(ev,collect(keys(ev.dataMoments)))
 
-"Obtain value(s) of selected moment(s) as an array"
+"Obtain value(s) of selected moment(s)"
 (dataMoment,Eval,Any...)
 
 "Obtain all data momoents as dict"
@@ -181,7 +181,7 @@ dataMomentW(ev::Eval)                      = dataMomentW(ev,collect(keys(ev.data
 dataMomentW(ev::Eval,ll::Array{Symbol,1}) = Float64[ ev.dataMomentsW[i] for i in ll]
 dataMomentW(ev::Eval,s::Symbol)= ev.dataMomentsW[s]
 
-"Obtain value(s) of selected moment weight(s) as an array"
+"Obtain value(s) of selected moment weight(s)"
 (dataMomentW,Eval,Any...)
 
 

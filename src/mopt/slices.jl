@@ -20,7 +20,7 @@ type Slice
 end
 
 function add!(s::Slice, p::Symbol, ev::Eval)
-    s.res[p][ ev.params[p] ] = [:moments => ev.moments, :value => ev.value ]
+    s.res[p][ ev.params[p] ] = [:moments => ev.simMoments, :value => ev.value ]
 end
 
 function get(s::Slice, p::Symbol, m::Symbol)

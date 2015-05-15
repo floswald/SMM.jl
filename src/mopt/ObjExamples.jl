@@ -57,6 +57,7 @@ function Testobj2(ev::Eval)
         val += (2.2)^2
     end
 
+	ev.status = 1
     setValue(ev,val)
     return ev
 end
@@ -88,7 +89,7 @@ function objfunc_norm(ev::Eval)
 	# get objective value: (data[i] - model[i]) / weight[i]
 	v = Dict{Symbol,Float64}()
 	for (k,mom) in dataMomentd(ev)
-		if length(dataMomentW(ev,k)) > 0
+		if haskey(dataMomentWd(ev),k)
 			v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
 		else
 			v[k] = ((simMoments[k] .- mom) ) .^2
@@ -110,6 +111,8 @@ function objfunc_norm(ev::Eval)
 
     return ev
 end
+
+
 
 #'.. py:function:: banana
 #'

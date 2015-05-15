@@ -24,9 +24,9 @@ type Chain <: AbstractChain
         par_nms    = Symbol[ symbol(x) for x in ps_names(MProb) ]
         par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
         mom_nms    = Symbol[ symbol(x) for x in ms_names(MProb) ]
-        parameters = convert(DataFrame,zeros(L,length(par_nms)+1))
+        parameters = convert(DataFrame,zeros(L,length(par2s_nms)+1))
         moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
-        names!(parameters,[:iter, par_nms])
+        names!(parameters,[:iter, par2s_nms])
         names!(moments   ,[:iter, mom_nms])
         return new(0,infos,parameters,moments,par_nms,par2s_nms,mom_nms)
     end
@@ -35,25 +35,21 @@ end
 # methods for a single chain
 # ==========================
 
-function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}),all=false)
-    if all
-        c.parameters[i,:]
-    else
-        c.parameters[i,c.params2s_nms]
-    end
+# function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}),all=false)
+#     if all
+#         c.parameters[i,:]
+#     else
+#         c.parameters[i,c.params2s_nms]
+#     end
+# end
+function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}))
+    c.parameters[i,c.params2s_nms]
 end
-function parameters(c::AbstractChain;all=false)
-    if all
-        c.parameters
-    else
-        c.parameters[:,c.params2s_nms]
-    end
+function parameters(c::AbstractChain)
+    c.parameters[:,c.params2s_nms]
 end
 
-# FIXME
-# could do the same for moments? i.e. only return MProb.moments_subset?
-
-moments(c::AbstractChain)                       = c.moments[i,:]
+moments(c::AbstractChain)                       = c.moments
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
 moments(c::AbstractChain, i::Int)               = moments(c, i:i)
 infos(c::AbstractChain)                         = c.infos
@@ -90,7 +86,6 @@ end
 getLastEval(chain :: AbstractChain) = getEval(chain::AbstractChain, chain.i - 1 )
 
 function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, prob::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
     chain.infos[chain.i,:evals]  = ev.value
     chain.infos[chain.i,:prob]   = prob
     chain.infos[chain.i,:accept] = ACC
@@ -117,21 +112,21 @@ end
 # no method for parameters(BGPChain)
 #
 # return an vcat of params from all chains
-function parameters(MC::Array,i::Union(Integer, UnitRange{Int});allp=false)
+function parameters(MC::Array,i::Union(Integer, UnitRange{Int}))
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
-    r = parameters(MC[1],i,allp) 
+    r = parameters(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = vcat(r,parameters(MC[ix],i,allp))
+            r = vcat(r,parameters(MC[ix],i))
         end
     end
     return r
 end
 
-function parameters(MC::Array,all::Bool)
-    parameters(MC,1:MC[1].i,allp=all)
+function parameters(MC::Array)
+    parameters(MC,1:MC[1].i)
 end
 
 

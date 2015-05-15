@@ -1,20 +1,20 @@
 module TestChain
 
-using FactCheck,DataFrames,MOpt,Lazy
+using FactCheck,MOpt,Lazy
 
 
 
 # TESTING Chains
 # ==============
-pb   = [ 
-  "a" => [0.6,0,1] , 
-  "b" => [0.8,0,1] 
-]
+pb   = [ "a" => [0.3, 0,1] , "b" => [0.4,0,1]]
 moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
 
 facts("Testing Default Chains constructor") do
 	
-	mprob = @> MProb() addSampledParam!(pb) addMoment!(moms)
+	mprob = MProb() 
+	addParam!(mprob,["c" => 0.1]) 
+	addSampledParam!(mprob,pb) 
+	addMoment!(mprob,moms)
 
 	L = 9
 	chain = Chain(mprob,L)
@@ -26,11 +26,18 @@ facts("Testing Default Chains constructor") do
 		# test that all member except i are L long
 		@fact length(chain.infos[:evals])  => L
 		@fact length(chain.infos[:accept]) => L
-		for nm in MOpt.ps_names(mprob)
+		for nm in MOpt.ps2s_names(mprob)
 			@fact length(chain.parameters[symbol(nm)]) => L
 		end
 		for nm in MOpt.ms_names(mprob)
 			@fact length(chain.moments[symbol(nm)]) => L
+		end
+	end
+
+	context("get correct dataframe labels") do
+		@fact names(MOpt.parameters(chain)) => MOpt.ps2s_names(mprob)
+		for nm in MOpt.ms_names(mprob)
+			@fact nm in names(MOpt.moments(chain))[2:end] => true
 		end
 	end
 end
@@ -56,7 +63,7 @@ facts("testing Chain/MChain methods") do
 
 	context("testing getindex(chain,i::Range)") do
 
-		mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj)
+		mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj)
 
 		L     = 9	# length of chain
 		chain = Chain(mprob,L)
@@ -71,7 +78,7 @@ facts("testing Chain/MChain methods") do
 	
 	context("test appendEval!(chain)") do
 
-		mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+		mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
 		ev = Eval(pb,moms)
 		ev = MOpt.Testobj2(ev)
 
@@ -97,7 +104,7 @@ facts("testing Chain/MChain methods") do
 		# verify new values on chain
 		@fact chain.infos[:evals][1] => ev.value
 		@fact chain.infos[:accept][1] => true
-		for nm in MOpt.ps_names(mprob)
+		for nm in MOpt.ps2s_names(mprob)
 			@fact chain.parameters[chain.i,symbol(nm)][1] => ev.params[nm]
 		end
 	end
@@ -106,7 +113,7 @@ end
 
 facts("testing collectFields and fillinFields functions") do
 	
-	mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+	mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
 	chain = Chain(mprob,10)
 
 	context("collectFields") do

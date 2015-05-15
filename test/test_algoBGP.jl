@@ -168,8 +168,8 @@ facts("testing swaprows") do
 		pair = (1,3)
 
 		# get params and moms
-		p1 = parameters(MA.MChains[pair[1]],ix,false)
-		p2 = parameters(MA.MChains[pair[2]],ix,false)
+		p1 = parameters(MA.MChains[pair[1]],ix)
+		p2 = parameters(MA.MChains[pair[2]],ix)
 		m1 = MA.MChains[pair[1]].moments[ix,MA.MChains[pair[1]].moments_nms]
 		m2 = MA.MChains[pair[2]].moments[ix,MA.MChains[pair[2]].moments_nms]
 		v1 = evals(MA.MChains[pair[1]],ix)

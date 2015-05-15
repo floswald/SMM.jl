@@ -12,7 +12,8 @@ function serialNormal(logmode="debug")
 
 	# initial value
 	pb    = ["p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] ] 
-	moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=rand(2))
+	# moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=rand(2))
+	moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=ones(2))
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	addMoment!(mprob,moms) 
@@ -43,9 +44,6 @@ function serialNormal(logmode="debug")
 
 	# run the estimation
 	runMOpt!(MA)
+	PyPlot.hist(MOpt.array(MOpt.parameters(MA.MChains[1])))
 	return MA
 end
-
-		
-
-

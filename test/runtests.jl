@@ -1,7 +1,9 @@
 
 
 # using MOpt 
-using FactCheck
+module MOptTests
+
+using MOpt, FactCheck
 
 include("test_Eval.jl")
 include("test_MProb.jl")
@@ -11,7 +13,9 @@ include("test_BGPchain.jl")
 include("test_algoBGP.jl")
 include("test_objfunc.jl")
 
-exitstatus()
+FactCheck.exitstatus()
+
+end
 
 
 
