@@ -17,7 +17,6 @@ type BGPChain <: AbstractChain
 	infos        ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
 	parameters   ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
 	moments      ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
-	accept_tol   ::Float64     # acceptance tolerance: new is not a "substantial" improvement over old, don't accept
 	dist_tol     ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
 	jump_prob    ::Float64 # probability of swapping with "close" chain
 
@@ -28,7 +27,7 @@ type BGPChain <: AbstractChain
 	tempering  ::Float64 # tempering in update probability
 	shock_sd   ::Float64 # sd of shock to 
 
-	function BGPChain(id,MProb,L,temp,shock,accept_tol,dist_tol,jump_prob)
+	function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob)
 		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
 		parameters = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps2s_names(MProb)))))
 		moments    = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
@@ -37,7 +36,7 @@ type BGPChain <: AbstractChain
 		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
 		names!(parameters,[:chain_id,:iter, par2s_nms])
 		names!(moments   ,[:chain_id,:iter, mom_nms])
-		return new(id,0,infos,parameters,moments,accept_tol,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
+		return new(id,0,infos,parameters,moments,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
     end
 end
 
@@ -55,11 +54,10 @@ type MAlgoBGP <: MAlgo
     function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
 
 		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
-		acctol    = linspace(opts["min_accept_tol"],opts["max_accept_tol"],opts["N"])
 		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
 		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
 		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],acctol[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
 	  	# current param values
 	  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
 
@@ -181,7 +179,6 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 			eval_old = getEval(chain,algo.i-1)
 
 			prob = minimum([1.0, exp(chain.tempering *(eval_old.value - eval_new.value))])
-			prob = prob * (eval_new.value < chain.accept_tol)
 
 			if isna(prob)
 				prob = 0.0
@@ -209,9 +206,9 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 		    chain.shock_sd                     = chain.shock_sd * (1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) )
 		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
 		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
-		    # debug("ACCEPTED: $ACC")
-		    # debug("old value: $(eval_old.value)")
-		    # debug("new value: $(eval_new.value)")
+		    debug("ACCEPTED: $ACC")
+		    debug("old value: $(eval_old.value)")
+		    debug("new value: $(eval_new.value)")
 		end
 	end
 end

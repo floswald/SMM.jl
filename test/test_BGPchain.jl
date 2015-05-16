@@ -15,11 +15,10 @@ facts("Testing BGPChain constructor") do
 	L = 9
 	temp = 100.0
 	shock = 12.0
-	accept_tol = 1.9
 	dist_tol = 0.001
 	jumpprob = 0.05
 	id = 180
-	chain = BGPChain(id,mprob,L,temp,shock,accept_tol,dist_tol,jumpprob)
+	chain = BGPChain(id,mprob,L,temp,shock,dist_tol,jumpprob)
 
 	@fact chain.i => 0 
 	@fact chain.id => id
@@ -39,7 +38,6 @@ facts("Testing BGPChain constructor") do
 		@fact chain.shock_sd => shock
 		@fact chain.jump_prob => jumpprob
 		@fact chain.dist_tol => dist_tol
-		@fact chain.accept_tol => accept_tol
 	end
 
 	context("get correct dataframe labels") do

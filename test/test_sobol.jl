@@ -126,7 +126,7 @@ module TestSobol
 
 
 
-    d = [ exp(  - sum( ( S[i] .- ss ).^2 )/h^2 ) for ss in Se ]
+    # d = [ exp(  - sum( ( S[i] .- ss ).^2 )/h^2 ) for ss in Se ]
 
 
 
