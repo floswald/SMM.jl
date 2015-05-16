@@ -9,7 +9,6 @@ using Reexport
 using Lumberjack
 @reexport using DataFrames
 import Base.show
-using Debug
 
 
 # exports: Types
