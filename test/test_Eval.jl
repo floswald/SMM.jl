@@ -4,8 +4,8 @@ using FactCheck, DataFrames, MOpt, HDF5
 
 
 
-# TESTING Chains
-# ==============
+# TESTING Eval 
+# ============
 p    = [:a => 3.1 , :b => 4.9]
 moms = DataFrame(name=[:alpha,:beta,:gamma],value=[0.8,0.7,0.5],weight=rand(3))
 
@@ -32,10 +32,11 @@ facts("Testing Eval object") do
 	ev2.status=1
 
 	context("testing param") do
-		@fact param(ev,:a) => [3.1]
+
+		@fact param(ev,:a) => 3.1
 		@fact param(ev,[:a,:b]) => [3.1,4.9]
 
-		@fact param(ev2,:a) => [3.1]
+		@fact param(ev2,:a) => 3.1
 		@fact param(ev2,[:a,:b]) => [3.1,4.9]
 		@fact paramd(ev) => [:a => 3.1 , :b => 4.9]
 
@@ -45,17 +46,18 @@ facts("Testing Eval object") do
 	end
 
 	context("testing moments") do
-		@fact dataMoment(ev2,:alpha) => [0.8]
-		@fact dataMomentW(ev2,:alpha) => [0.1]	
+		
+		@fact dataMoment(ev2,:alpha) => 0.8
+		@fact dataMomentW(ev2,:alpha) => 0.1	
 
 		setMoment(ev,:alpha,0.78)	
-		setMoment(ev2,DataFrame(name=["alpha"] , value = [0.78]))	
+		setMoment(ev2,DataFrame(name="alpha" , value = 0.78))	
 
-		@fact ev.moments[:alpha] => 0.78
-		@fact ev2.moments[:alpha] => 0.78
+		@fact ev.simMoments[:alpha] => 0.78
+		@fact ev2.simMoments[:alpha] => 0.78
 
 		setMoment(ev,[ :alpha => 0.78, :beta => 0.81] )	
-		@fact ev.moments[:beta] => 0.81
+		@fact ev.simMoments[:beta] => 0.81
 
 		setValue(ev,4.2)
 		@fact ev.value => 4.2
@@ -71,7 +73,7 @@ facts("Testing Eval object") do
 			ev2 = readEval(ff,"eval_test")
 			@fact ev2.status => ev.status
 			evs = readEvalArray(ff,"eval_list")
-			@fact evs[1].moments[:alpha] => ev.moments[:alpha]
+			@fact evs[1].simMoments[:alpha] => ev.simMoments[:alpha]
 			# readEval(ff,"eval_test",ev)
 		end
 

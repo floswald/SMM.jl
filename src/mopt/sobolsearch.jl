@@ -156,7 +156,7 @@ function sobolWeightedSearch(m::MProb,Ntot::Int64)
             end
         end
 
-        println( string(@sprintf( "iter:%3i bestval:%4.2f desn:%f" , Ntot - N, best_ev.value, cur_dens ), "bestpar:$(best_ev.params)" ))
+        println( string(@sprintf( "iter:%3i bestval:%4.2f dens:%f" , Ntot - N, best_ev.value, cur_dens ), "bestpar:$(best_ev.params)" ))
 
     end
 

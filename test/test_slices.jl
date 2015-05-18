@@ -4,8 +4,8 @@ module TestSlices
 
 	# initial value
 	pb    = ["m1" => [0.0,-2,2] , "m2" => [0.0,-2,2] ] 
-	moms = DataFrame(name=["m1","m2"],value=[0.0,0.0],weight=rand(2))
-	mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment(moms) MOpt.addEvalFunc(MOpt.objfunc_norm);
+	moms = DataFrame(name=["mu1","mu2"],value=[0.0,0.0],weight=rand(2))
+	mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment!(moms) MOpt.addEvalFunc!(MOpt.objfunc_norm);
 
 	# compute the slices
 	sl = MOpt.slices(mprob,30);

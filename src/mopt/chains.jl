@@ -15,19 +15,18 @@ type Chain <: AbstractChain
     infos        :: DataFrame
     parameters   :: DataFrame
     moments      :: DataFrame
-    params_nms   :: Array{Symbol,1}  # DataFrame names of parameters (i.e. exclusive of "id" or "iter", etc)
-    params2s_nms :: Array{Symbol,1}  # DataFrame names of parameters to sample
-    moments_nms  :: Array{Symbol,1}  # DataFrame names of moments
+    params_nms   :: Array{Symbol,1}  # names of parameters (i.e. exclusive of "id" or "iter", etc)
+    params2s_nms :: Array{Symbol,1}  # names of parameters to sample
+    moments_nms  :: Array{Symbol,1}  # names of moments
   
     function Chain(MProb,L)
-        # infos      = DataFrame(iter=0, evals = 0.0, accept = true, status = 0, exhanged_with=0, prob=0.0)
         infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L), eval_time=zeros(Float64,L))
         par_nms    = Symbol[ symbol(x) for x in ps_names(MProb) ]
         par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
         mom_nms    = Symbol[ symbol(x) for x in ms_names(MProb) ]
-        parameters = convert(DataFrame,zeros(L,length(par_nms)+1))
+        parameters = convert(DataFrame,zeros(L,length(par2s_nms)+1))
         moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
-        names!(parameters,[:iter, par_nms])
+        names!(parameters,[:iter, par2s_nms])
         names!(moments   ,[:iter, mom_nms])
         return new(0,infos,parameters,moments,par_nms,par2s_nms,mom_nms)
     end
@@ -36,25 +35,21 @@ end
 # methods for a single chain
 # ==========================
 
-function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}),all=false)
-    if all
-        c.parameters[i,:]
-    else
-        c.parameters[i,c.params2s_nms]
-    end
+# function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}),all=false)
+#     if all
+#         c.parameters[i,:]
+#     else
+#         c.parameters[i,c.params2s_nms]
+#     end
+# end
+function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}))
+    c.parameters[i,c.params2s_nms]
 end
-function parameters(c::AbstractChain;all=false)
-    if all
-        c.parameters
-    else
-        c.parameters[:,c.params2s_nms]
-    end
+function parameters(c::AbstractChain)
+    c.parameters[:,c.params2s_nms]
 end
 
-# FIXME
-# could do the same for moments? i.e. only return MProb.moments_subset?
-
-moments(c::AbstractChain)                       = c.moments[i,:]
+moments(c::AbstractChain)                       = c.moments
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
 moments(c::AbstractChain, i::Int)               = moments(c, i:i)
 infos(c::AbstractChain)                         = c.infos
@@ -62,10 +57,10 @@ infos(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:]
 infos(c::AbstractChain, i::Int)                 = infos(c, i:i)
 evals(c::AbstractChain, i::UnitRange{Int})      = c.infos[i,:evals]
 evals(c::AbstractChain, i::Int)                 = evals(c, i:i)
-allstats(c::AbstractChain,i::UnitRange{Int})    = cbind(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
-allstats(c::AbstractChain,i::Int)               = cbind(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
+allstats(c::AbstractChain,i::UnitRange{Int})    = hcat(c.infos[i,:],c.parameters[i,:],c.moments[i,:])
+allstats(c::AbstractChain,i::Int)               = hcat(infos(c, i:i),parameters(c, i:i),moments(c, i:i))
 
-# ---------------------------  BGP GETTERS / SETTERS ----------------------------
+# ---------------------------  CHAIN GETTERS / SETTERS ----------------------------
 export getEval, getLastEval, appendEval
 
 function getEval(chain::AbstractChain, i::Int64)
@@ -80,7 +75,9 @@ function getEval(chain::AbstractChain, i::Int64)
         end
     end
     for k in names(chain.moments)
-        ev.moments[k] = chain.moments[i,k]
+        if !(k in [:chain_id,:iter])
+            ev.simMoments[k] = chain.moments[i,k]
+        end
     end
 
     return (ev)
@@ -89,17 +86,20 @@ end
 getLastEval(chain :: AbstractChain) = getEval(chain::AbstractChain, chain.i - 1 )
 
 function appendEval!(chain::AbstractChain, ev:: Eval, ACC::Bool, prob::Float64)
-    # push!(chain.infos,[chain.i,val,ACC,status,0,prob])
     chain.infos[chain.i,:evals]  = ev.value
     chain.infos[chain.i,:prob]   = prob
     chain.infos[chain.i,:accept] = ACC
     chain.infos[chain.i,:status] = ev.status
     chain.infos[chain.i,:eval_time] = ev.time
-    for im in chain.moments_nms
-        chain.moments[chain.i,im] = ev.moments[im]
+    for k in names(chain.moments)
+        if !(k in [:chain_id,:iter])
+            chain.moments[chain.i,k] = ev.simMoments[k]
+        end
     end
-    for ip in chain.params_nms
-        chain.parameters[chain.i,ip] = ev.params[ip]
+    for k in names(chain.parameters)
+        if !(k in [:chain_id,:iter])
+            chain.parameters[chain.i,k] = ev.params[k]
+        end
     end
     return nothing
 end
@@ -111,22 +111,22 @@ end
 # but that doesn't work. errors with
 # no method for parameters(BGPChain)
 #
-# return an rbind of params from all chains
-function parameters(MC::Array,i::Union(Integer, UnitRange{Int});allp=false)
+# return an vcat of params from all chains
+function parameters(MC::Array,i::Union(Integer, UnitRange{Int}))
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
-    r = parameters(MC[1],i,allp) 
+    r = parameters(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,parameters(MC[ix],i,allp))
+            r = vcat(r,parameters(MC[ix],i))
         end
     end
     return r
 end
 
-function parameters(MC::Array,all::Bool)
-    parameters(MC,1:MC[1].i,allp=all)
+function parameters(MC::Array)
+    parameters(MC,1:MC[1].i)
 end
 
 
@@ -137,7 +137,7 @@ function moments(MC::Array,i::Union(Integer, UnitRange{Int}))
     r = moments(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,moments(MC[ix],i))
+            r = vcat(r,moments(MC[ix],i))
         end
     end
     return r
@@ -158,7 +158,7 @@ function infos(MC::Array,i::UnitRange{Int})
     r = infos(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,infos(MC[ix],i))
+            r = vcat(r,infos(MC[ix],i))
         end
     end
     return r
@@ -175,7 +175,7 @@ function evals(MC::Array,i::UnitRange{Int})
     r = infos(MC[1],i) 
     if length(MC)>1
         for ix=2:length(MC)
-            r = rbind(r,evals(MC[ix],i))
+            r = vcat(r,evals(MC[ix],i))
         end
     end
     return r
@@ -188,7 +188,7 @@ end
 
 
 function allstats(MC::Array) 
-    cbind(infos(MC),parameters(MC)[MC[1].params_nms],moments(MC)[MC[1].moments_nms])
+    hcat(infos(MC),parameters(MC)[MC[1].params_nms],moments(MC)[MC[1].moments_nms])
 end
 
 

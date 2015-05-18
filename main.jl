@@ -9,6 +9,9 @@ cd("$home/git/MOpt.jl")
 include("src/MOpt.jl")
 
 # test a full example
+MOpt.serialNormal("debug")
+
+
 include("src/cluster/examples/example-serial.jl")
 
 # to develop with tests: run this
@@ -29,8 +32,19 @@ include("test/runtests.jl")
 
 
 pb    = ["a" => [1.9,-2,2] , "b" => [-0.9,-1,1] ] 
-moms = DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))
-mprob = @> MProb() addSampledParam!(pb) addMoment(moms) addEvalFunc(MOpt.Testobj2)
+moms = MOpt.DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))
+
+# run a dummy objective fuction
+mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment!(moms) MOpt.addEvalFunc!(MOpt.Testobj2)
+MA = MOpt.MAlgoBGP(mprob,opts)
+MOpt.runMOpt!(MA)
+
+
+# run a bivariate normal objective fuction
+moms = MOpt.DataFrame(name=["mu1","mu2"],value=[0.0,0.0],weight=[0.1,0.1])
+mprob = @> MOpt.MProb() MOpt.addSampledParam!(pb) MOpt.addMoment!(moms) MOpt.addEvalFunc!(MOpt.objfunc_norm)
+MA = MOpt.MAlgoBGP(mprob,opts)
+MOpt.runMOpt!(MA)
 # moms = [
 # 	"alpha" => [ 0.8 , 0.02 ],
 # 	"beta"  => [ 0.8 , 0.02 ],
@@ -50,10 +64,10 @@ MOpt.plotSlices(mprob,x[1],x[2])
 using MOpt
 
 mprob = @> begin
- MProb()
- addParam!("c",-1)
- addSampledParam!("a",1.9,-2,2)
- addSampledParam!("b",-0.9,-1,1)
+ m = MProb()
+ addParam!(m,"c",-1)
+ addSampledParam!(m,"a")
+ addSampledParam!(m,"b",-0.9,-1,1)
 end
 
 

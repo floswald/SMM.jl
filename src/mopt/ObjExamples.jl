@@ -44,28 +44,31 @@ end
 
 export Testobj2,Testobj3,objfunc_norm
 
+# dummy objective function
+# this does not have a well defined minimum
+# so will not work for estimation
 function Testobj2(ev::Eval)
-
     start(ev)
-    info("in Test objective function")
+    # info("in Test objective function Testobj2")
 
     val = 0.0
-    for (k,v) in dataMoment(ev)
+    for (k,v) in dataMomentd(ev)
         setMoment(ev,k,v+2.2)
         val += (2.2)^2
     end
 
+	ev.status = 1
     setValue(ev,val)
     return ev
 end
 
-#'.. py:function:: objfunc_norm2
+#'.. py:function:: objfunc_norm
 #'
 #'   define a Test objective function
 function objfunc_norm(ev::Eval)
     
 	start(ev)
-	info("in Test objective function")
+	# info("in Test objective function objfunc_norm")
 
 	# extract parameters    
 	mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
@@ -75,21 +78,31 @@ function objfunc_norm(ev::Eval)
 	ns = 5000
 	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
 	randMultiNormal = MOpt.MvNormal(mu,sigma) 
-	simMoments      = mean(rand(randMultiNormal,ns),2)
+	simM            = mean(rand(randMultiNormal,ns),2)
+	simMoments = [:mu1 => simM[1], :mu2 => simM[2]]
+
 
 	# get data mometns
-	trueMoments = dataMoment(ev,[:m1,:m2]) 
+	trueMoments = dataMoment(ev,[:mu1,:mu2]) 
 	# same thing here, and use dataMomentsWeights for sd
 	# second argument can be optional
-
+	# get objective value: (data[i] - model[i]) / weight[i]
+	v = Dict{Symbol,Float64}()
+	for (k,mom) in dataMomentd(ev)
+		if haskey(dataMomentWd(ev),k)
+			v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
+		else
+			v[k] = ((simMoments[k] .- mom) ) .^2
+		end
+	end
+	setValue(ev, mean(collect(values(v))))
 	# value = data - model
-	setValue(ev, mean((simMoments - trueMoments).^2) )
+	# setValue(ev, mean((simMoments - trueMoments).^2) )
 
 	# also return the moments
-	# setMoment(ev, [:m1 => simMoments[1], :m2 => simMoments[2]])
-	mdf = DataFrame(name=["m1","m2"],value=simMoments[:])
-	setMoment(ev, mdf)
-	# we would also have a setter that takes a DataFrame
+	setMoment(ev, simMoments)
+	# mdf = DataFrame(name=["m1","m2"],value=simMoments[:])
+	# setMoment(ev, mdf)
 
 	ev.status = 1
 
@@ -98,6 +111,8 @@ function objfunc_norm(ev::Eval)
 
     return ev
 end
+
+
 
 #'.. py:function:: banana
 #'
@@ -110,9 +125,6 @@ function banana(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
     value = mean((data .- model).^2)
 
     momout = DataFrame(alpha = model)
-
-
-
     # we just want to find the lowest value - no moments involved.
     ret = ["value" => value, "params" => x, "time" => 1.0, "status" => 1, "moments" => momout]
     return ret

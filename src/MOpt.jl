@@ -8,35 +8,26 @@ using Distributions
 using Reexport
 using Lumberjack
 @reexport using DataFrames
-import Base.show, Base.transpose
+import Base.show
 
-# exports
-# ############
 
-export MProb, 
-       Chain,  
-       BGPChain,  
-       MAlgo,
-       MAlgoBGP,
-       Testobj, 
-       getindex,
-       setindex,
-       parameters,
-       evals,
-       infos,
-       allstats,
-       moments,
-       hist,
-       runMOpt!,
-       save,
-       slices,
-       transpose,
-       addParam!,
-       addSampledParam!
+# exports: Types
+export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval
+
+# exports: methods
+export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
+       runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, fill, 
+       dataMoment, dataMomentW, setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
 
 if !haskey(ENV,"IGNORE_HDF5")
        using HDF5
 end
+
+if VERSION < v"0.4.0-dev"
+    using Docile
+end
+@document
+
 
 # load files
 # ############
@@ -49,6 +40,7 @@ include("mopt/slices.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
+include("mopt/Examples.jl")
 include("mopt/sobolsearch.jl")
 
 
@@ -59,10 +51,6 @@ if Sys.OS_NAME == :Darwin
        using PyPlot
        include("mopt/plotting.jl")
 end
-
-
-
-
 
 end 	# module
 
