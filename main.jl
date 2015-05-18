@@ -9,10 +9,9 @@ cd("$home/git/MOpt.jl")
 include("src/MOpt.jl")
 
 # test a full example
-MOpt.serialNormal("debug")
+mm = MOpt.serialNormal()
 
 
-include("src/cluster/examples/example-serial.jl")
 
 # to develop with tests: run this
 include("test/test_MProb.jl")
@@ -29,7 +28,7 @@ include("test/runtests.jl")
 # to develop in main: run this
 # runnign examples:
 # MOpt.save(MA,"algo.h5")
-
+	
 
 pb    = ["a" => [1.9,-2,2] , "b" => [-0.9,-1,1] ] 
 moms = MOpt.DataFrame(name=["alpha","beta"],value=[0.0,0.0],weight=rand(2))

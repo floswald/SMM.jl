@@ -23,20 +23,19 @@ using MOpt
 # data are generated from a bivariate normal
 # with mu = [a,b] = [0,0], and cov = Diagonal([1,1])
 # aim: 
-# 1) sample [a',b'] from a space [-2,2] x [-1,1] and
+# 1) sample [a',b'] from a space [-2,2] and
 # 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
 #    and accepting/rejecting [a',b'] according to BGP
-# 3) S([a,b]) returns a summary of features of the data
+# 3) S([a,b]) returns a summary of features of the data, i.e. the simulated means
 
-# initial value
-p    = ["a" => 1.9 , "b" => -0.9]
-# param bounds
-pb   = [ "a" => [-2,2] , "b" => [-1,1] ]
-# data moments
-moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+pb    = ["p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] ] 
+moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=ones(2))
 
 # define a minization problem
-mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
+mprob = MProb() 
+addSampledParam!(mprob,pb) 
+addMoment!(mprob,moms) 
+addEvalFunc!(mprob,objfunc_norm)
 
 # look at slices of the model: 
 # how do objective function and
@@ -45,13 +44,12 @@ mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
 # the others fixed at initial value?
 
 obj_slices = MOpt.slices(mprob,30)
-MOpt.plotSlices(mprob,obj_slices[1],obj_slices[2])
 ```
 
-[![objective slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_objective.png)]()
+<!-- [![objective slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_objective.png)]()
 [![alpha slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_alpha.png)]()
 [![beta slices](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/slices_beta.png)]()
-
+ -->
 
 ```julia
 # setup a minization algorithm: options
@@ -65,8 +63,6 @@ opts =[
 	"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
 	"max_shock_sd"    => 1,							# initial sd of shock on hottest chain
 	"past_iterations" => 30,						# num of periods used to compute Cov(p)
-	"min_accept_tol"  => 100,						# ABC-MCMC cutoff for rejecting small improvements
-	"max_accept_tol"  => 100,						# ABC-MCMC cutoff for rejecting small improvements
 	"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
 	"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
 	"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
@@ -78,26 +74,6 @@ MA = MAlgoBGP(mprob,opts)
 # run it
 runMopt!(MA)
 
-# plot outputs
-plot(MA,"acc")
-# see first plot above
-```
-
-```julia
-plot(MA,"params_time")
-```
-
-[![params over time](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/pars_time.png)]()
-
-```julia
-plot(MA,"params_dist")
-```
-
-[![posterior](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/pars_dist.png)]()
-
-```julia
-# save results
-save(MA,MA["savefile"])
 ```
 
 ## Contributing
