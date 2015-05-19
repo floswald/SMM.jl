@@ -16,8 +16,8 @@ export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval
 
 # exports: methods
 export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
-       runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, fill, 
-       dataMoment, dataMomentW, setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
+       runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, 
+       dataMoment,dataMomentd, dataMomentW, dataMomentWd,setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
 
 if !haskey(ENV,"IGNORE_HDF5")
        using HDF5

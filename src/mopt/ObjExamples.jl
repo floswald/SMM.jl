@@ -83,7 +83,6 @@ function objfunc_norm(ev::Eval)
 
 
 	# get data mometns
-	trueMoments = dataMoment(ev,[:mu1,:mu2]) 
 	# same thing here, and use dataMomentsWeights for sd
 	# second argument can be optional
 	# get objective value: (data[i] - model[i]) / weight[i]
@@ -117,15 +116,18 @@ end
 #'.. py:function:: banana
 #'
 #'   define a Test objective function
-function banana(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1})
+function banana(ev::Eval)
 
-    model = 100 .* (x["b"] - x["a"].^2 ).^2 .+ (1.-x["a"])^2
+    start(ev)
+	p = paramd(ev)
+    model = 100 .* (p["b"] - p["a"].^2 ).^2 .+ (1.-p["a"])^2
     data  = 0.0
 
-    value = mean((data .- model).^2)
+    setValue(ev,model)
+    for (k,v) in dataMomentd(ev)
+        setMoment(ev,k,v+2.2)
+    end
+    finish(ev)
+    return ev
 
-    momout = DataFrame(alpha = model)
-    # we just want to find the lowest value - no moments involved.
-    ret = ["value" => value, "params" => x, "time" => 1.0, "status" => 1, "moments" => momout]
-    return ret
 end
