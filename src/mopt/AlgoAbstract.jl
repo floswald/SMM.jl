@@ -30,24 +30,11 @@ function runMOpt!( algo::MAlgo )
 
 	info("Starting estimation loop.")
 
-	# TODO
-	# currently this recreates the full dataset on each save
-	# if this is slow or otherwise problematic, do something like
-
-    # ff5 = h5open(filename, "w")
-	# g = ff5["parameters"]
-	# a_data = d_create(g, "a", datatype(Float64), dataspace(algo["maxiter"],1), "chunk", (ifloor(algo["maxiter"] / algo["save_frequency"]),1))
-	# b_data = d_create(g, "b", datatype(Float64), dataspace(algo["maxiter"],1), "chunk", (ifloor(algo["maxiter"] / algo["save_frequency"]),1))
-	# if saving...
-	# a_data[i-algo["save_frequency"] + 1 : i] = ...
-	# although needs to be done by chain...
-
 	# do iteration
 	for i in 1:algo["maxiter"]
 
-		t0 = time()
-
 		algo.i = i
+		t0 = time()
 
 		computeNextIteration!( algo )
 
@@ -57,6 +44,7 @@ function runMOpt!( algo::MAlgo )
 			@assert haskey(algo.opts,"filename")
 			if mod(i,algo["save_frequency"]) == 0
 				save(algo,algo["filename"])
+				info("saved data at iteration $i")
 			end
 		end
 

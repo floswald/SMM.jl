@@ -41,7 +41,7 @@ facts("Testing Eval object") do
 		@fact paramd(ev) => [:a => 3.1 , :b => 4.9]
 
 		myp = MyP()
-		fill(myp,ev)
+		MOpt.fill(myp,ev)
 		@fact myp.a => 3.1
 	end
 

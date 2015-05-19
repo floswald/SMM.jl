@@ -117,47 +117,34 @@ function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-    # info("computing next iteration")
+	incrementChainIter!(algo.MChains)
 
-    # check if we reached end of chain
-	if algo.i == algo["maxiter"]
-	    println("reached end of chain. goodbye.")
-	    return true
-	else
-		# else update iteration count on all chains
-		incrementChainIter!(algo.MChains)
+	# check algo index is the same on all chains
+	for ic in 1:algo["N"]
+		@assert algo.i == algo.MChains[ic].i
+	end
 
-		# check algo index is the same on all chains
-		for ic in 1:algo["N"]
-			@assert algo.i == algo.MChains[ic].i
-		end
+	# New Candidates
+	# --------------
+	if algo.i > 1
+		# MVN = getParamKernel(algo)	# returns a MvNormal object
+		MVN = getParamCovariance(algo)	# returns a Cov matrix
+		getNewCandidates!(algo,MVN)
+	end
 
-		# New Candidates
-		# --------------
-		if algo.i > 1
-			# MVN = getParamKernel(algo)	# returns a MvNormal object
-			MVN = getParamCovariance(algo)	# returns a Cov matrix
-			getNewCandidates!(algo,MVN)
-		end
+	# evaluate objective on all chains
+	# --------------------------------
+	v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
 
-		# evaluate objective on all chains
-		# --------------------------------
-		v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
+	# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
+	# -----------------------------------------------------------
+	doAcceptRecject!(algo,v)
 
-
-
-		# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
-		# -----------------------------------------------------------
-		doAcceptRecject!(algo,v)
-
-		# Part 2) EXCHANGE MOVES 
-		# ----------------------
-		# starting mixing in period 3
-		if algo.i>=2 && algo["N"] > 1 
-			exchangeMoves!(algo)
-		end
-
-		# Part 3) update sampling variances
+	# Part 2) EXCHANGE MOVES 
+	# ----------------------
+	# starting mixing in period 3
+	if algo.i>=2 && algo["N"] > 1 
+		exchangeMoves!(algo)
 	end
 end
 
@@ -206,9 +193,9 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 		    chain.shock_sd                     = chain.shock_sd * (1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) )
 		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
 		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
-		    debug("ACCEPTED: $ACC")
-		    debug("old value: $(eval_old.value)")
-		    debug("new value: $(eval_new.value)")
+		    # debug("ACCEPTED: $ACC")
+		    # debug("old value: $(eval_old.value)")
+		    # debug("new value: $(eval_new.value)")
 		end
 	end
 end

@@ -287,14 +287,13 @@ end
 
 facts("testing exchangeMoves") do
 
-
 	context("testing exchange Moves: some chains exchange") do
 
 	println("this test sets min_jump_prob=1 to make sure that there is a jump for sure")
 
-		opts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"min_accept_tol"=>0.05,"max_accept_tol"=>0.1,"print_level" => 3] 
+		newopts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"print_level" => 3] 
 
-		MA = MAlgoBGP(mprob,opts)
+		MA = MAlgoBGP(mprob,newopts)
 		MA.i = 1
 
 		MOpt.incrementChainIter!(MA.MChains)
@@ -340,120 +339,74 @@ facts("testing exchangeMoves") do
 end
 
 
-# facts("testing saving of algo") do
+facts("testing saving of algo") do
 
-# 	p    = ["a" => 0.9 , "b" => -0.9]
-# 	pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
-# 	moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+	MA = MAlgoBGP(mprob,opts)
+	runMOpt!(MA)
+	save(MA,joinpath(pwd(),"test.h5"))
 
-# 	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
+    vals = ASCIIString[]
+    keys = ASCIIString[]
+	for (k,v) in MA.opts
+		if typeof(v) <: Number
+			push!(vals,"$v")
+		else
+			push!(vals,v)
+		end
+		push!(keys,k)
+	end
+	ff5 = MOpt.h5open(joinpath(pwd(),"test.h5"),"r")
+	MAopts_keys = read(ff5,"algo/opts/keys")
+	MAopts_vals = read(ff5,"algo/opts/vals")
+	@fact all(MAopts_keys .== keys) => true
+	@fact all(MAopts_vals .== vals) => true
 
-# 	opts =[
-# 		"N"=>3,
-# 		"mode"=>"serial",
-# 		"maxiter"=> 100,
-# 		"filename"=> joinpath(pwd(),"test.h5"),
-# 		"maxtemp"=>100,
-# 		"print_level"=>2,
-# 		"min_shock_sd"=>0.1,
-# 		"max_shock_sd"=>1,
-# 		"past_iterations"=>30,
-# 		"min_accept_tol"=>100,
-# 		"max_accept_tol"=>100,
-# 		"min_disttol"=>0.1,
-# 		"max_disttol"=>0.1,
-# 		"min_jump_prob"=>0.05,
-# 		"max_jump_prob"=>0.2] 
+	ich = rand(1:MA["N"]) 	# pick a random chain
+	chain_a = read(ff5,"chain/$ich/parameters/a")
+	chain_b = read(ff5,"chain/$ich/parameters/b")
+	close(ff5)
+	# println(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a)
+	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
+	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:b]) .- chain_b .< 1e-6) => true
 
-# 	MA = MAlgoBGP(mprob,opts)
-# 	runMOpt!(MA)
-# 	save(MA,MA["filename"])
+	rm(joinpath(pwd(),"test.h5"))
 
-
-#     vals = ASCIIString[]
-#     keys = ASCIIString[]
-# 	for (k,v) in MA.opts
-# 		if typeof(v) <: Number
-# 			push!(vals,"$v")
-# 		else
-# 			push!(vals,v)
-# 		end
-# 		push!(keys,k)
-# 	end
-# 	ff5 = MOpt.h5open(MA["filename"],"r")
-# 	MAopts_keys = read(ff5,"algo/opts/keys")
-# 	MAopts_vals = read(ff5,"algo/opts/vals")
-# 	@fact all(MAopts_keys .== keys) => true
-# 	@fact all(MAopts_vals .== vals) => true
-
-# 	ich = rand(1:MA["N"]) 	# pick a random chain
-# 	chain_a = read(ff5,"chain/$ich/parameters/a")
-# 	chain_b = read(ff5,"chain/$ich/parameters/b")
-# 	close(ff5)
-# 	# println(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a)
-# 	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
-# 	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:b]) .- chain_b .< 1e-6) => true
-
-# 	rm(MA["filename"])
-
-# end
+end
 
 
-# facts("testing intermittent saving of algo") do
+facts("testing intermittent saving of algo") do
 
-# 	p    = ["a" => 0.9 , "b" => -0.9]
-# 	pb   = [ "a" => [-1,1] , "b" => [-1,1] ]
-# 	moms = DataFrame(moment=["alpha","beta"],data_value=[0.0,0.0],data_sd=rand(2))
+	opts["filename"] = joinpath(pwd(),"test.h5")
+	opts["save_frequency"] = 2
+	MA = MAlgoBGP(mprob,opts)
 
-# 	mprob = MProb(p,pb,MOpt.objfunc_norm2,moms)
+	# replicate run()
+	for i in 1:MA["maxiter"]
 
-# 	opts =[
-# 		"N"=>3,
-# 		"mode"=>"serial",
-# 		"maxiter"=> 100,
-# 		"filename"=> joinpath(pwd(),"test.h5"),
-# 		"save_frequency"=> 10,
-# 		"maxtemp"=>100,
-# 		"print_level"=>2,
-# 		"min_shock_sd"=>0.1,
-# 		"max_shock_sd"=>1,
-# 		"past_iterations"=>30,
-# 		"min_accept_tol"=>100,
-# 		"max_accept_tol"=>100,
-# 		"min_disttol"=>0.1,
-# 		"max_disttol"=>0.1,
-# 		"min_jump_prob"=>0.05,
-# 		"max_jump_prob"=>0.2] 
+		MA.i = i
+		MOpt.computeNextIteration!( MA )
 
-# 	MA = MAlgoBGP(mprob,opts)
+		if mod(i,MA["save_frequency"]) == 0
+			save(MA,MA["filename"])
+			# the saved dataset must now contain 
+			# all data up to iteration i
+			ff5 = MOpt.h5open(MA["filename"],"r")
+			ich = rand(1:MA["N"]) 	# pick a random chain
+			chain_a = read(ff5,"chain/$ich/parameters/a")
+			chain_b = read(ff5,"chain/$ich/parameters/b")
+			close(ff5)
 
-# 	# replicate run()
-# 	for i in 1:MA["maxiter"]
+			@fact length(find(chain_a.!=0)) => i
+			@fact length(find(chain_b.!=0)) => i
 
-# 		MA.i = i
-# 		MOpt.computeNextIteration!( MA )
+			@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
+			@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:b]) .- chain_b .< 1e-6) => true
+		end
+	end
 
-# 		if mod(i,MA["save_frequency"]) == 0
-# 			save(MA,MA["filename"])
-# 			# the saved dataset must now contain 
-# 			# all data up to iteration i
-# 			ff5 = MOpt.h5open(MA["filename"],"r")
-# 			ich = rand(1:MA["N"]) 	# pick a random chain
-# 			chain_a = read(ff5,"chain/$ich/parameters/a")
-# 			chain_b = read(ff5,"chain/$ich/parameters/b")
-# 			close(ff5)
+	rm(MA["filename"])
 
-# 			# @fact length(chain_a) => i
-# 			# @fact length(chain_b) => i
-
-# 			@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
-# 			@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:b]) .- chain_b .< 1e-6) => true
-# 		end
-# 	end
-
-# 	rm(MA["filename"])
-
-# end
+end
 
 
 
