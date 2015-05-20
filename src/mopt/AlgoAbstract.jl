@@ -29,12 +29,12 @@ function runMOpt!( algo::MAlgo )
 	# setup cluster if required
 
 	info("Starting estimation loop.")
+	t0 = time()
 
 	# do iteration
 	for i in 1:algo["maxiter"]
 
 		algo.i = i
-		t0 = time()
 
 		computeNextIteration!( algo )
 
@@ -49,26 +49,24 @@ function runMOpt!( algo::MAlgo )
 		end
 
 		# printing progress
-		t1 = round(time()-t0,2)
-		if Base.get(algo.opts,"print_level",0) > 2 
-			info("iteration $i took $t1 seconds")
-			println()
-			println(infos(algo.MChains,algo.i))
-		elseif Base.get(algo.opts,"print_level",0) > 1
+		if Base.get(algo.opts,"print_level",0) > 1
 			if mod(algo.i,10) == 0
-				info("iteration $i took $t1 seconds")
-				println()
 				println(infos(algo.MChains,algo.i))
 			end
 		elseif Base.get(algo.opts,"print_level",0) > 0
 			if mod(algo.i,100) == 0
-				info("iteration $i took $t1 seconds")
-				println()
 				println(infos(algo.MChains,algo.i))
 			end
 		end
 	end
-	info("Done with estimation loop.")
+	t1 = round(time()-t0,2)
+	algo.opts["time"] = t1
+	if haskey(algo.opts,"filename")
+		save(algo,algo["filename"])
+	else
+		warn("could not find 'filename' and did not save")
+	end
+	info("Done with estimation after $t1 seconds")
 end
 
 function ps2s_names(algo::MAlgo)

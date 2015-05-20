@@ -212,12 +212,29 @@ end
 
 function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::ASCIIString)
     for nn in names(dd)
-        if eltype(dd[nn]) <: Number
-            write(ff5,joinpath(path,string(nn)),convert(Array{Float64,1},dd[nn])) 
-        elseif eltype(dd[nn]) <: String
-            write(ff5,joinpath(path,string(nn)),convert(Array{ASCIIString,1},dd[nn])) 
+        col = dd[nn].data
+        if eltype(col) == Bool
+            col = convert(Array{Int64},col)
         end
+        # if eltype(dd[nn]) <: Number
+            write(ff5,joinpath(path,string(nn)),col) 
+            # write(ff5,joinpath(path,string(nn)),convert(Array{Float64,1},dd[nn])) 
+        # elseif eltype(dd[nn]) <: String
+        #     write(ff5,joinpath(path,string(nn)),convert(Array{ASCIIString,1},dd[nn])) 
+        # end
     end
+end
+
+function simpleDataFrameRead(ff5::HDF5File, path::ASCIIString)
+    colnames = names(ff5[path])
+    symnames = map(x->symbol(x),colnames)
+    n =  length(colnames)
+
+    columns = Array(Any, n)
+    for c in 1:n
+        columns[c] = read(ff5[joinpath(path,colnames[c])])
+    end
+    return DataFrame(columns,symnames)
 end
 
 

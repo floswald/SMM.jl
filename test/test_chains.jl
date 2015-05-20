@@ -124,8 +124,13 @@ facts("testing collectFields and fillinFields functions") do
 		@fact df[:b] => [0.0]
 
 	end
+end
 
-	
+
+facts("testing dataframe save and read") do
+
+
+
 
 end
 

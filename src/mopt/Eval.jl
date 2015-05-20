@@ -35,7 +35,7 @@ type Eval
 		this.dataMoments  = Dict{Symbol,Float64}()
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
-		this.simMoments      = Dict{Symbol,Float64}()
+		this.simMoments   = Dict{Symbol,Float64}()
 		return this
 	end
 

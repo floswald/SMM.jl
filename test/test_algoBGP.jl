@@ -339,35 +339,27 @@ facts("testing exchangeMoves") do
 end
 
 
-facts("testing saving of algo") do
+facts("testing reading and saving of algo") do
 
 	MA = MAlgoBGP(mprob,opts)
 	runMOpt!(MA)
 	save(MA,joinpath(pwd(),"test.h5"))
 
-    vals = ASCIIString[]
-    keys = ASCIIString[]
+    dd = Dict()
 	for (k,v) in MA.opts
-		if typeof(v) <: Number
-			push!(vals,"$v")
-		else
-			push!(vals,v)
-		end
-		push!(keys,k)
+		dd[k] = "$v"
 	end
-	ff5 = MOpt.h5open(joinpath(pwd(),"test.h5"),"r")
-	MAopts_keys = read(ff5,"algo/opts/keys")
-	MAopts_vals = read(ff5,"algo/opts/vals")
-	@fact all(MAopts_keys .== keys) => true
-	@fact all(MAopts_vals .== vals) => true
+
+	x = MOpt.readAlgoBGP(joinpath(pwd(),"test.h5"))
+	for (k,v) in dd
+		@fact haskey(dd,k) => true
+		@fact v == dd[k] => true
+	end
 
 	ich = rand(1:MA["N"]) 	# pick a random chain
-	chain_a = read(ff5,"chain/$ich/parameters/a")
-	chain_b = read(ff5,"chain/$ich/parameters/b")
-	close(ff5)
-	# println(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a)
-	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
-	@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:b]) .- chain_b .< 1e-6) => true
+	# cc = @where(x["parameters"],:chain_id .== ich)
+	@fact all(parameters(MA.MChains[ich])[:a] .- x["params"][x["params"][:chain_id] .== ich, :a] .< 1e-6) => true
+	@fact all(parameters(MA.MChains[ich])[:b] .- x["params"][x["params"][:chain_id] .== ich, :b] .< 1e-6) => true
 
 	rm(joinpath(pwd(),"test.h5"))
 
@@ -399,8 +391,8 @@ facts("testing intermittent saving of algo") do
 			@fact length(find(chain_a.!=0)) => i
 			@fact length(find(chain_b.!=0)) => i
 
-			@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:a]) .- chain_a .< 1e-6) => true
-			@fact all(convert(Array{Float64,1},parameters(MA.MChains[ich])[:b]) .- chain_b .< 1e-6) => true
+			@fact all(parameters(MA.MChains[ich])[:a] .- chain_a .< 1e-6) => true
+			@fact all(parameters(MA.MChains[ich])[:b] .- chain_b .< 1e-6) => true
 		end
 	end
 

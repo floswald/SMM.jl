@@ -319,9 +319,9 @@ end
 # save algo chains component-wise to HDF5 file
 function save(algo::MAlgoBGP, filename::ASCIIString)
     # step 1, create the file if it does not exist
+
     ff5 = h5open(filename, "w")
 
-	# saving the opts dict: complicated because values are numbers and strings.
     vals = ASCIIString[]
     keys = ASCIIString[]
 	for (k,v) in algo.opts
@@ -341,6 +341,32 @@ function save(algo::MAlgoBGP, filename::ASCIIString)
 	end
 
     close(ff5)
+end
+
+function readAlgoBGP(filename::ASCIIString)
+
+    ff5 = h5open(filename, "r")
+    keys = HDF5.read(ff5,"algo/opts/keys")
+    vals = HDF5.read(ff5,"algo/opts/vals")
+    opts = Dict()
+    for k in 1:length(keys)
+    	opts[keys[k]] = vals[k]
+    end
+
+    # each chain has 3 data.frames: parameters, moments and infos
+    n = int(opts["N"])
+    params = simpleDataFrameRead(ff5,joinpath("chain","1","parameters"))
+    moments = simpleDataFrameRead(ff5,joinpath("chain","1","moments"))
+    infos = simpleDataFrameRead(ff5,joinpath("chain","1","infos"))
+    if n>1
+    	for ich in 2:n
+    		params = vcat(params, simpleDataFrameRead(ff5,joinpath("chain","$ich","parameters")))
+    		moments = vcat(moments, simpleDataFrameRead(ff5,joinpath("chain","$ich","moments")))
+    		infos = vcat(infos, simpleDataFrameRead(ff5,joinpath("chain","$ich","infos")))
+    	end
+    end
+    close(ff5)
+    return ["opts" => opts, "params"=> params, "moments"=>moments,"infos"=>infos]
 end
 
 
