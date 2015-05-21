@@ -6,9 +6,9 @@
 export Slice,slices,add!,get
 
 type Slice
-    res  :: Dict
-    p0   :: Dict
-    m0   :: Dict
+    res  :: Dict    # result
+    p0   :: Dict    # initial param
+    m0   :: Dict    # data moments
 
     function Slice(p::Dict,m::Dict)
         this = new()
@@ -17,6 +17,7 @@ type Slice
         this.m0=deepcopy(m)
         return this
     end
+
 end
 
 function add!(s::Slice, p::Symbol, ev::Eval)
@@ -54,6 +55,7 @@ end
 #'   computes slices for the objective function
 function slices(m::MProb,npoints::Int,pad=0.1)
 
+    t0 = time()
     ranges = m.params_to_sample
 
     res = Slice(m.initial_value, m.moments)
@@ -63,6 +65,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
+        info("slicing along $pp")
 
         vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
             ev2 = deepcopy(ev)
@@ -75,9 +78,65 @@ function slices(m::MProb,npoints::Int,pad=0.1)
             add!( res, pp, v)
         end
     end  
+    t1 = round((time()-t0)/60)
+    info("done after $t1 minutes")
 
     return res 
-   
 end
 
+function write(s::Slice,fname::ASCIIString)
 
+    ff5 = h5open(fname, "w") 
+    # save res
+    for (k,v) in s.res
+        g = HDF5.g_create(ff5,string(k))
+        attrs(g)["Description"] = "Values and moments along paramter $k"
+        for (k2,v2) in v
+            g2 = HDF5.g_create(g,string(k2))
+            g2["value"] = v2[:value]
+            m = HDF5.g_create(g2,"moments")
+            for (km,vm) in v2[:moments]
+                m[string(km)] = vm
+            end
+        end
+    end
+    close(ff5)
+end
+
+function readSlice(fname::ASCIIString)
+
+    # get data
+    ff5 = h5open(fname, "r") 
+
+    sl = Slice(["dummyp"=>0],["dummym"=>2])
+    pnames = names(ff5)
+
+    res = Dict()
+
+    for p in pnames
+        g = ff5[p]
+        res[symbol(p)] = Dict()
+        for pp in names(g) 
+            res[symbol(p)][float(pp)] = Dict()
+            res[symbol(p)][float(pp)][:value] = read(g[pp]["value"])
+            res[symbol(p)][float(pp)][:moments] = Dict()
+            mnames = names(g[pp]["moments"])
+            for mn in mnames
+                md = g[pp]["moments"][mn]
+                res[symbol(p)][float(pp)][:moments][symbol(mn)] = read(md)
+            end
+        end
+    end
+
+    sl.res = res
+    return sl
+end
+
+function readSlice(remote::ASCIIString, fname::ASCIIString) 
+    a = tempname()
+    run(`scp $remote $a`)
+    println("saving locally to $a")
+    h5open(a, "r") do ff
+        return readSlice(ff)
+    end
+end
