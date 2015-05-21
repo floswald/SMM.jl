@@ -59,14 +59,14 @@ function runMOpt!( algo::MAlgo )
 			end
 		end
 	end
-	t1 = round(time()-t0,2)
+	t1 = round((time()-t0)/60,1)
 	algo.opts["time"] = t1
 	if haskey(algo.opts,"filename")
 		save(algo,algo["filename"])
 	else
 		warn("could not find 'filename' and did not save")
 	end
-	info("Done with estimation after $t1 seconds")
+	info("Done with estimation after $t1 minutes")
 end
 
 function ps2s_names(algo::MAlgo)
