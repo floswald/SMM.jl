@@ -132,11 +132,9 @@ function readSlice(fname::ASCIIString)
     return sl
 end
 
-function readSlice(remote::ASCIIString, fname::ASCIIString) 
+function readSliceRemote(remote::ASCIIString) 
     a = tempname()
     run(`scp $remote $a`)
     println("saving locally to $a")
-    h5open(a, "r") do ff
-        return readSlice(ff)
-    end
+    return readSlice(a)
 end

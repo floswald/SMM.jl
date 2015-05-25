@@ -68,14 +68,14 @@ facts("Testing Eval object") do
 			print("$ev")
 			write(ff,"eval_test",ev)
 			write(ff,"eval_list",[ev,ev2])
-			close("test5.h5")
+			close(ff)
 		end
 		h5open("test5.h5", "r") do ff
 			ev2 = readEval(ff,"eval_test")
 			@fact ev2.status => ev.status
 			evs = readEvalArray(ff,"eval_list")
 			@fact evs[1].simMoments[:alpha] => ev.simMoments[:alpha]
-			close("test5.h5")
+			close(ff)
 			# readEval(ff,"eval_test",ev)
 		end
 		rm("test5.h5")
