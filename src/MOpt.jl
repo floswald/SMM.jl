@@ -8,11 +8,12 @@ using Distributions
 using Reexport
 using Lumberjack
 @reexport using DataFrames
-import Base.show
+import Base.show, Base.std
+using GLM
 
 
 # exports: Types
-export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval
+export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval, AbstractChain
 
 # exports: methods
 export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
@@ -42,6 +43,7 @@ include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
 include("mopt/Examples.jl")
 include("mopt/sobolsearch.jl")
+include("mopt/econometrics.jl")
 
 
 # for now plotting only on my box because

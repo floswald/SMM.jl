@@ -49,6 +49,12 @@ function parameters(c::AbstractChain)
     c.parameters[:,c.params2s_nms]
 end
 
+function parameters_ID(c::AbstractChain, i::Union(Integer, UnitRange{Int}))
+    c.parameters[i,[:chain_id,:iter,c.params2s_nms]]
+end
+function parameters_ID(c::AbstractChain)
+    c.parameters[:,[:chain_id,:iter,c.params2s_nms]]
+end
 moments(c::AbstractChain)                       = c.moments
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
 moments(c::AbstractChain, i::Int)               = moments(c, i:i)
@@ -125,10 +131,26 @@ function parameters(MC::Array,i::Union(Integer, UnitRange{Int}))
     return r
 end
 
-function parameters(MC::Array)
-    parameters(MC,1:MC[1].i)
+function parameters_ID(MC::Array,i::Union(Integer, UnitRange{Int}))
+    if !isa(MC[1],AbstractChain)
+        error("must give array of AbstractChain") 
+    end
+    r = parameters_ID(MC[1],i) 
+    if length(MC)>1
+        for ix=2:length(MC)
+            r = vcat(r,parameters_ID(MC[ix],i))
+        end
+    end
+    return r
 end
 
+function parameters(MC::Array)
+    parameters(MC,1:nrow(MC[1].parameters))
+end
+
+function parameters_ID(MC::Array)
+    parameters_ID(MC,1:nrow(MC[1].parameters))
+end
 
 function moments(MC::Array,i::Union(Integer, UnitRange{Int}))
     if !isa(MC[1],AbstractChain)
