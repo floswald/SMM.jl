@@ -33,7 +33,10 @@ function get(s::Slice, p::Symbol, m::Symbol)
         y =  [ v[:moments][m] for (k,v) in s.res[p] ]
     end
 
-    return [ :x => convert(Array{Float64,1},x) , :y => convert(Array{Float64,1},y) ]
+    xx = convert(Array{Float64,1},x)
+    ix = sortperm(xx)
+
+    return [ :x => xx[ix] , :y => convert(Array{Float64,1},y)[ix] ]
 end
 
 # function get(s::Slice, p::Symbol)
