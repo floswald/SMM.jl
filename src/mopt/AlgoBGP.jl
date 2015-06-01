@@ -203,12 +203,15 @@ end
 function exchangeMoves!(algo::MAlgoBGP)
 	# for all chains
 	for ch in 1:algo["N"]
-		oldval = evals(algo.MChains[ch],algo.MChains[ch].i)[1]
+		e1 = getEval(algo.MChains[ch],algo.MChains[ch].i)
+		# oldval = evals(algo.MChains[ch],algo.MChains[ch].i)[1]
 		# 1) find all other chains with value +/- x% of chain ch
 		close = Int64[]  # vector of indices of "close" chains
 		for ch2 in 1:algo["N"]
 			if ch != ch2
-				tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
+				e2 = getEval(algo.MChains[ch2],algo.MChains[ch2].i)
+				tmp = abs(e2.value - e1.value) / abs(e1.value)
+				# tmp = abs(evals(algo.MChains[ch2],algo.MChains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
 				if tmp < algo.MChains[ch].dist_tol
 					push!(close,ch2)
 				end
