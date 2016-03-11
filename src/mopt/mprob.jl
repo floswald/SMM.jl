@@ -1,6 +1,5 @@
 
 """
-
 # Minimisation Problem: `MProb`
 
 A moment minimsation problem is defined by an objective function that
@@ -78,7 +77,7 @@ Add parameters to be sampled to an `MProb`.
 function addSampledParam!(m::MProb,name::Any,init::Any, lb::Any, ub::Any)
   @assert ub>lb
   m.initial_value[symbol(name)] = init 
-  m.params_to_sample[symbol(name)] = [ :lb => lb , :ub => ub]
+  m.params_to_sample[symbol(name)] = Dict( :lb => lb , :ub => ub)
   return m
 end
 
@@ -106,7 +105,7 @@ add a single moment to the mprob.
 `weight`: weight in the objective function
 """
 function addMoment!(m::MProb,name::Symbol,value,weight)
-  m.moments[symbol(name)] = [ :value => value , :weight => weight ]
+  m.moments[symbol(name)] = Dict( :value => value , :weight => weight )
   return m 
 end
 
@@ -129,8 +128,6 @@ function addMoment!(m::MProb,d::DataFrame)
   return m 
 end
 
-"Add moments to an MProb"
-(addMoment!,MProb,Any...)
 
 # -------------------- ADDING OBJ FUNCTION --------------------
 function addEvalFunc!(m::MProb,f::Function)

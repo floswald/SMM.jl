@@ -21,7 +21,7 @@ type Slice
 end
 
 function add!(s::Slice, p::Symbol, ev::Eval)
-    s.res[p][ ev.params[p] ] = [:moments => ev.simMoments, :value => ev.value ]
+    s.res[p][ ev.params[p] ] = Dict(:moments => ev.simMoments, :value => ev.value )
 end
 
 function get(s::Slice, p::Symbol, m::Symbol)
@@ -36,7 +36,7 @@ function get(s::Slice, p::Symbol, m::Symbol)
     xx = convert(Array{Float64,1},x)
     ix = sortperm(xx)
 
-    return [ :x => xx[ix] , :y => convert(Array{Float64,1},y)[ix] ]
+    return Dict( :x => xx[ix] , :y => convert(Array{Float64,1},y)[ix] )
 end
 
 # function get(s::Slice, p::Symbol)
@@ -111,7 +111,7 @@ function readSlice(fname::ASCIIString)
     # get data
     ff5 = h5open(fname, "r") 
 
-    sl = Slice(["dummyp"=>0],["dummym"=>2])
+    sl = Slice(Dict("dummyp"=>0),Dict("dummym"=>2))
     pnames = names(ff5)
 
     res = Dict()

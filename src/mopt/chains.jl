@@ -35,21 +35,21 @@ end
 # methods for a single chain
 # ==========================
 
-# function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}),all=false)
+# function parameters(c::AbstractChain, i::Union{Integer, UnitRange{Int}),all=false)
 #     if all
 #         c.parameters[i,:]
 #     else
 #         c.parameters[i,c.params2s_nms]
 #     end
 # end
-function parameters(c::AbstractChain, i::Union(Integer, UnitRange{Int}))
+function parameters(c::AbstractChain, i::Union{Integer, UnitRange{Int}})
     c.parameters[i,c.params2s_nms]
 end
 function parameters(c::AbstractChain)
     c.parameters[:,c.params2s_nms]
 end
 
-function parameters_ID(c::AbstractChain, i::Union(Integer, UnitRange{Int}))
+function parameters_ID(c::AbstractChain, i::Union{Integer, UnitRange{Int}})
     c.parameters[i,[:chain_id,:iter,c.params2s_nms]]
 end
 function parameters_ID(c::AbstractChain)
@@ -118,7 +118,7 @@ end
 # no method for parameters(BGPChain)
 #
 # return an vcat of params from all chains
-function parameters(MC::Array,i::Union(Integer, UnitRange{Int}))
+function parameters(MC::Array,i::Union{Integer, UnitRange{Int}})
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
@@ -131,7 +131,7 @@ function parameters(MC::Array,i::Union(Integer, UnitRange{Int}))
     return r
 end
 
-function parameters_ID(MC::Array,i::Union(Integer, UnitRange{Int}))
+function parameters_ID(MC::Array,i::Union{Integer, UnitRange{Int}})
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
@@ -152,7 +152,7 @@ function parameters_ID(MC::Array)
     parameters_ID(MC,1:nrow(MC[1].parameters))
 end
 
-function moments(MC::Array,i::Union(Integer, UnitRange{Int}))
+function moments(MC::Array,i::Union{Integer, UnitRange{Int}})
     if !isa(MC[1],AbstractChain)
         error("must give array of AbstractChain") 
     end
@@ -226,13 +226,13 @@ function incrementChainIter!(MC::Array)
 end
 
 
-function saveChainToHDF5(chain::AbstractChain, ff5::HDF5File,path::ASCIIString)
+function saveChainToHDF5(chain::AbstractChain, ff5::HDF5File,path::AbstractString)
     simpleDataFrameSave(chain.parameters,ff5,joinpath(path,"parameters"))
     simpleDataFrameSave(chain.infos,ff5, joinpath(path,"infos"))
     simpleDataFrameSave(chain.moments,ff5, joinpath(path,"moments"))
 end
 
-function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::ASCIIString)
+function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::AbstractString)
     for nn in names(dd)
         col = dd[nn].data
         if eltype(col) == Bool
@@ -247,7 +247,7 @@ function simpleDataFrameSave(dd::DataFrame,ff5::HDF5File, path::ASCIIString)
     end
 end
 
-function simpleDataFrameRead(ff5::HDF5File, path::ASCIIString)
+function simpleDataFrameRead(ff5::HDF5File, path::AbstractString)
     colnames = names(ff5[path])
     symnames = map(x->symbol(x),colnames)
     n =  length(colnames)

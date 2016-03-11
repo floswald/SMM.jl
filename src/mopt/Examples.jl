@@ -11,14 +11,14 @@ function serialNormal(logmode="debug")
 	# 3) S([a,b]) returns a summary of features of the data
 
 	# initial value
-	pb    = ["p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] ] 
+	pb    = Dict("p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] )
 	moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=ones(2))
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	addMoment!(mprob,moms) 
 	addEvalFunc!(mprob,objfunc_norm)
 
-	opts =[
+	opts =Dict(
 		"N"               => 1,							# number of MCMC chains
 		"maxiter"         => 500,						# max number of iterations
 		"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
@@ -32,7 +32,7 @@ function serialNormal(logmode="debug")
 		"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
 		"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
 		"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
-		"max_jump_prob"   => 0.2]						# prob of jumps from hottest chain
+		"max_jump_prob"   => 0.2)						# prob of jumps from hottest chain
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)

@@ -5,10 +5,10 @@ module TestAlgoBGP
 
 using FactCheck, DataFrames, MOpt, Lazy
 
-pb   = [ "a" => [0.3, 0,1] , "b" => [0.4,0,1]]
-moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
+pb   = Dict( "a" => [0.3; 0;1] , "b" => [0.4;0;1])
+moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8;0.7;0.5],weight=rand(3))
 mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
-opts =["N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1] 
+opts =Dict("N"=>5,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1)
 
 facts("testing MAlgoBGP Constructor") do
 
@@ -87,8 +87,8 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		MOpt.incrementChainIter!(MA.MChains)
 
 		# set a parameter vector on all chains using appendEval!
-		myp = [:a => rand() , :b => rand()]
-		mym = [ :alpha => rand(), :beta => rand(), :gamma => rand() ]
+		myp = Dict(:a => rand() , :b => rand())
+		mym = Dict( :alpha => rand(), :beta => rand(), :gamma => rand() )
 		ev = Eval(); ev.value   =  1.1; ev.params  = myp; ev.time = 0; ev.status  = 1
 		setMoment(ev,mym)
 		for ich in 1:MA["N"]
@@ -105,7 +105,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# get parameter_to_sample names as symbols 
 
 		# get covariance matrix of those
-		VV = cov( array(pars[:, ]  )) + 0.0001 * Diagonal([1 for p in pb])
+		VV = cov( convert(Array,pars[:, ]) ) + 0.0001 * Diagonal([1 for p in pb])
 
 		# get kernel and check VV
 		myVV = MOpt.getParamCovariance(MA)
@@ -129,7 +129,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# must correspond to entry number ix plus a shock from the kernel
 		ich = 1; ix = 10
 		MVN = MOpt.MvNormal( myVV.*MA.MChains[ich].tempering )
-		shockd = Dict(MOpt.ps2s_names(MA.m),rand(MVN) )
+		shockd = Dict(zip(MOpt.ps2s_names(MA.m),rand(MVN) ))
 
 		eval_before = getLastEval(MA.MChains[ich]).params # get a dataframe of row ix-1
 		MOpt.jumpParams!(MA,ich,shockd)
@@ -155,8 +155,8 @@ facts("testing swaprows") do
 
 			# set a parameter vector on all chains using appendEval!
 			for ich in 1:MA["N"]
-				myp = [:a => rand() , :b => rand()]
-				mym = [ :alpha => rand(), :beta => rand(), :gamma => rand() ]
+				myp = Dict(:a => rand() , :b => rand())
+				mym = Dict( :alpha => rand(), :beta => rand(), :gamma => rand() )
 				ev = Eval(); ev.value   =  1.1; ev.params  = myp; ev.time = 0; ev.status  = 1
 				setMoment(ev,mym)
 				MOpt.appendEval!(MA.MChains[ich],ev,true,1.0)
@@ -165,27 +165,27 @@ facts("testing swaprows") do
 		end
 
 		# get a pair (i,j) of chains
-		pair = (1,3)
+		pair = Pair(1,3)
 
 		# get params and moms
-		p1 = parameters(MA.MChains[pair[1]],ix)
-		p2 = parameters(MA.MChains[pair[2]],ix)
-		m1 = MA.MChains[pair[1]].moments[ix,MA.MChains[pair[1]].moments_nms]
-		m2 = MA.MChains[pair[2]].moments[ix,MA.MChains[pair[2]].moments_nms]
-		v1 = evals(MA.MChains[pair[1]],ix)
-		v2 = evals(MA.MChains[pair[2]],ix)
+		p1 = parameters(MA.MChains[pair.first ],ix)
+		p2 = parameters(MA.MChains[pair.second],ix)
+		m1 = MA.MChains[pair.first ].moments[ix,MA.MChains[pair.first ].moments_nms]
+		m2 = MA.MChains[pair.second].moments[ix,MA.MChains[pair.second].moments_nms]
+		v1 = evals(MA.MChains[pair.first ],ix)
+		v2 = evals(MA.MChains[pair.second],ix)
 
 
 		# exchange
 		MOpt.swapRows!(MA,pair,ix)
 
 		# check parameters
-		@fact parameters(MA.MChains[pair[1]],ix) == p2 => true
-		@fact parameters(MA.MChains[pair[2]],ix) == p1 => true
-		@fact MA.MChains[pair[1]].moments[ix,MA.MChains[pair[1]].moments_nms] == m2 => true
-		@fact MA.MChains[pair[2]].moments[ix,MA.MChains[pair[2]].moments_nms] == m1 => true
-		@fact evals(MA.MChains[pair[1]],ix) == v2 => true
-		@fact evals(MA.MChains[pair[2]],ix) == v1 => true
+		@fact parameters(MA.MChains[pair.first ],ix) == p2 => true
+		@fact parameters(MA.MChains[pair.second],ix) == p1 => true
+		@fact MA.MChains[pair.first ].moments[ix,MA.MChains[pair.first ].moments_nms] == m2 => true
+		@fact MA.MChains[pair.second].moments[ix,MA.MChains[pair.second].moments_nms] == m1 => true
+		@fact evals(MA.MChains[pair.first ],ix) == v2 => true
+		@fact evals(MA.MChains[pair.second],ix) == v1 => true
 
 	end
 
@@ -251,9 +251,9 @@ facts("testing accept reject") do
 		# assign a very good bad value on each chain: 
 		for i in 1:length(v) 
 			v1[i].value = v1[i].value - 100.0
-			setMoment(v1[i],  [ :alpha => rand(), :beta => rand(), :gamma => rand() ] )
+			setMoment(v1[i],  Dict( :alpha => rand(), :beta => rand(), :gamma => rand() ))
 			v2[i].value = v2[i].value + 100.0
-			setMoment(v2[i],  [ :alpha => rand(), :beta => rand(), :gamma => rand() ] )
+			setMoment(v2[i],  Dict( :alpha => rand(), :beta => rand(), :gamma => rand() ) )
 		end
 		MAs = MAlgo[]
 		push!(MAs,deepcopy(MA),deepcopy(MA))
@@ -291,7 +291,7 @@ facts("testing exchangeMoves") do
 
 	println("this test sets min_jump_prob=1 to make sure that there is a jump for sure")
 
-		newopts =["N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"print_level" => 3] 
+		newopts =Dict("N"=>20,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>100,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.01,"max_disttol"=>0.01,"min_jump_prob"=>1.0,"max_jump_prob"=>1.0,"print_level" => 3) 
 
 		MA = MAlgoBGP(mprob,newopts)
 		MA.i = 1

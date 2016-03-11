@@ -36,7 +36,7 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
 	t0 = time() - t0
 
 	# return a dict
-	ret = ["value" => v, "params" => deepcopy(x), "time" => t0, "status" => status, "moments" => mout]
+	ret = Dict("value" => v, "params" => deepcopy(x), "time" => t0, "status" => status, "moments" => mout)
 	return ret
 
 end
@@ -79,7 +79,7 @@ function objfunc_norm(ev::Eval)
 	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
 	randMultiNormal = MOpt.MvNormal(mu,sigma) 
 	simM            = mean(rand(randMultiNormal,ns),2)
-	simMoments = [:mu1 => simM[1], :mu2 => simM[2]]
+	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
 
 	# get data mometns

@@ -86,13 +86,9 @@ function cutoff(ag::AGrid)
 end
 
 # decides if value should be evaluated
-function shouldEval(ag::AGrid, x::Array{Float64,1})
-	(d,v) = 
-
-
-
-
-end
+# function shouldEval(ag::AGrid, x::Array{Float64,1})
+# 	(d,v) = 
+# end
 
 
 end

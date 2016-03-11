@@ -5,9 +5,12 @@
 
 
 
-@doc """
+"""
+# Compute Score of moments
+
 Computes an approximation to the simulated score of moments at the optimal parameter value. This is the matrix of derivatives of moments w.r.t. parameters around the best parameter value.
-""" ->
+
+"""
 function score(MA::MAlgo)
 
 	p = parameters_ID(MA.MChains)
@@ -34,9 +37,9 @@ end
 
 
 
-@doc """
+"""
 Computes standard errors of MCMC estimates
-""" ->
+"""
 function std(MA::MAlgo)
 
 	Sd = score(MA)

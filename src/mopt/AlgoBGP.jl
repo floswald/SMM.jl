@@ -28,14 +28,14 @@ type BGPChain <: AbstractChain
 	shock_sd   ::Float64 # sd of shock to 
 
 	function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob)
-		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock,zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
+		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
 		parameters = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps2s_names(MProb)))))
 		moments    = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
 		par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
 		par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
 		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
-		names!(parameters,[:chain_id,:iter, par2s_nms])
-		names!(moments   ,[:chain_id,:iter, mom_nms])
+		names!(parameters,[:chain_id;:iter; par2s_nms])
+		names!(moments   ,[:chain_id;:iter; mom_nms])
 		return new(id,0,infos,parameters,moments,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
     end
 end
@@ -51,7 +51,7 @@ type MAlgoBGP <: MAlgo
     current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
     MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
   
-    function MAlgoBGP(m::MProb,opts=["N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100])
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100))
 
 		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
 		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
@@ -222,25 +222,25 @@ function exchangeMoves!(algo::MAlgoBGP)
 			if rand() < algo.MChains[ch].jump_prob
 				ex_with =sample(close)
 			#	debug("making an exchange move for chain $ch with chain $ex_with set:$close")
-				swapRows!(algo,(ch,ex_with),algo.i)
+				swapRows!(algo,Pair(ch,ex_with),algo.i)
 			end
 		end
 	end
 
 end
 
-function swapRows!(algo::MAlgoBGP,pair::(Int,Int),i::Int)
+function swapRows!(algo::MAlgoBGP,pair::Pair,i::Int)
 
-	e1 = getEval(algo.MChains[pair[1]],i)
-	e2 = getEval(algo.MChains[pair[2]],i)
+	e1 = getEval(algo.MChains[pair.first] ,i)
+	e2 = getEval(algo.MChains[pair.second],i)
 
 	# swap
-	appendEval!(algo.MChains[pair[1]],e2)
-	appendEval!(algo.MChains[pair[2]],e1)
+	appendEval!(algo.MChains[pair.first  ],e2)
+	appendEval!(algo.MChains[pair.second ],e1)
 
 	# make a note in infos
-	algo.MChains[pair[1]].infos[i,:exchanged_with] = pair[2]
-	algo.MChains[pair[2]].infos[i,:exchanged_with] = pair[1]
+	algo.MChains[pair.first].infos[i,:exchanged_with] = pair.second
+	algo.MChains[pair.second].infos[i,:exchanged_with] = pair.first
 
 end
 
@@ -265,7 +265,7 @@ function getParamCovariance(algo::MAlgoBGP)
 
 	# compute Var-Cov matrix of parameters_to_sample
 	# plus some small random noise
-	VV = cov(array(pardf[:, ps2s_names(algo.m)])) + 0.0001 * Diagonal([1 for i=1:length(ps2s_names(algo.m))])
+	VV = cov(convert(Array,pardf[:, ps2s_names(algo.m)])) + 0.0001 * Diagonal([1 for i=1:length(ps2s_names(algo.m))])
 	return VV
 
 	# setup a MvNormal
@@ -295,7 +295,7 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 
 		# shock parameters on chain index ch
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
-		shock = Dict(ps2s_names(algo) , shock)
+		shock = Dict(zip(ps2s_names(algo) , shock))
 
 		# debug("shock to parameters on chain $ch :")
 		# debug("shock = $shock")
@@ -320,7 +320,7 @@ end
 
 
 # save algo chains component-wise to HDF5 file
-function save(algo::MAlgoBGP, filename::ASCIIString)
+function save(algo::MAlgoBGP, filename::AbstractString)
     # step 1, create the file if it does not exist
 
     ff5 = h5open(filename, "w")
@@ -369,7 +369,7 @@ function readAlgoBGP(filename::ASCIIString)
     	end
     end
     close(ff5)
-    return ["opts" => opts, "params"=> params, "moments"=>moments,"infos"=>infos]
+    return Dict("opts" => opts, "params"=> params, "moments"=>moments,"infos"=>infos)
 end
 
 

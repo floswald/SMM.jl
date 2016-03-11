@@ -160,7 +160,7 @@ function sobolWeightedSearch(m::MProb,Ntot::Int64)
 
     end
 
-    return [ :evals => res, :X => X, :V=>V]
+    return Dict( :evals => res, :X => X, :V=>V)
 end
 
 

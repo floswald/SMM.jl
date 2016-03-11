@@ -1,9 +1,9 @@
 
 
-@doc """
-### `Eval` type for managing function evaluations 
+"""
+# `Eval` type for managing function evaluations 
 
-#### fields 
+## fields 
 
 *`value`: current function value
 *`time`: initial timing
@@ -14,7 +14,7 @@
 *`status`: Int error status
 *`options`: Dict of options
 
-""" ->
+""" 
 type Eval
 
 	value        :: Float64
@@ -26,7 +26,6 @@ type Eval
 	status       :: Int64
 	options      :: Dict
 
-	"Eval Default Constructor: creates an empty `Eval` instance"
 	function Eval()
 		this              = new()
 		this.value        = -1
@@ -39,12 +38,6 @@ type Eval
 		return this
 	end
 
-	"""Eval Constructor for moment dataframe:
-
-	* `mom`: DataFrame with moments. Needs 3 columns named `name`, `value` and `weight`
-	* `p`: Dict of parameters
-
-	"""
 	function Eval(p::Dict,mom::DataFrame)
 		this = new()
 		this.value        = -1
@@ -74,12 +67,6 @@ type Eval
 		return this
 	end
 
-	"""Eval Constructor for `MProb` and param dict:
-
-	* `MProb`: an `MProb` object
-	* `p`: Dict of parameters
-
-	"""
 	function Eval(mprob::MProb,p::Dict)
 		this              = new()
 		this.value        = -1
@@ -103,12 +90,6 @@ type Eval
 		return this
 	end
 
-	"""Eval Constructor for moment and param dicts:
-
-	* `m`: Dict of datamoments without weights
-	* `p`: Dict of parameters
-
-	"""
 	function Eval(p::Dict{Symbol,Float64},m::Dict{Symbol,Float64})
 		this              = Eval()
 		this.value        = -1
@@ -122,28 +103,22 @@ type Eval
 		return this
 	end
 
-	"""Eval Constructor for moment and param dicts:
+	# function Eval(p::Dict{Symbol,Float64},m::Dict{Symbol,(Float64,Float64)})
+	# 	this              = Eval()
+	# 	this.value        = -1
+	# 	this.time         = time()
+	# 	this.status       = -1
+	# 	this.dataMoments  = Dict{Symbol,Float64}()
+	# 	this.dataMomentsW = Dict{Symbol,Float64}()
+	# 	for kk in keys(m)
+	# 		this.dataMoments[kk]  = m[kk][1]
+	# 		this.dataMomentsW[kk] = m[kk][2]
+	# 	end
+	# 	this.params       = p
+	# 	this.simMoments   = Dict{Symbol,Float64}()
 
-	* `m`: Dict of datamoments with weights
-	* `p`: Dict of parameters
-
-	"""
-	function Eval(p::Dict{Symbol,Float64},m::Dict{Symbol,(Float64,Float64)})
-		this              = Eval()
-		this.value        = -1
-		this.time         = time()
-		this.status       = -1
-		this.dataMoments  = Dict{Symbol,Float64}()
-		this.dataMomentsW = Dict{Symbol,Float64}()
-		for kk in keys(m)
-			this.dataMoments[kk]  = m[kk][1]
-			this.dataMomentsW[kk] = m[kk][2]
-		end
-		this.params       = p
-		this.simMoments   = Dict{Symbol,Float64}()
-
-		return this
-	end
+	# 	return this
+	# end
 end
 
 function start(ev::Eval)
@@ -159,11 +134,6 @@ param(ev::Eval,ll::Array{Any,1})       = Float64[ ev.params[i] for i in ll]
 param(ev::Eval)                        = param(ev,collect(keys(ev.params)))
 param(ev::Eval,s::Symbol)              = ev.params[s]
 
-"Obtain value(s) of selected parameter(s)"
-(param,Eval,Any...)
-
-
-"Obtain all paramter values as dict"
 paramd(ev::Eval)                       = ev.params
 
 
@@ -171,25 +141,23 @@ dataMoment(ev::Eval,ll::Array{Symbol,1})  = Float64[ ev.dataMoments[i] for i in 
 dataMoment(ev::Eval,s::Symbol)         = ev.dataMoments[s]
 dataMoment(ev::Eval)                      = dataMoment(ev,collect(keys(ev.dataMoments)))
 
-"Obtain value(s) of selected moment(s)"
-(dataMoment,Eval,Any...)
 
-"Obtain all data momoents as dict"
+"""
+Obtain all data momoents as dict
+"""
 dataMomentd(ev::Eval) = ev.dataMoments
 
 dataMomentW(ev::Eval)                      = dataMomentW(ev,collect(keys(ev.dataMomentW)))
 dataMomentW(ev::Eval,ll::Array{Symbol,1}) = Float64[ ev.dataMomentsW[i] for i in ll]
 dataMomentW(ev::Eval,s::Symbol)= ev.dataMomentsW[s]
 
-"Obtain value(s) of selected moment weight(s)"
-(dataMomentW,Eval,Any...)
 
-
-"Obtain all moment weights as dict"
+"""
+Obtain all moment weights as dict
+"""
 dataMomentWd(ev::Eval)                  = ev.dataMomentsW
 
 
-"this allows to fill the values of a given structure with the values from Eval"
 function fill(p::Any,ev::Eval)
 	for k in keys(ev.params)
 		setfield!(p,k,ev.params[k])

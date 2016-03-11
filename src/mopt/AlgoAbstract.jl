@@ -6,6 +6,8 @@
 # define an abstract type and set/get for it
 abstract MAlgo
 
+import Base.getindex, Base.setindex!
+
 # getter and setters for Algo.opts
 function getindex(algo::MAlgo, key)
   return(algo.opts[key])
@@ -28,7 +30,7 @@ function runMOpt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
-	info("Starting estimation loop.")
+	Lumberjack.info("Starting estimation loop.")
 	t0 = time()
 
 	# do iteration
@@ -44,7 +46,7 @@ function runMOpt!( algo::MAlgo )
 			@assert haskey(algo.opts,"filename")
 			if mod(i,algo["save_frequency"]) == 0
 				save(algo,algo["filename"])
-				info("saved data at iteration $i")
+				Lumberjack.info("saved data at iteration $i")
 			end
 		end
 
@@ -64,9 +66,9 @@ function runMOpt!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo["filename"])
 	else
-		warn("could not find 'filename' and did not save")
+		Lumberjack.warn("could not find 'filename' and did not save")
 	end
-	info("Done with estimation after $t1 minutes")
+	Lumberjack.info("Done with estimation after $t1 minutes")
 end
 
 function ps2s_names(algo::MAlgo)

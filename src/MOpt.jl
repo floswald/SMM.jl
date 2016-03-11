@@ -24,11 +24,6 @@ if !haskey(ENV,"IGNORE_HDF5")
        using HDF5
 end
 
-if VERSION < v"0.4.0-dev"
-    using Docile
-end
-@document
-
 
 # load files
 # ############
