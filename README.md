@@ -8,6 +8,12 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 
 [![acceptance rates](https://dl.dropboxusercontent.com/u/109115/MOpt.jl/acceptance.png)]()
 
+## Installation
+
+```julia
+Pkg.clone("https://github.com/floswald/MOpt.jl")
+```
+
 ## Detailed Documentation
 
 [Documentation available on readthedocs.](http://moptjl.readthedocs.org/en/latest/)
