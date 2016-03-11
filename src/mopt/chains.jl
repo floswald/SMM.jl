@@ -26,8 +26,8 @@ type Chain <: AbstractChain
         mom_nms    = Symbol[ symbol(x) for x in ms_names(MProb) ]
         parameters = convert(DataFrame,zeros(L,length(par2s_nms)+1))
         moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
-        names!(parameters,[:iter, par2s_nms])
-        names!(moments   ,[:iter, mom_nms])
+        names!(parameters,[:iter; par2s_nms])
+        names!(moments   ,[:iter; mom_nms])
         return new(0,infos,parameters,moments,par_nms,par2s_nms,mom_nms)
     end
 end

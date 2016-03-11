@@ -1,9 +1,7 @@
 
 
 # main dev routine for Mopt.jl
-
-home = ENV["HOME"]
-cd("$home/git/MOpt.jl")
+cd(Pkg.dir("MOpt"))
 
 # load the source of the package
 include("src/MOpt.jl")

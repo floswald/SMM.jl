@@ -26,7 +26,7 @@ function sobolsearch(m::MProb,Ntot::Int64)
     N = Ntot
     while N >=0
 
-        SS = [ Dict(ps2s_names(m),next(sq)) for i in 1:(2*nc)]
+        SS = [ Dict(zip(ps2s_names(m),next(sq))) for i in 1:(2*nc)]
         vv = pmap(SS) do ushock
             ev2 = deepcopy(ev)
 
@@ -47,8 +47,7 @@ function sobolsearch(m::MProb,Ntot::Int64)
                 best_ev=e
             end
         end
-
-        info( string(@sprintf( "iter:%3i bestval:%4.2f " , Ntot - N, best_ev.value), "bestpar:$(best_ev.params)" ))
+        println( string(@sprintf( "iter:%3i bestval:%2.8f " , Ntot - N, best_ev.value), "bestpar:$(best_ev.params)" ))
 
     end
 
@@ -116,7 +115,7 @@ function sobolWeightedSearch(m::MProb,Ntot::Int64)
             # compute accept reject based on average wdensity
             if ( true) #  rand() < (r/cur_dens) )
                 u = next(sq)
-                push!(SS, Dict(ps2s_names(m),u) )
+                push!(SS, Dict(zip(ps2s_names(m),u) ))
                 # update density
                 cur_dens = 0.9 * cur_dens + 0.1*r
                 V[ (ni+i-1) , 2] = r

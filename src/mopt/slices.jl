@@ -68,7 +68,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        info("slicing along $pp")
+        Lumberjack.info("slicing along $pp")
 
         vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
             ev2 = deepcopy(ev)
@@ -82,7 +82,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
         end
     end  
     t1 = round((time()-t0)/60)
-    info("done after $t1 minutes")
+    Lumberjack.info("done after $t1 minutes")
 
     return res 
 end

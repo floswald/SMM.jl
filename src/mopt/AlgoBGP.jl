@@ -346,7 +346,7 @@ function save(algo::MAlgoBGP, filename::AbstractString)
     close(ff5)
 end
 
-function readAlgoBGP(filename::ASCIIString)
+function readAlgoBGP(filename::AbstractString)
 
     ff5 = h5open(filename, "r")
     keys = HDF5.read(ff5,"algo/opts/keys")
@@ -357,7 +357,7 @@ function readAlgoBGP(filename::ASCIIString)
     end
 
     # each chain has 3 data.frames: parameters, moments and infos
-    n = int(opts["N"])
+    n = parse(Int,opts["N"])
     params = simpleDataFrameRead(ff5,joinpath("chain","1","parameters"))
     moments = simpleDataFrameRead(ff5,joinpath("chain","1","moments"))
     infos = simpleDataFrameRead(ff5,joinpath("chain","1","infos"))

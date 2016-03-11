@@ -1,4 +1,4 @@
-julia 0.3
+julia 0.4
 DataFrames
 Reexport
 FactCheck
@@ -7,5 +7,4 @@ HDF5
 Lumberjack
 Lazy
 Sobol
-Docile
 GLM

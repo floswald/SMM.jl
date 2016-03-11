@@ -324,10 +324,10 @@ if !haskey(ENV,"IGNORE_HDF5")
 		# saving parameters 
     	kk         = HDF5.read(ff5, joinpath(path,"params_keys"))
     	vv         = HDF5.read(ff5, joinpath(path,"params_vals"))
-    	ev.params  = Dict( [ symbol(k) for k in kk] , vv)
+    	ev.params  = Dict( zip( [ symbol(k) for k in kk] , vv) )
     	kk         = HDF5.read(ff5, joinpath(path,"moments_keys"))
     	vv         = HDF5.read(ff5, joinpath(path,"moments_vals"))
-    	ev.simMoments = Dict( [ symbol(k) for k in kk] , vv)
+    	ev.simMoments = Dict( zip( [ symbol(k) for k in kk] , vv) )
 
     	return(ev)
     end
