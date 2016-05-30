@@ -83,6 +83,8 @@ function df2dict(df::DataFrame)
 end
 
 
+
+
 # function checkbounds!(df::DataFrame,di::Dict)
 # 	if nrow(df) > 1
 # 		error("can only process a single row")

@@ -202,6 +202,23 @@ function show(io::IO,ev::Eval)
   print(io,"Eval: val:$(ev.value) status:$(ev.status)\n")
 end
 
+
+"""
+	check_moments(ev::Eval)
+
+returns all data and simluated moments as a dataframe.
+
+"""
+function check_moments(ev::Eval)
+
+	d = DataFrame(moment = collect(keys(ev.dataMoments)),data = collect(values(ev.dataMoments)))
+	dsim = DataFrame(moment = collect(keys(ev.simMoments)),data = collect(values(ev.simMoments)))
+
+	return join(d,dsim, on=:moment)
+end
+
+
+
 if !haskey(ENV,"IGNORE_HDF5")
 
 	import Base.write

@@ -91,3 +91,5 @@ function moments(m::MAlgo, ch :: Int64, iter:: Int64)
 	return [ m.MChains[ch].moments[iter,p] for p in ms_names(m)]
 end
 
+
+
