@@ -212,7 +212,7 @@ returns all data and simluated moments as a dataframe.
 function check_moments(ev::Eval)
 
 	d = DataFrame(moment = collect(keys(ev.dataMoments)),data = collect(values(ev.dataMoments)))
-	dsim = DataFrame(moment = collect(keys(ev.simMoments)),data = collect(values(ev.simMoments)))
+	dsim = DataFrame(moment = collect(keys(ev.simMoments)),simulation= collect(values(ev.simMoments)))
 
 	return join(d,dsim, on=:moment)
 end
