@@ -213,8 +213,11 @@ function check_moments(ev::Eval)
 
 	d = DataFrame(moment = collect(keys(ev.dataMoments)),data = collect(values(ev.dataMoments)))
 	dsim = DataFrame(moment = collect(keys(ev.simMoments)),simulation= collect(values(ev.simMoments)))
+	r = join(d,dsim, on=:moment)
+	r[:distance] = r[:data] .- r[:simulation]
+	r[:percent_dev] = 100 * r[:distance] ./ r[:data]
 
-	return join(d,dsim, on=:moment)
+	return r
 end
 
 
