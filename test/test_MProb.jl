@@ -1,7 +1,7 @@
 
 module TestMProb
 
-using FactCheck, MOpt
+using FactCheck, MOpt, DataFrames
 
 
 
@@ -20,7 +20,7 @@ using FactCheck, MOpt
 # test default constructor type
 pb   = Dict( "a" => [0.5,0,1] , "b" => [0.6,0,1] )
 
-moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8,0.7,0.5],weight=rand(3))
+moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3))
 
 facts("Testing the MProb constructor") do
 

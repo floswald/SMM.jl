@@ -7,7 +7,7 @@ module MOpt
 using Distributions 
 using Reexport
 using Lumberjack
-@reexport using DataFrames
+using DataFrames
 import Base.show, Base.std
 using GLM
 
