@@ -62,6 +62,14 @@ function Testobj2(ev::Eval)
     return ev
 end
 
+
+function Testobj_fails(ev::Eval)
+	
+	# this function returns with an exception
+	open("/no/data/here")
+
+end
+
 #'.. py:function:: objfunc_norm
 #'
 #'   define a Test objective function

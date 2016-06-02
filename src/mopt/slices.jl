@@ -59,8 +59,6 @@ end
 function slices(m::MProb,npoints::Int,pad=0.1)
 
     t0 = time()
-    ranges = m.params_to_sample
-
     res = Slice(m.initial_value, m.moments)
     # we want to iterate over each parameters, 
     # and compute a linerange
@@ -78,7 +76,11 @@ function slices(m::MProb,npoints::Int,pad=0.1)
         end
 
         for (v in vv) 
-            add!( res, pp, v)
+            if (typeof(v) <: Exception)
+                Lumberjack.info("exception received. value not stored.")
+            else
+                add!( res, pp, v)
+            end
         end
     end  
     t1 = round((time()-t0)/60)
