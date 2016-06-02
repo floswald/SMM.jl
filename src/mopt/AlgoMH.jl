@@ -190,8 +190,8 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		shock = rand(MVN) * algo.MChains[ch].shock_sd
 
 		if get(algo.opts,"print_level",0) > 3
-			info("shock to parameters on chain $ch :")
-			info(shock)
+			Base.info("shock to parameters on chain $ch :")
+			Base.info(shock)
 		end
 
 		updateCandidateParam!(algo,ch,shock)

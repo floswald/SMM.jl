@@ -7,7 +7,7 @@ function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
 
     if length(vargs) > 0
         if get(vargs[1],"printlevel",0) > 0
-            info("in Test objective function")
+            Base.info("in Test objective function")
         end
     end
 
