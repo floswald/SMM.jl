@@ -35,6 +35,7 @@ type Eval
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
 		this.simMoments   = Dict{Symbol,Float64}()
+		this.options      = Dict()
 		return this
 	end
 
@@ -47,6 +48,7 @@ type Eval
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
 		this.simMoments      = Dict{Symbol,Float64}()
+		this.options      = Dict()
 
 		if !in(:name,names(mom)) throw(ArgumentError("moment dataframe needs column named `name`")) end
 		if !in(:value,names(mom)) throw(ArgumentError("moment dataframe needs column named `value`")) end
@@ -76,6 +78,7 @@ type Eval
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
 		this.simMoments   = Dict{Symbol,Float64}()
+		this.options      = Dict()
 
 		for (kk in keys(mprob.moments) )
 			this.dataMoments[kk]  = mprob.moments[kk][:value]
@@ -99,6 +102,7 @@ type Eval
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = p
 		this.simMoments   = Dict{Symbol,Float64}()
+		this.options      = Dict()
 
 		return this
 	end
