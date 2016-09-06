@@ -19,7 +19,7 @@ facts("Testing Default Chains constructor") do
 	L = 9
 	chain = Chain(mprob,L)
 
-	@fact chain.i => 0 
+	@fact chain.i --> 0 
 
 	context("length of members") do
 
