@@ -30,7 +30,7 @@ function runMOpt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
-	Lumberjack.info("Starting estimation loop.")
+	info("Starting estimation loop.")
 	t0 = time()
 
 	# do iteration
@@ -46,7 +46,7 @@ function runMOpt!( algo::MAlgo )
 			@assert haskey(algo.opts,"filename")
 			if mod(i,algo["save_frequency"]) == 0
 				save(algo,algo["filename"])
-				Lumberjack.info("saved data at iteration $i")
+				info("saved data at iteration $i")
 			end
 		end
 
@@ -66,9 +66,9 @@ function runMOpt!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo["filename"])
 	else
-		Lumberjack.warn("could not find 'filename' and did not save")
+		warn("could not find 'filename' and did not save")
 	end
-	Lumberjack.info("Done with estimation after $t1 minutes")
+	info("Done with estimation after $t1 minutes")
 end
 
 function ps2s_names(algo::MAlgo)

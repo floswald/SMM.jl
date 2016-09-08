@@ -66,7 +66,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        Lumberjack.info("slicing along $pp")
+        info("slicing along $pp")
 
         vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
             ev2 = deepcopy(ev)
@@ -77,14 +77,14 @@ function slices(m::MProb,npoints::Int,pad=0.1)
 
         for (v in vv) 
             if (typeof(v) <: Exception)
-                Lumberjack.info("exception received. value not stored.")
+                info("exception received. value not stored.")
             else
                 add!( res, pp, v)
             end
         end
     end  
     t1 = round((time()-t0)/60)
-    Lumberjack.info("done after $t1 minutes")
+    info("done after $t1 minutes")
 
     return res 
 end

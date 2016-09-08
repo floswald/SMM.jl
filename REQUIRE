@@ -1,10 +1,8 @@
-julia 0.4
+julia 0.5
 DataFrames
-Reexport
 FactCheck
 Distributions
 HDF5
-Lumberjack
 Lazy
 Sobol
 GLM

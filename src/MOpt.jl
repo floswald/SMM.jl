@@ -5,7 +5,6 @@ module MOpt
 # ############
 
 using Distributions 
-using Reexport
 using Lumberjack
 using DataFrames
 import Base.show, Base.std

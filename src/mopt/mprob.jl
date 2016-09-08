@@ -141,7 +141,7 @@ function evaluateObjective(m::MProb,p::Dict)
     try
        ev = eval(Expr(:call,m.objfunc,ev))
     catch ex
-      Lumberjack.info("caught exception $ex")
+      info("caught exception $ex")
       ev.status = -2
     end
     gc()
@@ -153,7 +153,7 @@ function evaluateObjective(m::MProb,ev)
     try
        ev = eval(Expr(:call,m.objfunc,ev))
     catch ex
-      Lumberjack.info("caught excpetion $ex")
+      info("caught excpetion $ex")
       ev.status = -2
     end
     gc()

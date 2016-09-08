@@ -38,8 +38,8 @@ function serialNormal(logmode="debug")
 	MA = MAlgoBGP(mprob,opts)
 
 	# setup Lumberjack logging
-	# remove_truck("console")
-	# add_truck(LumberjackTruck(STDOUT,logmode),"serial-log")
+	MOpt.add_truck(MOpt.LumberjackTruck(STDOUT, "info"), "new-logger")
+	MOpt.add_truck(MOpt.LumberjackTruck(joinpath(pwd(),"MA.log"), "debug"), "dbg-logger")
 
 	# run the estimation
 	runMOpt!(MA)
