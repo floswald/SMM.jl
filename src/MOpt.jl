@@ -5,8 +5,8 @@ module MOpt
 # ############
 
 using Distributions 
-using Lumberjack
 using DataFrames
+using HDF5
 import Base.show, Base.std
 using GLM
 
@@ -18,10 +18,6 @@ export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval, AbstractChain
 export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
        runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, 
        dataMoment,dataMomentd, dataMomentW, dataMomentWd,setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
-
-if !haskey(ENV,"IGNORE_HDF5")
-       using HDF5
-end
 
 
 # load files
