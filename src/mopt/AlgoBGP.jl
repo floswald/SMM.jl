@@ -28,14 +28,18 @@ type BGPChain <: AbstractChain
 	shock_sd   ::Float64 # sd of shock to 
 
 	function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob)
-		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
-		parameters = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ps2s_names(MProb)))))
-		moments    = hcat(DataFrame(chain_id = [id for i=1:L], iter=1:L), convert(DataFrame,zeros(L,length(ms_names(MProb)))))
+		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = DataArray(zeros(Float64,L)), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
+		parameters = DataFrame(chain_id = [id for i=1:L], iter=1:L)
+        moments    = DataFrame(chain_id = [id for i=1:L], iter=1:L)
 		par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
 		par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
 		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
-		names!(parameters,[:chain_id;:iter; par2s_nms])
-		names!(moments   ,[:chain_id;:iter; mom_nms])
+        for i in par2s_nms
+            parameters[i] = DataArray(zeros(L))
+        end
+        for i in mom_nms
+            moments[i] = DataArray(zeros(L))
+        end
 		return new(id,0,infos,parameters,moments,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
     end
 end
@@ -53,11 +57,19 @@ type MAlgoBGP <: MAlgo
   
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100))
 
-		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
-		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
-		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
-		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+        if opts["N"] > 1
+    		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
+    		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
+    		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
+    		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
+    	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+          else
+            temps     = [1.0]
+            shocksd   = [opts["min_shock_sd"]]
+            disttol   = [opts["min_disttol"]]
+            jump_prob = [opts["min_jump_prob"]]
+            chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+        end
 	  	# current param values
 	  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
 

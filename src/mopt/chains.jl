@@ -53,7 +53,7 @@ function parameters_ID(c::AbstractChain, i::Union{Integer, UnitRange{Int}})
     c.parameters[i,[:chain_id,:iter,c.params2s_nms]]
 end
 function parameters_ID(c::AbstractChain)
-    c.parameters[:,[:chain_id,:iter,c.params2s_nms]]
+    c.parameters[:,vcat(:chain_id,:iter,c.params2s_nms)]
 end
 moments(c::AbstractChain)                       = c.moments
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
