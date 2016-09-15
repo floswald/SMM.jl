@@ -21,7 +21,6 @@ export fitMirror
 # end
 
 
-
 # taking a dictionary of vectors, returns
 # the values as a dataframe or as a dictionary
 # using Debug

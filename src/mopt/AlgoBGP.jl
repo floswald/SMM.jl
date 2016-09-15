@@ -146,7 +146,8 @@ function computeNextIteration!( algo::MAlgoBGP )
 
 	# evaluate objective on all chains
 	# --------------------------------
-	v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
+    v = pmap( x -> evaluateObjective(algo.m,x), algo.current_param)
+
 
 	# Part 1) LOCAL MOVES ABC-MCMC for i={1,...,N}. accept/reject
 	# -----------------------------------------------------------
@@ -201,8 +202,18 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 				end
 			end 
 		    # update sampling variances
+            # -------------------------
+
+            # update average acceptance rate: moving average
 		    chain.infos[algo.i,:accept_rate]   = 0.9 * chain.infos[algo.i-1,:accept_rate] + 0.1 * ACC
-		    chain.shock_sd                     = chain.shock_sd * (1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) )
+
+            # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
+            accept_too_high = chain.infos[algo.i,:accept_rate]>0.234
+            if accept_too_high
+                chain.shock_sd *= 1.05  # increase variance by 5% => will accept less
+            else # too low
+                chain.shock_sd *= 0.95  # decrease variance by 5% => will accept more
+            end
 		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
 		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
 		    # debug("ACCEPTED: $ACC")
@@ -211,6 +222,11 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 		end
 	end
 end
+
+
+1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) 
+
+
 
 function exchangeMoves!(algo::MAlgoBGP)
 	# for all chains
