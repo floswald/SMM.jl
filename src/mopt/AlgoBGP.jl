@@ -224,9 +224,6 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 end
 
 
-1+ 0.05*( 2*(chain.infos[algo.i,:accept_rate]>0.234) -1) 
-
-
 
 function exchangeMoves!(algo::MAlgoBGP)
 	# for all chains
