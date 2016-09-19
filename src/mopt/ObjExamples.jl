@@ -1,7 +1,7 @@
 #'.. py:function:: Testobj
 #'
 #'   define a Test objective function
-function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
+function Testobj(x::Dict,mom::DataFrame,whichmom::Array{String,1},vargs...)
 
 	t0 = time()
 

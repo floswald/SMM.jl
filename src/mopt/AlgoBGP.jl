@@ -31,9 +31,9 @@ type BGPChain <: AbstractChain
 		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = DataArray(zeros(Float64,L)), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
 		parameters = DataFrame(chain_id = [id for i=1:L], iter=1:L)
         moments    = DataFrame(chain_id = [id for i=1:L], iter=1:L)
-		par_nms    = sort(Symbol[ symbol(x) for x in ps_names(MProb) ])
-		par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
-		mom_nms    = sort(Symbol[ symbol(x) for x in ms_names(MProb) ])
+		par_nms    = sort(Symbol[ Symbol(x) for x in ps_names(MProb) ])
+		par2s_nms  = Symbol[ Symbol(x) for x in ps2s_names(MProb) ]
+		mom_nms    = sort(Symbol[ Symbol(x) for x in ms_names(MProb) ])
         for i in par2s_nms
             parameters[i] = DataArray(zeros(L))
         end
@@ -350,8 +350,8 @@ function save(algo::MAlgoBGP, filename::AbstractString)
 
     ff5 = h5open(filename, "w")
 
-    vals = ASCIIString[]
-    keys = ASCIIString[]
+    vals = String[]
+    keys = String[]
 	for (k,v) in algo.opts
 		if typeof(v) <: Number
 			push!(vals,"$v")

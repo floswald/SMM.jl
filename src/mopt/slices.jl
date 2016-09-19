@@ -12,7 +12,7 @@ type Slice
 
     function Slice(p::Dict,m::Dict)
         this = new()
-        this.res = [ k => Dict() for k in keys(p) ]
+        this.res = Dict( k => Dict() for k in keys(p) )
         this.p0=deepcopy(p)
         this.m0=deepcopy(m)
         return this
@@ -75,7 +75,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
             return(ev2)
         end
 
-        for (v in vv) 
+        for v in vv 
             if (typeof(v) <: Exception)
                 Lumberjack.info("exception received. value not stored.")
             else
@@ -89,7 +89,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     return res 
 end
 
-function write(s::Slice,fname::ASCIIString)
+function write(s::Slice,fname::String)
 
     ff5 = h5open(fname, "w") 
     # save res
@@ -108,7 +108,7 @@ function write(s::Slice,fname::ASCIIString)
     close(ff5)
 end
 
-function readSlice(fname::ASCIIString)
+function readSlice(fname::String)
 
     # get data
     ff5 = h5open(fname, "r") 
@@ -120,15 +120,15 @@ function readSlice(fname::ASCIIString)
 
     for p in pnames
         g = ff5[p]
-        res[symbol(p)] = Dict()
+        res[Symbol(p)] = Dict()
         for pp in names(g) 
-            res[symbol(p)][float(pp)] = Dict()
-            res[symbol(p)][float(pp)][:value] = read(g[pp]["value"])
-            res[symbol(p)][float(pp)][:moments] = Dict()
+            res[Symbol(p)][float(pp)] = Dict()
+            res[Symbol(p)][float(pp)][:value] = read(g[pp]["value"])
+            res[Symbol(p)][float(pp)][:moments] = Dict()
             mnames = names(g[pp]["moments"])
             for mn in mnames
                 md = g[pp]["moments"][mn]
-                res[symbol(p)][float(pp)][:moments][symbol(mn)] = read(md)
+                res[Symbol(p)][float(pp)][:moments][Symbol(mn)] = read(md)
             end
         end
     end
@@ -137,7 +137,7 @@ function readSlice(fname::ASCIIString)
     return sl
 end
 
-function readSliceRemote(remote::ASCIIString) 
+function readSliceRemote(remote::String) 
     a = tempname()
     run(`scp $remote $a`)
     println("saving locally to $a")

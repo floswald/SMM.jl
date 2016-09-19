@@ -5,9 +5,9 @@ module MOpt
 # ############
 
 using Distributions 
-using Reexport
 using Lumberjack
 using DataFrames
+using HDF5
 import Base.show, Base.std
 using GLM
 
@@ -19,10 +19,6 @@ export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval, AbstractChain
 export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
        runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, 
        dataMoment,dataMomentd, dataMomentW, dataMomentWd,setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
-
-if !haskey(ENV,"IGNORE_HDF5")
-       using HDF5
-end
 
 
 # load files
@@ -40,14 +36,11 @@ include("mopt/Examples.jl")
 include("mopt/sobolsearch.jl")
 include("mopt/econometrics.jl")
 
-
-# for now plotting only on my box because
-# installing matplotlib on unix hpc is tricky.
-# comment this out if you want the plot function
-if Sys.OS_NAME == :Darwin
+if is_apple()
        using PyPlot
        include("mopt/plotting.jl")
 end
+
 
 end 	# module
 
