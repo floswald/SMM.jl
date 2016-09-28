@@ -93,7 +93,7 @@ function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::Array{AS
         suptitle("Objective Function vs Parameters")
 
     else
-        error("facet needs to be either params or moments")
+        ArgumentError("facet needs to be either params or moments")
     end
 end
 

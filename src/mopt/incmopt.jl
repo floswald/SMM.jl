@@ -21,7 +21,6 @@ export fitMirror
 # end
 
 
-
 # taking a dictionary of vectors, returns
 # the values as a dataframe or as a dictionary
 # using Debug
@@ -51,7 +50,7 @@ end
 function fillinFields!(dict::Dict,df::DataFrame,I::Int)
 
     if nrow(df)!=1
-        error("can fill in only a single dataframe row")
+        ArgumentError("can fill in only a single dataframe row")
     end
     dk = collect(keys(dict))
     for ik in dk
@@ -65,7 +64,7 @@ end
 function fillinFields!(dict::Dict,df::DataFrame)
 
     if nrow(df)!=1
-        error("can fill in only a single dataframe row")
+        ArgumentError("can fill in only a single dataframe row")
     end
     dk = names(df)
     for ik in dk

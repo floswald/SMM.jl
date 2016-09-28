@@ -17,15 +17,15 @@ facts("testing MAlgoBGP Constructor") do
 
 		MA = MAlgoBGP(mprob,opts)
 
-		@fact isa(MA,MAlgo) => true
-		@fact isa(MA,MAlgoBGP) => true
-		@fact isa(MA.m,MProb) => true
+		@fact isa(MA,MAlgo) --> true
+		@fact isa(MA,MAlgoBGP) --> true
+		@fact isa(MA.m,MProb) --> true
 
-		@fact MA.i => 0
-		@fact length(MA.MChains) => opts["N"]
+		@fact MA.i --> 0
+		@fact length(MA.MChains) --> opts["N"]
 
 		for ix = 1:opts["N"]
-			@fact MA.current_param[ix] => mprob.initial_value
+			@fact MA.current_param[ix] --> mprob.initial_value
 		end
 
 	end
@@ -35,12 +35,12 @@ facts("testing MAlgoBGP Constructor") do
 		MA = MAlgoBGP(mprob,opts)
 
 		# getters
-		@fact MA["N"] => opts["N"]
-		@fact MA["mode"] => opts["mode"]
+		@fact MA["N"] --> opts["N"]
+		@fact MA["mode"] --> opts["mode"]
 
 		# setter
 		MA["newOption"] = "hi"
-		@fact MA["newOption"] => "hi"
+		@fact MA["newOption"] --> "hi"
 
 	end
 
@@ -56,15 +56,15 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		ub = 12.0
 		lb = -1.1
 		z = MOpt.fitMirror(x,lb,ub)
-		@fact (z < ub) & (z>lb) => true
+		@fact (z < ub) & (z>lb) --> true
 
 		x = rand()
 		z = MOpt.fitMirror(x,lb,ub)
-		@fact z-x<eps() => true
+		@fact z-x<eps() --> true
 
 		x = -1.11
 		z = MOpt.fitMirror(x,lb,ub)
-		@fact (z < ub) & (z>lb) => true
+		@fact (z < ub) & (z>lb) --> true
 
 	end
 
@@ -72,10 +72,10 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 
 		df = DataFrame(a=1.2,b=-1.5)
 		MOpt.fitMirror!(df,mprob.params_to_sample)
-		@fact df[1][1] > pb["a"][2] => true
-		@fact df[1][1] < pb["a"][3] => true
-		@fact df[2][1] > pb["b"][2] => true
-		@fact df[2][1] < pb["b"][3] => true
+		@fact df[1][1] > pb["a"][2] --> true
+		@fact df[1][1] < pb["a"][3] --> true
+		@fact df[2][1] > pb["b"][2] --> true
+		@fact df[2][1] < pb["b"][3] --> true
 
 	end
 
@@ -110,7 +110,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		# get kernel and check VV
 		myVV = MOpt.getParamCovariance(MA)
 
-		@fact myVV[:] == VV[:] => true
+		@fact myVV[:] == VV[:] --> true
 
 	end
 
@@ -135,7 +135,7 @@ facts("testing getNewCandidates(MAlgoBGP)") do
 		MOpt.jumpParams!(MA,ich,shockd)
 
 		for (k,v) in eval_before
-			@fact MA.current_param[ich][k] => fitMirror(v + shockd[k], MA.m.params_to_sample[k])
+			@fact MA.current_param[ich][k] --> fitMirror(v + shockd[k], MA.m.params_to_sample[k])
 		end
 	end
 end
@@ -180,12 +180,12 @@ facts("testing swaprows") do
 		MOpt.swapRows!(MA,pair,ix)
 
 		# check parameters
-		@fact parameters(MA.MChains[pair.first ],ix) == p2 => true
-		@fact parameters(MA.MChains[pair.second],ix) == p1 => true
-		@fact MA.MChains[pair.first ].moments[ix,MA.MChains[pair.first ].moments_nms] == m2 => true
-		@fact MA.MChains[pair.second].moments[ix,MA.MChains[pair.second].moments_nms] == m1 => true
-		@fact evals(MA.MChains[pair.first ],ix) == v2 => true
-		@fact evals(MA.MChains[pair.second],ix) == v1 => true
+		@fact parameters(MA.MChains[pair.first ],ix) == p2 --> true
+		@fact parameters(MA.MChains[pair.second],ix) == p1 --> true
+		@fact MA.MChains[pair.first ].moments[ix,MA.MChains[pair.first ].moments_nms] == m2 --> true
+		@fact MA.MChains[pair.second].moments[ix,MA.MChains[pair.second].moments_nms] == m1 --> true
+		@fact evals(MA.MChains[pair.first ],ix) == v2 --> true
+		@fact evals(MA.MChains[pair.second],ix) == v1 --> true
 
 	end
 
@@ -207,13 +207,13 @@ facts("testing accept reject") do
 		MOpt.doAcceptRecject!(MA,v)
 
 		# all accepted: 
-		@fact all(infos(MA.MChains,1)[:accept]) => true
-		@fact all(infos(MA.MChains,1)[:status] .== 1.0) => true
+		@fact all(infos(MA.MChains,1)[:accept]) --> true
+		@fact all(infos(MA.MChains,1)[:status] .== 1.0) --> true
 
 		# all params equal to initial value
 		for nm in MOpt.ps2s_names(MA)
 			#print( " $nm $(parameters(MA,1,1,nm)) $(pb[string(nm)][1] ) ")
-			@fact parameters(MA,1,1,nm) => roughly(pb[string(nm)][1])
+			@fact parameters(MA,1,1,nm) --> roughly(pb[string(nm)][1])
 		end
 
 		# next iteration
@@ -270,14 +270,14 @@ facts("testing accept reject") do
 					ev_p = paramd(ev)
 					ev_m = ev.simMoments
 					for (k,v) in ev_p
-						@fact v => ma.current_param[ch][k]
+						@fact v --> ma.current_param[ch][k]
 					end
 				else
 					# if not, parameters(ma.MChains[ch],ma.i) == parameters(ma.MChains[ch],ma.i-1)
 					ev_p = paramd(Last_ev)
 					ev_m = Last_ev.simMoments
 					for (k,v) in ev_p
-						@fact v => not(ma.current_param[ch][k])
+						@fact v --> not(ma.current_param[ch][k])
 					end
 				end
 			end
@@ -325,10 +325,10 @@ facts("testing exchangeMoves") do
 
 		# expect we exchanged ch1 and ch2 but nothing else
 		ex_1 = infos(MA.MChains[ch1],MA.i)[:exchanged_with][1]
-		@fact  ex_1 != 0 => true
+		@fact  ex_1 != 0 --> true
 		for i in 1:length(v) 
 			if ((i != ch1)  & ( i != ex_1) )
-				@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] == 0 =>true
+				@fact infos(MA.MChains[i],MA.i)[:exchanged_with][1] == 0 -->true
 			else
 				# dont' know the pairs!
 			end
@@ -352,14 +352,14 @@ facts("testing reading and saving of algo") do
 
 	x = MOpt.readAlgoBGP(joinpath(pwd(),"test.h5"))
 	for (k,v) in dd
-		@fact haskey(dd,k) => true
-		@fact v == dd[k] => true
+		@fact haskey(dd,k) --> true
+		@fact v == dd[k] --> true
 	end
 
 	ich = rand(1:MA["N"]) 	# pick a random chain
 	# cc = @where(x["parameters"],:chain_id .== ich)
-	@fact all(parameters(MA.MChains[ich])[:a] .- x["params"][x["params"][:chain_id] .== ich, :a] .< 1e-6) => true
-	@fact all(parameters(MA.MChains[ich])[:b] .- x["params"][x["params"][:chain_id] .== ich, :b] .< 1e-6) => true
+	@fact all(parameters(MA.MChains[ich])[:a] .- x["params"][x["params"][:chain_id] .== ich, :a] .< 1e-6) --> true
+	@fact all(parameters(MA.MChains[ich])[:b] .- x["params"][x["params"][:chain_id] .== ich, :b] .< 1e-6) --> true
 
 	rm(joinpath(pwd(),"test.h5"))
 
@@ -388,11 +388,11 @@ facts("testing intermittent saving of algo") do
 			chain_b = read(ff5,"chain/$ich/parameters/b")
 			close(ff5)
 
-			@fact length(find(chain_a.!=0)) => i
-			@fact length(find(chain_b.!=0)) => i
+			@fact length(find(chain_a.!=0)) --> i
+			@fact length(find(chain_b.!=0)) --> i
 
-			@fact all(parameters(MA.MChains[ich])[:a] .- chain_a .< 1e-6) => true
-			@fact all(parameters(MA.MChains[ich])[:b] .- chain_b .< 1e-6) => true
+			@fact all(parameters(MA.MChains[ich])[:a] .- chain_a .< 1e-6) --> true
+			@fact all(parameters(MA.MChains[ich])[:b] .- chain_b .< 1e-6) --> true
 		end
 	end
 

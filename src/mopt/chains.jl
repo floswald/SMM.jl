@@ -53,7 +53,7 @@ function parameters_ID(c::AbstractChain, i::Union{Integer, UnitRange{Int}})
     c.parameters[i,[:chain_id,:iter,c.params2s_nms]]
 end
 function parameters_ID(c::AbstractChain)
-    c.parameters[:,[:chain_id,:iter,c.params2s_nms]]
+    c.parameters[:,vcat(:chain_id,:iter,c.params2s_nms)]
 end
 moments(c::AbstractChain)                       = c.moments
 moments(c::AbstractChain, i::UnitRange{Int})    = c.moments[i,:]
@@ -120,7 +120,7 @@ end
 # return an vcat of params from all chains
 function parameters(MC::Array,i::Union{Integer, UnitRange{Int}})
     if !isa(MC[1],AbstractChain)
-        error("must give array of AbstractChain") 
+        ArgumentError("must give array of AbstractChain") 
     end
     r = parameters(MC[1],i) 
     if length(MC)>1
@@ -133,7 +133,7 @@ end
 
 function parameters_ID(MC::Array,i::Union{Integer, UnitRange{Int}})
     if !isa(MC[1],AbstractChain)
-        error("must give array of AbstractChain") 
+        ArgumentError("must give array of AbstractChain") 
     end
     r = parameters_ID(MC[1],i) 
     if length(MC)>1
@@ -154,7 +154,7 @@ end
 
 function moments(MC::Array,i::Union{Integer, UnitRange{Int}})
     if !isa(MC[1],AbstractChain)
-        error("must give array of AbstractChain") 
+        ArgumentError("must give array of AbstractChain") 
     end
     r = moments(MC[1],i) 
     if length(MC)>1
@@ -175,7 +175,7 @@ end
 
 function infos(MC::Array,i::UnitRange{Int})
     if !isa(MC[1],AbstractChain)
-        error("must give array of AbstractChain") 
+        ArgumentError("must give array of AbstractChain") 
     end
     r = infos(MC[1],i) 
     if length(MC)>1
@@ -192,7 +192,7 @@ end
 
 function evals(MC::Array,i::UnitRange{Int})
     if !isa(MC[1],AbstractChain)
-        error("must give array of AbstractChain") 
+        ArgumentError("must give array of AbstractChain") 
     end
     r = infos(MC[1],i) 
     if length(MC)>1
