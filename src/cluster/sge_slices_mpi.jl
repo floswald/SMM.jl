@@ -21,7 +21,7 @@ function bind_pe_procs()
   # remove master from the node list
   master_node = ENV["HOSTNAME"]
   remove_master = 1
-  machines = ASCIIString[]
+  machines = String[]
   for pp in procs
     # println(pp["name"])
     for i=1:int(pp["n"])

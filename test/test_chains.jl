@@ -27,10 +27,10 @@ facts("Testing Default Chains constructor") do
 		@fact length(chain.infos[:evals])  --> L
 		@fact length(chain.infos[:accept]) --> L
 		for nm in MOpt.ps2s_names(mprob)
-			@fact length(chain.parameters[symbol(nm)]) --> L
+			@fact length(chain.parameters[Symbol(nm)]) --> L
 		end
 		for nm in MOpt.ms_names(mprob)
-			@fact length(chain.moments[symbol(nm)]) --> L
+			@fact length(chain.moments[Symbol(nm)]) --> L
 		end
 	end
 
@@ -105,7 +105,42 @@ facts("testing Chain/MChain methods") do
 		@fact chain.infos[:evals][1] --> ev.value
 		@fact chain.infos[:accept][1] --> true
 		for nm in MOpt.ps2s_names(mprob)
-			@fact chain.parameters[chain.i,symbol(nm)][1] --> ev.params[nm]
+			@fact chain.parameters[chain.i,Symbol(nm)][1] --> ev.params[nm]
+		end
+	end
+
+	context("test appendEval!(chain(NA))") do
+
+		mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj2)
+		ev = Eval(pb,moms)
+		ev = MOpt.Testobj2(ev)
+
+		for (k,va) in ev.params
+			ev.params[k] = NaN
+		end
+
+		ev.value = NaN
+
+		L = 9
+		chain = Chain(mprob,L)
+		# set i to 1 to test this:
+		chain.i = 1
+
+		# verify values are zero:
+		@fact all(chain.infos[chain.i,:evals] == 0.0) --> true
+		# verify params are zero
+		for ic in 1:ncol(chain.parameters)
+			@fact chain.parameters[chain.i,ic][1] --> 0.0
+		end
+
+		# update chain with v
+		MOpt.appendEval!(chain,ev,false,1.0)
+
+		# verify new values on chain
+		@fact isnan(chain.infos[:evals][1]) --> true
+		@fact chain.infos[:accept][1] --> false
+		for nm in MOpt.ps2s_names(mprob)
+			@fact isnan(chain.parameters[chain.i,Symbol(nm)][1]) --> true
 		end
 	end
 end

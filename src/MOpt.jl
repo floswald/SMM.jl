@@ -5,6 +5,10 @@ module MOpt
 # ############
 
 using Distributions 
+<<<<<<< HEAD
+=======
+using Lumberjack
+>>>>>>> cededc4d52642fe0d3d93d6782ce7c011106b2cd
 using DataFrames
 using HDF5
 import Base.show, Base.std
@@ -35,14 +39,11 @@ include("mopt/Examples.jl")
 include("mopt/sobolsearch.jl")
 include("mopt/econometrics.jl")
 
-
-# for now plotting only on my box because
-# installing matplotlib on unix hpc is tricky.
-# comment this out if you want the plot function
-if Sys.OS_NAME == :Darwin
+if is_apple()
        using PyPlot
        include("mopt/plotting.jl")
 end
+
 
 end 	# module
 

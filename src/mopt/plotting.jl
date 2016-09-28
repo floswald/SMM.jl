@@ -19,7 +19,7 @@ function plotExample(s::Slice)
 end
 
 
-function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::Array{ASCIIString,1})
+function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::Array{String,1})
 
     if "moments" in facet
 
@@ -98,5 +98,5 @@ function plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::Array{AS
 end
 
 plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame) = plotSlice(m,val_df,mom_df,"moments")
-plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::ASCIIString) = plotSlice(m,val_df,mom_df,[facet])
+plotSlices(m::MProb,val_df::DataFrame,mom_df::DataFrame,facet::String) = plotSlice(m,val_df,mom_df,[facet])
 

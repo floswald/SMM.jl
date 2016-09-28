@@ -21,7 +21,6 @@ export fitMirror
 # end
 
 
-
 # taking a dictionary of vectors, returns
 # the values as a dataframe or as a dictionary
 # using Debug
@@ -41,7 +40,7 @@ function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
         cnames = Symbol[x for x in dk]
         return DataFrame(cols, cnames)
     else ## ==== return as collection
-        return([ k => v[I] for (k,v) in dict ])
+        return(Dict( k => v[I] for (k,v) in dict ))
     end
 end
 
@@ -78,7 +77,7 @@ end
 function df2dict(df::DataFrame)
   nm = names(df)
   snm = map(x->string(x),nm)
-  out = [i => df[symbol(i)] for i in snm]
+  out = Dict(i => df[symbol(i)] for i in snm)
   return out
 end
 
@@ -128,24 +127,6 @@ function fitMirror!(x::DataFrame,b::Dict)
 end
 
 
-
-function findInterval{T<:Number}(x::T,vec::Array{T})
-
-    out = zeros(Int,length(x))
-    vec = unique(vec)
-    sort!(vec)
-
-    for j in 1:length(x)
-        if x[j] < vec[1]
-            out[1] = 0
-        elseif x[j] > vec[end]
-            out[end] = 0
-        else
-            out[j] = searchsortedfirst(vec,x[j])-1 
-        end
-    end
-    return out
-end
 function findInterval{T<:Number}(x::T,vec::Array{T})
 
     out = zeros(Int,length(x))

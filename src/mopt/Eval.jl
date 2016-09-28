@@ -55,13 +55,13 @@ type Eval
 		if !in(:weight,names(mom)) throw(ArgumentError("moment dataframe needs column named `weight`")) end
 
 		for i in eachrow(mom)
-			kk = symbol(i[:name])
+			kk = Symbol(i[:name])
 			this.dataMoments[kk]  = i[:value]
 			this.dataMomentsW[kk] = i[:weight]
 		end
 
 		for k in keys(p)
-			kk = symbol(k)
+			kk = Symbol(k)
 			this.params[kk] = p[k][1] # we take the first one, in case there are several values per param
 			# not sure about that.
 		end
@@ -80,13 +80,13 @@ type Eval
 		this.simMoments   = Dict{Symbol,Float64}()
 		this.options      = Dict()
 
-		for (kk in keys(mprob.moments) )
+		for kk in keys(mprob.moments) 
 			this.dataMoments[kk]  = mprob.moments[kk][:value]
 			this.dataMomentsW[kk] = mprob.moments[kk][:weight]
 		end
 
-		for (k in keys(p))
-			kk = symbol(k)
+		for k in keys(p)
+			kk = Symbol(k)
 			this.params[kk] = p[k]
 		end
 
@@ -186,7 +186,7 @@ end
 # and that column :value stores the value
 function setMoment(ev::Eval,d::DataFrame)
 	for i in 1:nrow(d)
-		ev.simMoments[ symbol(d[i,:name]) ] = d[i,:value]
+		ev.simMoments[ Symbol(d[i,:name]) ] = d[i,:value]
 	end
 end
 
@@ -230,7 +230,7 @@ if !haskey(ENV,"IGNORE_HDF5")
 
 	import Base.write
 
-    function write(ff5::HDF5File, path::ASCIIString, ev::Eval)
+    function write(ff5::HDF5File, path::String, ev::Eval)
 
     	# saving value time and status
     	HDF5.write(ff5, joinpath(path,"value")  , ev.value )
@@ -238,17 +238,17 @@ if !haskey(ENV,"IGNORE_HDF5")
     	HDF5.write(ff5, joinpath(path,"time")   , ev.time )
 
 		# saving parameters and moments
-		HDF5.write(ff5, joinpath(path,"params_keys")    , convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.params)]))
+		HDF5.write(ff5, joinpath(path,"params_keys")    , convert(Array{String,1}, [string(k) for k in keys(ev.params)]))
 		HDF5.write(ff5, joinpath(path,"params_vals")    , convert(Array{Float64,1}, [v for v in values(ev.params)]))	 	 
-		HDF5.write(ff5, joinpath(path,"moments_keys")   , convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.simMoments)]))	 
+		HDF5.write(ff5, joinpath(path,"moments_keys")   , convert(Array{String,1}, [string(k) for k in keys(ev.simMoments)]))	 
 		HDF5.write(ff5, joinpath(path,"moments_vals")   , convert(Array{Float64,1}, [v for v in values(ev.simMoments)]))	 	 
     end
 
-    function write(ff5::HDF5File, path::ASCIIString, evs::Array{Eval,1})
+    function write(ff5::HDF5File, path::String, evs::Array{Eval,1})
 
     	ev = evs[1]
-    	p_names = convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.params) ])
-    	m_names = convert(Array{ASCIIString,1}, [string(k) for k in keys(ev.simMoments)])
+    	p_names = convert(Array{String,1}, [string(k) for k in keys(ev.params) ])
+    	m_names = convert(Array{String,1}, [string(k) for k in keys(ev.simMoments)])
 		HDF5.write(ff5, joinpath(path,"params_keys")    , p_names)
 		HDF5.write(ff5, joinpath(path,"moments_keys")    , m_names)	 	 
 
@@ -266,16 +266,16 @@ if !haskey(ENV,"IGNORE_HDF5")
 			V[i,3] = ev.time
 
 			j = 0
-			for (n in p_names)
+			for n in p_names
 				j = j+1
-				P[i,j] = ev.params[symbol(n)]
+				P[i,j] = ev.params[Symbol(n)]
 			end
 
 			if (ev.status>0)
 				j = 0
-				for (n in m_names)
+				for n in m_names
 					j = j+1
-					M[i,j] = ev.simMoments[symbol(n)]
+					M[i,j] = ev.simMoments[Symbol(n)]
 				end
 			end
 		end
@@ -287,11 +287,11 @@ if !haskey(ENV,"IGNORE_HDF5")
 
     end
 
-    function readEvalArray( ff5::HDF5File, path::ASCIIString)
+    function readEvalArray( ff5::HDF5File, path::String)
 
     	# get list of moments
-    	p_names = [ symbol(s) for s in HDF5.read(ff5, joinpath(path,"params_keys")) ]
-    	m_names = [ symbol(s) for s in HDF5.read(ff5, joinpath(path,"moments_keys")) ]
+    	p_names = [ Symbol(s) for s in HDF5.read(ff5, joinpath(path,"params_keys")) ]
+    	m_names = [ Symbol(s) for s in HDF5.read(ff5, joinpath(path,"moments_keys")) ]
 
     	V = transpose(HDF5.read(ff5, joinpath(path,"values")))
     	P = transpose(HDF5.read(ff5, joinpath(path,"parameters")))
@@ -311,14 +311,14 @@ if !haskey(ENV,"IGNORE_HDF5")
 			V[i,3] = ev.time
 
 			j = 0
-			for (n in p_names)
+			for n in p_names
 				j = j+1
 				ev.params[p_names[j]] = P[i,j]
 			end
 
 			if (ev.status>0)
 				j = 0
-				for (n in m_names)
+				for n in m_names
 					j = j+1
 					ev.simMoments[m_names[j]] = M[i,j]
 				end
@@ -328,7 +328,7 @@ if !haskey(ENV,"IGNORE_HDF5")
     	return(evs)
     end
 
-    function readEvalArrayRemote(remote::ASCIIString, path::ASCIIString)
+    function readEvalArrayRemote(remote::String, path::String)
     	a = tempname()
     	run(`scp $remote $a`)
     	println("saving locally to $a")
@@ -337,7 +337,7 @@ if !haskey(ENV,"IGNORE_HDF5")
 		end
     end
 
-    function readEval( ff5::HDF5File, path::ASCIIString)
+    function readEval( ff5::HDF5File, path::String)
     	ev = Eval()
 
     	# saving value time and status
@@ -348,15 +348,15 @@ if !haskey(ENV,"IGNORE_HDF5")
 		# saving parameters 
     	kk         = HDF5.read(ff5, joinpath(path,"params_keys"))
     	vv         = HDF5.read(ff5, joinpath(path,"params_vals"))
-    	ev.params  = Dict( zip( [ symbol(k) for k in kk] , vv) )
+    	ev.params  = Dict( zip( [ Symbol(k) for k in kk] , vv) )
     	kk         = HDF5.read(ff5, joinpath(path,"moments_keys"))
     	vv         = HDF5.read(ff5, joinpath(path,"moments_vals"))
-    	ev.simMoments = Dict( zip( [ symbol(k) for k in kk] , vv) )
+    	ev.simMoments = Dict( zip( [ Symbol(k) for k in kk] , vv) )
 
     	return(ev)
     end
 
-    function write(ff5::HDF5File, path::ASCIIString, dd::Dict{Symbol,Float64})
+    function write(ff5::HDF5File, path::String, dd::Dict{Symbol,Float64})
 		for (k,v) in dd
 			HDF5.write(ff5, joinpath(path,string(k)), v)
 		end
