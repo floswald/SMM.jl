@@ -126,23 +126,6 @@ type Eval
 end
 
 
-function show(io::IO,e::Eval)
-
-  print(io,"Eval Object:\n")
-  print(io,"============\n\n")
-  print(io,"Objective function value:\n")
-  print(io,e.value)
-  print(io,"\nEvaluation Time:\n")
-  print(io,e.time)
-  print(io,"\nEvaluation Status:\n")
-  print(io,e.status)
-  print(io,"Parameters:\n")
-  print(io,collect(keys(e.params)))
-  print(io,"\nMoments:\n")
-  print(io,collect(keys(e.dataMoments)))
-  print(io,"===========================\n")
-end
-
 function start(ev::Eval)
 	ev.time = time()
 end
@@ -219,10 +202,6 @@ function getBest(evs::Array{Eval,1})
   	end
   end
   return best
-end
-
-function show(io::IO,ev::Eval)
-  print(io,"Eval: val:$(ev.value) status:$(ev.status)\n")
 end
 
 
@@ -384,5 +363,15 @@ if !haskey(ENV,"IGNORE_HDF5")
 end
 
 
-
-
+function show(io::IO,e::Eval)
+  print(io,"Eval Object:\n")
+  print(io,"============\n\n")
+  print(io,"Objective function value: $(e.value)\n")
+  print(io,"Evaluation Time: $(e.time)\n")
+  print(io,"Evaluation Status: $(e.status)\n")
+  print(io,"Parameters:\n")
+  print(io,collect(keys(e.params)))
+  print(io,"\nMoments:\n")
+  print(io,collect(keys(e.dataMoments)))
+  print(io,"\n===========================\n")
+end
