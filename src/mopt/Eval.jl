@@ -125,6 +125,24 @@ type Eval
 	# end
 end
 
+
+function show(io::IO,e::Eval)
+
+  print(io,"Eval Object:\n")
+  print(io,"============\n\n")
+  print(io,"Objective function value:\n")
+  print(io,e.value)
+  print(io,"\nEvaluation Time:\n")
+  print(io,e.time)
+  print(io,"\nEvaluation Status:\n")
+  print(io,e.status)
+  print(io,"Parameters:\n")
+  print(io,collect(keys(e.params)))
+  print(io,"\nMoments:\n")
+  print(io,collect(keys(e.dataMoments)))
+  print(io,"===========================\n")
+end
+
 function start(ev::Eval)
 	ev.time = time()
 end
