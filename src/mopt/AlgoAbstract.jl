@@ -30,7 +30,7 @@ function runMOpt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
-	info("Starting estimation loop.")
+	Lumberjack.info("Starting estimation loop.")
 	t0 = time()
 
 	# do iteration
@@ -38,27 +38,33 @@ function runMOpt!( algo::MAlgo )
 
 		algo.i = i
 
-		computeNextIteration!( algo )
+		try
+			computeNextIteration!( algo )
 
-		# save at certain frequency
-		# TODO look into HDF5 chunk saving?
-		if haskey(algo.opts,"save_frequency")
-			@assert haskey(algo.opts,"filename")
-			if mod(i,algo["save_frequency"]) == 0
-				save(algo,algo["filename"])
-				info("saved data at iteration $i")
+			# save at certain frequency
+			# TODO look into HDF5 chunk saving?
+			if haskey(algo.opts,"save_frequency")
+				@assert haskey(algo.opts,"filename")
+				if mod(i,algo["save_frequency"]) == 0
+					save(algo,algo["filename"])
+					Lumberjack.info("saved data at iteration $i")
+				end
 			end
-		end
 
-		# printing progress
-		if Base.get(algo.opts,"print_level",0) > 1
-			if mod(algo.i,10) == 0
-				println(infos(algo.MChains,algo.i))
+			# printing progress
+			if Base.get(algo.opts,"print_level",0) > 1
+				if mod(algo.i,10) == 0
+					println(infos(algo.MChains,algo.i))
+				end
+			elseif Base.get(algo.opts,"print_level",0) > 0
+				if mod(algo.i,100) == 0
+					println(infos(algo.MChains,algo.i))
+				end
 			end
-		elseif Base.get(algo.opts,"print_level",0) > 0
-			if mod(algo.i,100) == 0
-				println(infos(algo.MChains,algo.i))
-			end
+		catch e
+			Lumberjack.info("caught exception $e")
+			println(infos(algo.MChains,algo.i))
+			throw(e)
 		end
 	end
 	t1 = round((time()-t0)/60,1)
@@ -66,9 +72,9 @@ function runMOpt!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo["filename"])
 	else
-		warn("could not find 'filename' and did not save")
+		Lumberjack.warn("could not find 'filename' and did not save")
 	end
-	info("Done with estimation after $t1 minutes")
+	Lumberjack.info("Done with estimation after $t1 minutes")
 end
 
 function ps2s_names(algo::MAlgo)

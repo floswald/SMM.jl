@@ -172,6 +172,7 @@ function setValue(ev::Eval,value::Float64)
 	ev.value = value
 end
 
+
 function setMoment(ev::Eval,k::Symbol,value::Float64)
 	ev.simMoments[k] = value
 end

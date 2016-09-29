@@ -178,29 +178,37 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 		else
 			eval_old = getEval(chain,algo.i-1)
 
-			prob = minimum([1.0, exp(chain.tempering *(eval_old.value - eval_new.value))])
+            if eval_new.status < 0
+                prob = 0.0
+                eval_old.status = -1
+                ACC = false
+                appendEval!(chain,eval_old,ACC,prob)
+            else
 
-			if isna(prob)
-				prob = 0.0
-				eval_old.status = -1
-				ACC = false
-				appendEval!(chain,eval_old,ACC,prob)
+    			prob = minimum([1.0, exp(chain.tempering *(eval_old.value - eval_new.value))])
 
-			elseif !isfinite(eval_old.value)
-				prob = 1.0
-				eval_new.status = -2
-				ACC = false
-				appendEval!(chain,eval_new,ACC,prob)
-			else 
-				status = 1
-				if prob > rand()
-					ACC = true
-					appendEval!(chain,eval_new,ACC,prob)
-				else
-					ACC = false
-					appendEval!(chain,eval_old,ACC,prob)
-				end
-			end 
+    			if isna(prob)
+    				prob = 0.0
+    				eval_old.status = -1
+    				ACC = false
+    				appendEval!(chain,eval_old,ACC,prob)
+
+    			elseif !isfinite(eval_old.value)
+    				prob = 1.0
+    				eval_new.status = -2
+    				ACC = false
+    				appendEval!(chain,eval_new,ACC,prob)
+    			else 
+    				# status = 1
+    				if prob > rand()
+    					ACC = true
+    					appendEval!(chain,eval_new,ACC,prob)
+    				else
+    					ACC = false
+    					appendEval!(chain,eval_old,ACC,prob)
+    				end
+    			end 
+            end
 		    # update sampling variances
             # -------------------------
 

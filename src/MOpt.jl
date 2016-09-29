@@ -5,10 +5,7 @@ module MOpt
 # ############
 
 using Distributions 
-<<<<<<< HEAD
-=======
 using Lumberjack
->>>>>>> cededc4d52642fe0d3d93d6782ce7c011106b2cd
 using DataFrames
 using HDF5
 import Base.show, Base.std
