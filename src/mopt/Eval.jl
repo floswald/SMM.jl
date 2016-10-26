@@ -213,12 +213,15 @@ returns all data and simluated moments as a dataframe.
 """
 function check_moments(ev::Eval)
 
-	d = DataFrame(moment = collect(keys(ev.dataMoments)),data = collect(values(ev.dataMoments)))
+	d = DataFrame(moment = collect(keys(ev.dataMoments)),data = collect(values(ev.dataMoments)),data_sd = collect(values(ev.dataMomentsW)))
 	dsim = DataFrame(moment = collect(keys(ev.simMoments)),simulation= collect(values(ev.simMoments)))
 	r = join(d,dsim, on=:moment)
 	r[:distance] =  r[:simulation] .- r[:data]
-	r[:percent_dev] = 100 * r[:distance] ./ r[:data]
-
+    r[:abs_percent_dev] = abs(100 * r[:distance] ./ r[:data])
+    if length(ev.dataMomentsW) > 0
+       r[:weighted_dist2] = ((r[:simulation] .- r[:data]) ./ r[:data_sd] ).^2 
+	   r[:weighted_precent] = abs((r[:abs_percent_dev] .- r[:data]) ./ r[:data_sd] )
+    end
 	return r
 end
 
