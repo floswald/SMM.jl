@@ -7,6 +7,7 @@ module MOpt
 using Distributions 
 using Lumberjack
 using DataFrames
+using DataFramesMeta
 using HDF5
 import Base.show, Base.std
 using GLM

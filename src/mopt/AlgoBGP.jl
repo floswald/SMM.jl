@@ -185,7 +185,7 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
                 appendEval!(chain,eval_old,ACC,prob)
             else
 
-    			prob = minimum([1.0, exp(chain.tempering *(eval_old.value - eval_new.value))])
+    			prob = minimum([1.0, chain.tempering *exp(eval_old.value - eval_new.value)])
 
     			if isna(prob)
     				prob = 0.0
