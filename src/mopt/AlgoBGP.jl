@@ -52,7 +52,7 @@ type MAlgoBGP <: MAlgo
     m               :: MProb # an MProb
     opts            :: Dict	# list of options
     i               :: Int 	# iteration
-    current_param   :: Array{Dict,1}  # current param value: one Dict for each chain
+    current_param   :: Array{Dict}  # current param value: one Dict for each chain
     MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
   
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100))
@@ -71,7 +71,7 @@ type MAlgoBGP <: MAlgo
             chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
         end
 	  	# current param values
-	  	cpar = [ deepcopy(m.initial_value) for i=1:opts["N"] ] 
+	  	cpar = Dict[ deepcopy(m.initial_value) for i=1:opts["N"] ] 
 
 	    return new(m,opts,0,cpar,chains)
     end

@@ -70,6 +70,30 @@ function Testobj_fails(ev::Eval)
 
 end
 
+function BGP_rand(x::Float64)
+    r1 = Normal(x,1.0)
+    r100 = Normal(x,0.01)
+    r1_5 = Normal(x-5.0,1)
+    0.45 * rand(r1) + 0.45 * rand(r100) + 0.1 * rand(r1_5)
+end
+function BGP_posterior(x::Vector{Float64})
+    r1 = Normal(0,1.0)
+    r100 = Normal(0,0.01)
+    r1_5 = Normal(5.0,1)
+    0.45 * pdf(r1,x) + 0.45 * pdf(r100,x) + 0.1 * pdf(r1_5,x)
+end
+
+function objfunc_BGP(ev::Eval)
+    start(ev)
+    p = paramd(ev)  # param vector as dict
+    y = BGP_posterior([p[:theta]])
+    setMoment(ev,y)
+    setValue(ev,-y)
+    ev.status=1
+    finish(ev)
+    return(ev)
+end
+
 #'.. py:function:: objfunc_norm
 #'
 #'   define a Test objective function

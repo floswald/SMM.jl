@@ -46,7 +46,7 @@ type Eval
 		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
 		this.dataMomentsW = Dict{Symbol,Float64}()
-		this.params       = Dict{Symbol,Float64}()
+		this.params       = Dict()
 		this.simMoments      = Dict{Symbol,Float64}()
 		this.options      = Dict()
 
@@ -62,6 +62,9 @@ type Eval
 
 		for k in keys(p)
 			kk = Symbol(k)
+            if length(p[k]) > 3
+                warn("you have a parameter with more tham 3 entries. we assume p = [val,lb,ub]")
+            end
 			this.params[kk] = p[k][1] # we take the first one, in case there are several values per param
 			# not sure about that.
 		end
@@ -93,7 +96,7 @@ type Eval
 		return this
 	end
 
-	function Eval(p::Dict{Symbol,Float64},m::Dict{Symbol,Float64})
+	function Eval(p::Dict,m::Dict{Symbol,Float64})
 		this              = Eval()
 		this.value        = -1
 		this.time         = time()

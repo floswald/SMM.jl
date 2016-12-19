@@ -19,11 +19,11 @@ function serialNormal(logmode="debug")
 	addEvalFunc!(mprob,objfunc_norm)
 
 	opts =Dict(
-		"N"               => 1,							# number of MCMC chains
+		"N"               => length(workers()),							# number of MCMC chains
 		"maxiter"         => 500,						# max number of iterations
 		"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
 		"print_level"     => 1,							# increasing verbosity level of output
-		"maxtemp"         => 1,							# tempering of hottest chain
+		"maxtemp"         => 2,							# tempering of hottest chain
 		"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
 		"max_shock_sd"    => 0.1,						# initial sd of shock on hottest chain
 		"past_iterations" => 30,						# num of periods used to compute Cov(p)
@@ -41,6 +41,38 @@ function serialNormal(logmode="debug")
 	MOpt.add_truck(MOpt.LumberjackTruck(STDOUT, "info"), "new-logger")
 	MOpt.add_truck(MOpt.LumberjackTruck(joinpath(pwd(),"MA.log"), "debug"), "dbg-logger")
 
+	# run the estimation
+	runMOpt!(MA)
+	fig = figure("parameter histograms") 
+	plt[:hist](convert(Array,MOpt.parameters(MA.MChains[1])),15)
+	return MA
+end
+
+
+function BGP_example()
+
+	p = Dict("theta" => [2.0,-2,10])
+	mprob = MProb()
+	addSampledParam!(mprob,p)
+	addEvalFunc!(mprob,MOpt.objfunc_BGP)
+
+	opts =Dict(
+		"N"               => length(workers()),							# number of MCMC chains
+		"maxiter"         => 500,						# max number of iterations
+		"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
+		"print_level"     => 1,							# increasing verbosity level of output
+		"maxtemp"         => 1,							# tempering of hottest chain
+		"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
+		"max_shock_sd"    => 0.1,						# initial sd of shock on hottest chain
+		"past_iterations" => 30,						# num of periods used to compute Cov(p)
+		"min_accept_tol"  => 100000,					# ABC-MCMC cutoff for rejecting small improvements
+		"max_accept_tol"  => 100000,					# ABC-MCMC cutoff for rejecting small improvements
+		"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
+		"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
+		"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
+		"max_jump_prob"   => 0.05)						# prob of jumps from hottest chain
+	# setup the BGP algorithm
+	MA = MAlgoBGP(mprob,opts)
 	# run the estimation
 	runMOpt!(MA)
 	fig = figure("parameter histograms") 

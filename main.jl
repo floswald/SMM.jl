@@ -9,6 +9,8 @@ include("src/MOpt.jl")
 # test a full example
 mm = MOpt.serialNormal()
 
+# test a full example
+mm = MOpt.BGP_example()
 
 
 # to develop with tests: run this
