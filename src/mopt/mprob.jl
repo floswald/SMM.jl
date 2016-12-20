@@ -29,8 +29,8 @@ of datamoments `moments`.
 type MProb
 
   # setup
-  initial_value       :: Dict           # initial parameter value as a dict
-  params_to_sample    :: Dict           # Dict with lower and upper bounds
+  initial_value       :: OrderedDict           # initial parameter value as a dict
+  params_to_sample    :: OrderedDict           # Dict with lower and upper bounds
   objfunc             :: Function       # objective function
   objfunc_opts        :: Dict           # options passed to the objective function, e.g. printlevel
   moments             :: Dict           # a dictionary of data moments to track
@@ -38,8 +38,8 @@ type MProb
   # very simple constructor
   function MProb()
     this = new()
-    this.initial_value       = Dict()
-    this.params_to_sample    = Dict()
+    this.initial_value       = OrderedDict()
+    this.params_to_sample    = OrderedDict()
     this.objfunc             = x -> x
     this.objfunc_opts        = Dict()
     this.moments             = Dict()

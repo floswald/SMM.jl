@@ -13,6 +13,23 @@ mm = MOpt.serialNormal()
 mm = MOpt.BGP_example()
 
 
+# chain 
+# serves only to store data 
+type chain
+    evals::Array{Eval}
+    id::Int64
+    accepted::Array{Bool}
+end
+# # params(chain) --> Dict(p1=>array,p2=>array)
+# # values(chain) --> vector
+# # moments(chain) --> Dict(m1=>array,...)
+
+# last
+
+
+
+
+
 # to develop with tests: run this
 include("test/test_MProb.jl")
 include("test/test_chains.jl")

@@ -50,35 +50,45 @@ type BGPChain <: AbstractChain
     end
 end
 
-type BGPChains
-	MChains :: Array{BGPChain,1}
+type Chain
+    evals::Array{Eval}
+    id::Int64
+    accepted::Array{Bool}
+    exchanged::Array{Int}
+    sigmas :: Vector{Float64}
+
+    function Chain(id::Int,n::Int,sig::Vector{Float64})
+        this = new()
+        this.evals = Array{Eval}(n)
+        this.accepted = falses(n)
+        this.exchanged = zeros(Int,n)
+        this.id = id
+        this.sigma = PDiagMat(sig)
+        return this
+    end
 end
 
 type MAlgoBGP <: MAlgo
     m               :: MProb # an MProb
     opts            :: Dict	# list of options
     i               :: Int 	# iteration
-    current_param   :: Array{Dict}  # current param value: one Dict for each chain
-    MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
+    current_param   :: Array{OrderedDict}  # current param value: one Dict for each chain
+    MChains         :: Array{Chain} 	# collection of Chains: if N==1, length(chains) = 1
   
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100,"bound_prob"=>0.15))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1))
 
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
-    		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
-    		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
-    		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-    	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i],opts["bound_prob"]) for i=1:opts["N"] ]
+            # initial std dev for each parameter to achieve at least bound_prob on the bounds
+            init_sd = OrderedDict( k => initvar(v[:lb],opts["bound_prob"]) for (k,v) in m.params_to_sample)
+            chains = Chain[Chain(i,opts["maxiter"],collect(values(init_sd)) .* temps[i]) for i in 1:opts["N"]]
           else
             temps     = [1.0]
-            shocksd   = [opts["min_shock_sd"]]
-            disttol   = [opts["min_disttol"]]
-            jump_prob = [opts["min_jump_prob"]]
-            chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i],opts["bound_prob"]) for i=1:opts["N"] ]
+            init_sd = OrderedDict( k => initvar(v[:lb],opts["bound_prob"]) for (k,v) in m.params_to_sample)
+            chains = Chain[Chain(i,opts["maxiter"],collect(values(init_sd)) .* temps[i]) for i in 1:opts["N"]]
         end
 	  	# current param values
-	  	cpar = Dict[ deepcopy(m.initial_value) for i=1:opts["N"] ] 
-
+	  	cpar = OrderedDict[ deepcopy(m.initial_value) for i=1:opts["N"] ] 
 	    return new(m,opts,0,cpar,chains)
     end
 end
@@ -173,6 +183,7 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
 	for ch in 1:algo["N"]
 		chain = algo.MChains[ch]
 		eval_new  = v[ch]
+        @assert isa(eval_new,Eval)
 
 		xold = -99.0
 		if algo.i == 1
@@ -318,6 +329,20 @@ function getParamCovariance(algo::MAlgoBGP)
 end
 
 
+function sample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},ub::Vector{Flaot64})
+
+    # draw as long as all points are in support
+    n = 100
+    for i in 1:n
+        x = rand(d)
+        if (x.>=lb) && (x.<=ub)
+            return x
+        end
+    end
+    error("no draw in support after $n trials")
+
+end
+
 # function getNewCandidates!(algo::MAlgoBGP,MVN::MvNormal)
 function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 
@@ -328,25 +353,23 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		# getParamKernel could be in here
 		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
 		# setup a MvNormal
-		VV2 = VV.* algo.MChains[ch].shock_sd
-		# VV2 = VV
-		MVN = MvNormal(VV2)
 
-		# constraint the shock_sd: 95% conf interval should not exceed overall param interval width
-		# shock_list = [ (algo.m.params_to_sample[p][:ub] - algo.m.params_to_sample[p][:lb]) for p in ps2s_names(algo) ] ./ (1.96 * 2 *diag(VV2))
-		# shock_ub  = minimum(   shock_list  )
-		# algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
 
-		# shock parameters on chain index ch
-        # shock = rand(MVN) * algo.MChains[ch].shock_sd
-		shock = rand(MVN) 
-		shock = Dict(zip(ps2s_names(algo) , shock))
+        # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
+        sig = algo.MChains[ch].shock_sd
+        mu  = getLastEval(algo.MChains[ch]).params
+        lb = [v[:lb] for (k,v) in algo.m.params_to_sample]
+        ub = [v[:ub] for (k,v) in algo.m.params_to_sample]
 
-		debug("shock to parameters on chain $ch :")
-		debug("shock = $shock")
+        newp = sample(MvNormal(mu,sig),lb,ub)
 
-		debug("current params: $(getLastEval(algo.MChains[ch]).params)")
 
+        eval_old = getLastEval(algo.MChains[ch])
+        for k in keys(eval_old.params)
+            algo.current_param[ch][k] = fitMirror(eval_old.params[k] + shock[k] , 
+                                                    algo.m.params_to_sample[k][:lb],
+                                                    algo.m.params_to_sample[k][:ub])
+        end
 		jumpParams!(algo,ch,shock)
 		# debug("new params: $(algo.current_param)")
 	end

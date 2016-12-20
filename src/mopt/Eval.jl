@@ -12,7 +12,9 @@
 * `dataMoments`: Dict of data moments
 * `dataMomentsW`: Dict of weights for data moments
 * `status`: Int error status
-* `options`: Dict of options
+* `prob`: probability of acceptance
+* `accepted`: whether draw was accepted
+* `options`: Dict of options and other info
 
 """ 
 type Eval
@@ -24,6 +26,8 @@ type Eval
 	dataMoments  :: Dict
 	dataMomentsW :: Dict
 	status       :: Int64
+    prob         :: Float64
+    accepted     :: Bool
 	options      :: Dict
 
 	function Eval()
@@ -35,6 +39,8 @@ type Eval
 		this.dataMomentsW = Dict{Symbol,Float64}()
 		this.params       = Dict{Symbol,Float64}()
 		this.simMoments   = Dict{Symbol,Float64}()
+        this.prob = 0.0
+        this.accepted = false
 		this.options      = Dict()
 		return this
 	end
@@ -49,6 +55,8 @@ type Eval
 		this.params       = Dict()
 		this.simMoments      = Dict{Symbol,Float64}()
 		this.options      = Dict()
+        this.prob = 0.0
+        this.accepted = false
 
 		if !in(:name,names(mom)) throw(ArgumentError("moment dataframe needs column named `name`")) end
 		if !in(:value,names(mom)) throw(ArgumentError("moment dataframe needs column named `value`")) end
@@ -82,6 +90,8 @@ type Eval
 		this.params       = Dict{Symbol,Float64}()
 		this.simMoments   = Dict{Symbol,Float64}()
 		this.options      = Dict()
+        this.prob = 0.0
+        this.accepted = false
 
 		for kk in keys(mprob.moments) 
 			this.dataMoments[kk]  = mprob.moments[kk][:value]
@@ -106,6 +116,8 @@ type Eval
 		this.params       = p
 		this.simMoments   = Dict{Symbol,Float64}()
 		this.options      = Dict()
+        this.prob = 0.0
+        this.accepted = false
 
 		return this
 	end
