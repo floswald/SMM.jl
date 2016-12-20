@@ -12,7 +12,7 @@ function serialNormal(logmode="debug")
 
 	# initial value
 	pb    = Dict("p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] )
-	moms = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=ones(2))
+	moms = DataFrame(name=["mu2","mu1"],value=[-1.0,1.0],weight=ones(2))
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	addMoment!(mprob,moms) 
@@ -23,9 +23,9 @@ function serialNormal(logmode="debug")
 		"maxiter"         => 500,						# max number of iterations
 		"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
 		"print_level"     => 1,							# increasing verbosity level of output
-		"maxtemp"         => 2,							# tempering of hottest chain
+		"maxtemp"         => 1.1,							# tempering of hottest chain
 		"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
-		"max_shock_sd"    => 0.1,						# initial sd of shock on hottest chain
+		"max_shock_sd"    => 0.3,						# initial sd of shock on hottest chain
 		"past_iterations" => 30,						# num of periods used to compute Cov(p)
 		"min_accept_tol"  => 100000,					# ABC-MCMC cutoff for rejecting small improvements
 		"max_accept_tol"  => 100000,					# ABC-MCMC cutoff for rejecting small improvements

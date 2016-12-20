@@ -24,23 +24,29 @@ type BGPChain <: AbstractChain
 	moments_nms  ::Array{Symbol,1}	# names of moments
 	params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
 
-	tempering  ::Float64 # tempering in update probability
-	shock_sd   ::Float64 # sd of shock to 
+	tempering  :: Float64 # tempering in update probability
+	shock_sd   :: Vector{Float64} # vector of std deviations to shock each parameter. 
 
-	function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob)
-		infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = DataArray(zeros(Float64,L)), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
-		parameters = DataFrame(chain_id = [id for i=1:L], iter=1:L)
-        moments    = DataFrame(chain_id = [id for i=1:L], iter=1:L)
-		par_nms    = sort(Symbol[ Symbol(x) for x in ps_names(MProb) ])
-		par2s_nms  = Symbol[ Symbol(x) for x in ps2s_names(MProb) ]
-		mom_nms    = sort(Symbol[ Symbol(x) for x in ms_names(MProb) ])
-        for i in par2s_nms
-            parameters[i] = DataArray(zeros(L))
+	function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob,bound_prob)
+        # get initial std dev of shock for each param
+        # this depends on the width of the search interval
+        this = new()
+        this.id = id
+        this.i = 0
+        this.shock_sd = map(x->initvar(x,bound_prob),[v[:lb] for (k,v) in Mprob.params_to_sample])
+		this.infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = DataArray(zeros(Float64,L)), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
+		this.parameters = DataFrame(chain_id = [id for i=1:L], iter=1:L)
+        this.moments    = DataFrame(chain_id = [id for i=1:L], iter=1:L)
+		this.params_nms    = sort(Symbol[ Symbol(x) for x in ps_names(MProb) ])
+		this.params2s_nms  = Symbol[ Symbol(x) for x in ps2s_names(MProb) ]
+		this.moments_nms    = sort(Symbol[ Symbol(x) for x in ms_names(MProb) ])
+        for i in this.params2s_nms
+            this.parameters[i] = DataArray(zeros(L))
         end
         for i in mom_nms
-            moments[i] = DataArray(zeros(L))
+            this.moments[i] = DataArray(zeros(L))
         end
-		return new(id,0,infos,parameters,moments,dist_tol,jump_prob,par_nms,mom_nms,par2s_nms,temp,shock)
+		return this
     end
 end
 
@@ -55,20 +61,20 @@ type MAlgoBGP <: MAlgo
     current_param   :: Array{Dict}  # current param value: one Dict for each chain
     MChains         :: Array{BGPChain,1} 	# collection of Chains: if N==1, length(chains) = 1
   
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"maxiter"=>100,"maxtemp"=> 100,"bound_prob"=>0.15))
 
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
     		shocksd   = linspace(opts["min_shock_sd"],opts["max_shock_sd"],opts["N"])
     		disttol   = linspace(opts["min_disttol"],opts["max_disttol"],opts["N"])
     		jump_prob = linspace(opts["min_jump_prob"],opts["max_jump_prob"],opts["N"])
-    	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+    	  	chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i],opts["bound_prob"]) for i=1:opts["N"] ]
           else
             temps     = [1.0]
             shocksd   = [opts["min_shock_sd"]]
             disttol   = [opts["min_disttol"]]
             jump_prob = [opts["min_jump_prob"]]
-            chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i]) for i=1:opts["N"] ]
+            chains    = [BGPChain(i,m,opts["maxiter"],temps[i],shocksd[i],disttol[i],jump_prob[i],opts["bound_prob"]) for i=1:opts["N"] ]
         end
 	  	# current param values
 	  	cpar = Dict[ deepcopy(m.initial_value) for i=1:opts["N"] ] 
@@ -185,7 +191,8 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
                 appendEval!(chain,eval_old,ACC,prob)
             else
 
-    			prob = minimum([1.0, chain.tempering *exp(eval_old.value - eval_new.value)])
+                # prob = minimum([1.0,exp( chain.tempering *( eval_old.value - eval_new.value))])
+    			prob = minimum([1.0,exp( ( eval_old.value - eval_new.value) )])
 
     			if isna(prob)
     				prob = 0.0
@@ -218,15 +225,19 @@ function doAcceptRecject!(algo::MAlgoBGP,v::Array)
             # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
             accept_too_high = chain.infos[algo.i,:accept_rate]>0.234
             if accept_too_high
-                chain.shock_sd *= 1.05  # increase variance by 5% => will accept less
+                chain.shock_sd *= 1.20  # increase variance by 10% => will accept less
             else # too low
-                chain.shock_sd *= 0.95  # decrease variance by 5% => will accept more
+                chain.shock_sd *= 0.9  # decrease variance by 10% => will accept more
             end
 		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
 		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
-		    # debug("ACCEPTED: $ACC")
-		    # debug("old value: $(eval_old.value)")
-		    # debug("new value: $(eval_new.value)")
+            debug("")
+            debug("chain: $ch")
+		    debug("ACCEPTED: $ACC")
+            debug("accept_rate = $(chain.infos[algo.i,:accept_rate])")
+		    debug("old value: $(eval_old.value)")
+		    debug("new value: $(eval_new.value)")
+            debug("")
 		end
 	end
 end
@@ -317,23 +328,24 @@ function getNewCandidates!(algo::MAlgoBGP,VV::Matrix)
 		# getParamKernel could be in here
 		# chain.temperature should parameterize MVN somehow (as in their toy example: multiplies the variance)
 		# setup a MvNormal
-		# VV2 = VV.*algo.MChains[ch].tempering
-		VV2 = VV
+		VV2 = VV.* algo.MChains[ch].shock_sd
+		# VV2 = VV
 		MVN = MvNormal(VV2)
 
 		# constraint the shock_sd: 95% conf interval should not exceed overall param interval width
-		shock_list = [ (algo.m.params_to_sample[p][:ub] - algo.m.params_to_sample[p][:lb]) for p in ps2s_names(algo) ] ./ (1.96 * 2 *diag(VV2))
-		shock_ub  = minimum(   shock_list  )
-		algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
+		# shock_list = [ (algo.m.params_to_sample[p][:ub] - algo.m.params_to_sample[p][:lb]) for p in ps2s_names(algo) ] ./ (1.96 * 2 *diag(VV2))
+		# shock_ub  = minimum(   shock_list  )
+		# algo.MChains[ch].shock_sd  = min(algo.MChains[ch].shock_sd , shock_ub)
 
 		# shock parameters on chain index ch
-		shock = rand(MVN) * algo.MChains[ch].shock_sd
+        # shock = rand(MVN) * algo.MChains[ch].shock_sd
+		shock = rand(MVN) 
 		shock = Dict(zip(ps2s_names(algo) , shock))
 
-		# debug("shock to parameters on chain $ch :")
-		# debug("shock = $shock")
+		debug("shock to parameters on chain $ch :")
+		debug("shock = $shock")
 
-		# debug("current params: $(getLastEval(algo.MChains[ch]).params)")
+		debug("current params: $(getLastEval(algo.MChains[ch]).params)")
 
 		jumpParams!(algo,ch,shock)
 		# debug("new params: $(algo.current_param)")

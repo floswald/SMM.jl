@@ -10,6 +10,7 @@ using DataFrames, DataFramesMeta
 using HDF5
 import Base.show, Base.std
 using GLM
+using RCall
 
 
 # exports: Types
