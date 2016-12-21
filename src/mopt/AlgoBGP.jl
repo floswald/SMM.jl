@@ -10,62 +10,39 @@
 # Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov Chains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
 export jumpParams!
 
-# Define a Chain Type for BGP
-type BGPChain <: AbstractChain
-	id::Int             # chain id
-	i::Int              # current index
-	infos        ::DataFrame   # DataFrameionary of arrays(L,1) with eval, ACC and others
-	parameters   ::DataFrame   # DataFrameionary of arrays(L,1), 1 for each parameter
-	moments      ::DataFrame   # DataFrameionary of DataArrays(L,1), 1 for each moment
-	dist_tol     ::Float64 # percentage value distance from current chain i that is considered "close" enough. i.e. close = ((val_i - val_j)/val_j < dist_tol )
-	jump_prob    ::Float64 # probability of swapping with "close" chain
+type Chain
+    evals     :: Array{Eval}
+    id        :: Int64
+    iter      :: Int64
+    accepted  :: Array{Bool}
+    exchanged :: Array{Int}
+    m         :: Mprob
+    sigmas    :: Vector{Float64}
 
-	params_nms   ::Array{Symbol,1}	# names of parameters (i.e. exclusive of "id" or "iter", etc)
-	moments_nms  ::Array{Symbol,1}	# names of moments
-	params2s_nms ::Array{Symbol,1}  # DataFrame names of parameters to sample 
-
-	tempering  :: Float64 # tempering in update probability
-	shock_sd   :: Vector{Float64} # vector of std deviations to shock each parameter. 
-
-	function BGPChain(id,MProb,L,temp,shock,dist_tol,jump_prob,bound_prob)
-        # get initial std dev of shock for each param
-        # this depends on the width of the search interval
-        this = new()
-        this.id = id
-        this.i = 0
-        this.shock_sd = map(x->initvar(x,bound_prob),[v[:lb] for (k,v) in Mprob.params_to_sample])
-		this.infos      = DataFrame(chain_id = [id for i=1:L], iter=1:L, evals = DataArray(zeros(Float64,L)), accept = zeros(Bool,L), status = zeros(Int,L), exchanged_with=zeros(Int,L),prob=zeros(Float64,L),perc_new_old=zeros(Float64,L),accept_rate=zeros(Float64,L),shock_sd = [shock;zeros(Float64,L-1)],eval_time=zeros(Float64,L),tempering=zeros(Float64,L))
-		this.parameters = DataFrame(chain_id = [id for i=1:L], iter=1:L)
-        this.moments    = DataFrame(chain_id = [id for i=1:L], iter=1:L)
-		this.params_nms    = sort(Symbol[ Symbol(x) for x in ps_names(MProb) ])
-		this.params2s_nms  = Symbol[ Symbol(x) for x in ps2s_names(MProb) ]
-		this.moments_nms    = sort(Symbol[ Symbol(x) for x in ms_names(MProb) ])
-        for i in this.params2s_nms
-            this.parameters[i] = DataArray(zeros(L))
-        end
-        for i in mom_nms
-            this.moments[i] = DataArray(zeros(L))
-        end
-		return this
+    function Chain(id::Int,n::Int,m::Mprob,sig::Vector{Float64})
+        this           = new()
+        this.evals     = Array{Eval}(n)
+        this.accepted  = falses(n)
+        this.exchanged = zeros(Int,n)
+        this.id        = id
+        this.iter      = 1
+        this.m         = m
+        this.sigma     = PDiagMat(sig)
+        return this
     end
 end
 
-type Chain
-    evals::Array{Eval}
-    id::Int64
-    accepted::Array{Bool}
-    exchanged::Array{Int}
-    sigmas :: Vector{Float64}
+function next_eval!(c::Chain)
+    # generate new parameter vector from last accepted param
+    pp = getNewCandidates(c)
 
-    function Chain(id::Int,n::Int,sig::Vector{Float64})
-        this = new()
-        this.evals = Array{Eval}(n)
-        this.accepted = falses(n)
-        this.exchanged = zeros(Int,n)
-        this.id = id
-        this.sigma = PDiagMat(sig)
-        return this
-    end
+    # evaluate objective 
+    ev = evaluateObjective(c.m,pp)
+
+    # accept reject 
+    doAcceptRecject!(c,ev)
+
+
 end
 
 type MAlgoBGP <: MAlgo
@@ -152,6 +129,11 @@ function computeNextIteration!( algo::MAlgoBGP )
 		@assert algo.i == algo.MChains[ic].i
 	end
 
+    # TODO 
+    # this on each chain
+    # START=========================================================
+    pmap( x->next_eval!(x), algo.MChains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+
 	# New Candidates
 	# --------------
 	if algo.i > 1
@@ -169,7 +151,9 @@ function computeNextIteration!( algo::MAlgoBGP )
 	# -----------------------------------------------------------
 	doAcceptRecject!(algo,v)
 
-	# Part 2) EXCHANGE MOVES 
+    # STOP=========================================================
+
+	# Part 2) EXCHANGE MOVES only on master
 	# ----------------------
 	# starting mixing in period 3
 	if algo.i>=2 && algo["N"] > 1 
@@ -179,77 +163,71 @@ end
 
 # notice: higher tempering draws candiates further spread out,
 # but accepts lower function values with lower probability
-function doAcceptRecject!(algo::MAlgoBGP,v::Array)
-	for ch in 1:algo["N"]
-		chain = algo.MChains[ch]
-		eval_new  = v[ch]
-        @assert isa(eval_new,Eval)
+function doAcceptRecject!(c::Chain,ev::Eval)
+	if c.iter == 1
+		# accept everything.
+		ACC = true; prob = 1.0
+		chain.infos[algo.i,:accept_rate] = 0.1
+		eval_new.status = 1
+		appendEval!(chain,eval_new,ACC,prob)
+	else
+		eval_old = getEval(chain,algo.i-1)
 
-		xold = -99.0
-		if algo.i == 1
-			# accept all
-			ACC = true; prob = 1.0
-			chain.infos[algo.i,:accept_rate] = 0.1
-			eval_new.status = 1
-			appendEval!(chain,eval_new,ACC,prob)
-		else
-			eval_old = getEval(chain,algo.i-1)
+        if eval_new.status < 0
+            prob = 0.0
+            eval_old.status = -1
+            ACC = false
+            appendEval!(chain,eval_old,ACC,prob)
+        else
 
-            if eval_new.status < 0
-                prob = 0.0
-                eval_old.status = -1
-                ACC = false
-                appendEval!(chain,eval_old,ACC,prob)
-            else
+            # prob = minimum([1.0,exp( chain.tempering *( eval_old.value - eval_new.value))])
+			prob = minimum([1.0,exp( ( eval_old.value - eval_new.value) )])
 
-                # prob = minimum([1.0,exp( chain.tempering *( eval_old.value - eval_new.value))])
-    			prob = minimum([1.0,exp( ( eval_old.value - eval_new.value) )])
+			if isna(prob)
+				prob = 0.0
+				eval_old.status = -1
+				ACC = false
+				appendEval!(chain,eval_old,ACC,prob)
 
-    			if isna(prob)
-    				prob = 0.0
-    				eval_old.status = -1
-    				ACC = false
-    				appendEval!(chain,eval_old,ACC,prob)
+			elseif !isfinite(eval_old.value)
+				prob = 1.0
+				eval_new.status = -2
+				ACC = false
+				appendEval!(chain,eval_new,ACC,prob)
+			else 
+				# status = 1
+				if prob > rand()
+					ACC = true
+					appendEval!(chain,eval_new,ACC,prob)
+				else
+					ACC = false
+					appendEval!(chain,eval_old,ACC,prob)
+				end
+			end 
+        end
+	    # update sampling variances
+        # -------------------------
 
-    			elseif !isfinite(eval_old.value)
-    				prob = 1.0
-    				eval_new.status = -2
-    				ACC = false
-    				appendEval!(chain,eval_new,ACC,prob)
-    			else 
-    				# status = 1
-    				if prob > rand()
-    					ACC = true
-    					appendEval!(chain,eval_new,ACC,prob)
-    				else
-    					ACC = false
-    					appendEval!(chain,eval_old,ACC,prob)
-    				end
-    			end 
-            end
-		    # update sampling variances
-            # -------------------------
+        # update average acceptance rate: moving average
+	    chain.infos[algo.i,:accept_rate]   = 0.9 * chain.infos[algo.i-1,:accept_rate] + 0.1 * ACC
 
-            # update average acceptance rate: moving average
-		    chain.infos[algo.i,:accept_rate]   = 0.9 * chain.infos[algo.i-1,:accept_rate] + 0.1 * ACC
-
-            # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
-            accept_too_high = chain.infos[algo.i,:accept_rate]>0.234
-            if accept_too_high
-                chain.shock_sd *= 1.20  # increase variance by 10% => will accept less
-            else # too low
-                chain.shock_sd *= 0.9  # decrease variance by 10% => will accept more
-            end
-		    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
-		    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
-            debug("")
-            debug("chain: $ch")
-		    debug("ACCEPTED: $ACC")
-            debug("accept_rate = $(chain.infos[algo.i,:accept_rate])")
-		    debug("old value: $(eval_old.value)")
-		    debug("new value: $(eval_new.value)")
-            debug("")
-		end
+        # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
+        accept_too_high = chain.infos[algo.i,:accept_rate]>0.234
+        if accept_too_high
+            chain.shock_sd *= 1.20  # increase variance by 10% => will accept less
+        else # too low
+            chain.shock_sd *= 0.9  # decrease variance by 10% => will accept more
+        end
+	    chain.infos[algo.i,:shock_sd]      = chain.shock_sd
+	    chain.infos[algo.i,:perc_new_old] = (eval_new.value - eval_old.value) / abs(eval_old.value)
+        debug("")
+        debug("chain: $ch")
+	    debug("ACCEPTED: $ACC")
+        debug("accept_rate = $(chain.infos[algo.i,:accept_rate])")
+	    debug("old value: $(eval_old.value)")
+	    debug("new value: $(eval_new.value)")
+        debug("")
+	end
 	end
 end
 
