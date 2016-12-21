@@ -132,7 +132,6 @@ end
 # -------------------- ADDING OBJ FUNCTION --------------------
 function addEvalFunc!(m::MProb,f::Function)
   m.objfunc = f
-  return m 
 end
 
 # evalute objective function

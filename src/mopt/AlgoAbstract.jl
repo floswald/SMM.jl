@@ -3,7 +3,7 @@
 
 
 
-# define an abstract type and set/get for it
+# A Moment Optimizing Algorithm is called MAlgo
 abstract MAlgo
 
 import Base.getindex, Base.setindex!
@@ -17,12 +17,6 @@ function setindex!(algo::MAlgo, val,key)
   algo.opts[key] = val
 end
 
-# get chain number "which" from algo
-function getChain(algo::MAlgo, which::Int)
-	algo.chains[which]
-end
-
-
 function runMOpt!( algo::MAlgo )
 
 	# tasks
@@ -30,7 +24,7 @@ function runMOpt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
-	Lumberjack.info("Starting estimation loop.")
+	@info("Starting estimation loop.")
 	t0 = time()
 
 	# do iteration
@@ -47,23 +41,22 @@ function runMOpt!( algo::MAlgo )
 				@assert haskey(algo.opts,"filename")
 				if mod(i,algo["save_frequency"]) == 0
 					save(algo,algo["filename"])
-					Lumberjack.info("saved data at iteration $i")
+					@info("saved data at iteration $i")
 				end
 			end
 
 			# printing progress
-			if Base.get(algo.opts,"print_level",0) > 1
-				if mod(algo.i,10) == 0
-					println(infos(algo.MChains,algo.i))
-				end
-			elseif Base.get(algo.opts,"print_level",0) > 0
-				if mod(algo.i,100) == 0
-					println(infos(algo.MChains,algo.i))
-				end
-			end
+			# if Base.get(algo.opts,"print_level",0) > 1
+			# 	if mod(algo.i,10) == 0
+			# 		println(infos(algo.MChains,algo.i))
+			# 	end
+			# elseif Base.get(algo.opts,"print_level",0) > 0
+			# 	if mod(algo.i,100) == 0
+			# 		println(infos(algo.MChains,algo.i))
+			# 	end
+			# end
 		catch e
-			Lumberjack.info("caught exception $e")
-			println(infos(algo.MChains,algo.i))
+			@info("caught exception $e")
 			throw(e)
 		end
 	end
@@ -72,30 +65,30 @@ function runMOpt!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo["filename"])
 	else
-		Lumberjack.warn("could not find 'filename' and did not save")
+		@warn("could not find 'filename' and did not save")
 	end
-	Lumberjack.info("Done with estimation after $t1 minutes")
+	@info("Done with estimation after $t1 minutes")
 end
 
-function ps2s_names(algo::MAlgo)
-	return ps2s_names(algo.m)
-end
+# function ps2s_names(algo::MAlgo)
+# 	return ps2s_names(algo.m)
+# end
 
-function ms_names(algo::MAlgo)
-	return ms_names(algo.m)
-end
+# function ms_names(algo::MAlgo)
+# 	return ms_names(algo.m)
+# end
 
-function parameters(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
-	return m.MChains[ch].parameters[iter,p]
-end
+# function parameters(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
+# 	return m.MChains[ch].parameters[iter,p]
+# end
 
-function moments(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
-	return m.MChains[ch].moments[iter,p]
-end
+# function moments(m::MAlgo, ch :: Int64, iter:: Int64, p::Symbol)
+# 	return m.MChains[ch].moments[iter,p]
+# end
 
-function moments(m::MAlgo, ch :: Int64, iter:: Int64)
-	return [ m.MChains[ch].moments[iter,p] for p in ms_names(m)]
-end
+# function moments(m::MAlgo, ch :: Int64, iter:: Int64)
+# 	return [ m.MChains[ch].moments[iter,p] for p in ms_names(m)]
+# end
 
 
 
