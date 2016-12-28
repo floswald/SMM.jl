@@ -1,4 +1,6 @@
 
+abstract AbstractChain
+
 # The BGP MCMC Algorithm: Likelihood-Free Parallel Tempering
 # ==========================================================
 #
@@ -9,7 +11,7 @@
 # 
 # Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov BGPChains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
 
-type BGPChain
+type BGPChain <: AbstractChain
     evals     :: Array{Eval}
     id        :: Int64
     iter      :: Int64
@@ -26,6 +28,7 @@ type BGPChain
         this.evals     = Array{Eval}(n)
         this.evals[1]  = Eval(m)    # set first eval
         this.accepted  = falses(n)
+        this.accept_rate = 0.0
         this.exchanged = zeros(Int,n)
         this.id        = id
         this.iter      = 0
@@ -38,9 +41,10 @@ end
 
 lastAccepted(c::BGPChain) = find(c.accepted[c.iter:-1:1])[1]
 getLastEval(c::BGPChain) = c.evals[lastAccepted(c)]
-set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
+set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(c.m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
 function set_eval!(c::BGPChain,ev::Eval)
     c.evals[c.iter] = deepcopy(ev)
+    c.accepted[c.iter] =  ev.accepted 
     return nothing
 end
 function set_exchanged!(c::BGPChain,i::Int)
@@ -71,22 +75,35 @@ function next_eval!(c::BGPChain)
 
 end
 
+# end BGPChain
+###################################
+
+
+
 type MAlgoBGP <: MAlgo
     m               :: MProb # an MProb
     opts            :: Dict	# list of options
     i               :: Int 	# iteration
-    MBGPChains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
+    chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
   
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1))
 
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
-            init_sd = OrderedDict( k => initvar(v[:lb],opts["bound_prob"]) for (k,v) in m.params_to_sample)
+            println("opts=$opts")
+            println("pars = $( m.params_to_sample)")
+            init_sd = OrderedDict()
+            for (k,v) in m.params_to_sample
+                init_sd[k] = MOpt.initvar(v[:lb],opts["bound_prob"])
+            end
             BGPChains = BGPChain[BGPChain(i,opts["maxiter"],collect(values(init_sd)) .* temps[i]) for i in 1:opts["N"]]
           else
             temps     = [1.0]
-            init_sd = OrderedDict( k => initvar(v[:lb],opts["bound_prob"]) for (k,v) in m.params_to_sample)
+            init_sd = OrderedDict()
+            for (k,v) in m.params_to_sample
+                init_sd[k] = MOpt.initvar(v[:lb],opts["bound_prob"])
+            end
             BGPChains = BGPChain[BGPChain(i,opts["maxiter"],collect(values(init_sd)))]
         end
 	  	# current param values
@@ -105,17 +122,17 @@ function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-	incrementBGPChainIter!(algo.MBGPChains)
+	incrementBGPChainIter!(algo.chains)
 
 	# check algo index is the same on all BGPChains
 	for ic in 1:algo["N"]
-		@assert algo.i == algo.MBGPChains[ic].i
+		@assert algo.i == algo.chains[ic].i
 	end
 
     # TODO 
     # this on each BGPChain
     # START=========================================================
-    pmap( x->next_eval!(x), algo.MBGPChains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+    pmap( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
 
 	# Part 2) EXCHANGE MOVES only on master
 	# ----------------------
@@ -190,14 +207,14 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# for all BGPChains
     dtol = get(algo.opts,"disttol",0.1)
 	for ch in 1:algo["N"]
-        e1 = getLastEval(algo.MBGPChains[ch])
+        e1 = getLastEval(algo.chains[ch])
 		# 1) find all other BGPChains with value +/- x% of BGPChain ch
 		close = Int64[]  # vector of indices of "close" BGPChains
 		for ch2 in 1:algo["N"]
 			if ch != ch2
-				e2 = getLastEval(algo.MBGPChains[ch2])
+				e2 = getLastEval(algo.chains[ch2])
 				tmp = abs(e2.value - e1.value) / abs(e1.value)
-				# tmp = abs(evals(algo.MBGPChains[ch2],algo.MBGPChains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
+				# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
 				if tmp < dtol 
                     @debug("perc dist $ch and $ch2 is $tmp. label close.")
 					push!(close,ch2)
@@ -216,8 +233,8 @@ end
 
 function swap_ev!(algo::MAlgoBGP,ch_id::Pair)
     @debug("swapping evs for $(ch_id.first) and $(ch_id.second)")
-    c1 = algo.MBGPChains[ch_id.first] 
-    c2 = algo.MBGPChains[ch_id.second]
+    c1 = algo.chains[ch_id.first] 
+    c2 = algo.chains[ch_id.second]
 
 	e1 = getLastEval(c1)
 	e2 = getLastEval(c2)
@@ -300,7 +317,7 @@ function save(algo::MAlgoBGP, filename::AbstractString)
 
 	# saving the BGPChains
 	for cc in 1:algo["N"]
-	    saveBGPChainToHDF5(algo.MBGPChains[cc], ff5, "BGPChain/$cc")
+	    saveBGPChainToHDF5(algo.chains[cc], ff5, "BGPChain/$cc")
 	end
 
     close(ff5)
@@ -346,6 +363,6 @@ function show(io::IO,MA::MAlgoBGP)
 	print(io,"\n")
 	print(io,"BGPChains\n")
 	print(io,"------\n")
-	print(io,"Tempering range: [$(MA.MBGPChains[1].tempering),$(MA.MBGPChains[end].tempering)]\n")
-	print(io,"Jump probability range: [$(MA.MBGPChains[1].jump_prob),$(MA.MBGPChains[end].jump_prob)]\n")
+	print(io,"Tempering range: [$(MA.chains[1].tempering),$(MA.chains[end].tempering)]\n")
+	print(io,"Jump probability range: [$(MA.chains[1].jump_prob),$(MA.chains[end].jump_prob)]\n")
 end

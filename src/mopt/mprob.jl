@@ -33,7 +33,7 @@ type MProb
   params_to_sample    :: OrderedDict           # Dict with lower and upper bounds
   objfunc             :: Function       # objective function
   objfunc_opts        :: Dict           # options passed to the objective function, e.g. printlevel
-  moments             :: Dict           # a dictionary of data moments to track
+  moments             :: OrderedDict           # a dictionary of data moments to track
 
   # very simple constructor
   function MProb()
@@ -42,7 +42,7 @@ type MProb
     this.params_to_sample    = OrderedDict()
     this.objfunc             = x -> x
     this.objfunc_opts        = Dict()
-    this.moments             = Dict()
+    this.moments             = OrderedDict()
     return(this)
   end
 
@@ -64,7 +64,7 @@ Add initial parameter values to an `MProb` minimsation problem.
 
 * `p`: A Dict with (String,Number) pairs
 """
-function addParam!(m::MProb,p::Dict)
+function addParam!(m::MProb,p::Union{Dict,OrderedDict})
   for k in keys(p)
     m.initial_value[Symbol(k)] = p[k]
   end

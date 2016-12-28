@@ -89,7 +89,7 @@ finds standard deviation `sigma` of mean zero univariate normal such that `cdf(N
 Use this function to specify the variance when sampling from a symmetrically bounded normal distribution when you want 
 to have a mass of `prob` at the bounds.
 """
-function initvar(bound::Float64,prob::Float64;low_var::Float64=0.01,hi_var::Float64=100.0)
+function initvar(bound::Float64,prob::Float64;low_var::Float64=eps(),hi_var::Float64=100.0)
     @assert (prob < 1) && (prob > 0)
     fzero(x->distvar(x,bound,prob),low_var,hi_var)
 end
@@ -99,6 +99,7 @@ end
 
 helper function for `initvar`
 """
+# TODO not normal(0,sig)!!!!
 function distvar(sig::Float64,b::Float64,p::Float64)
     N = Normal(0,sig)
     cdf(N,b) - p

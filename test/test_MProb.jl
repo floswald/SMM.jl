@@ -1,7 +1,7 @@
 
 module TestMProb
 
-using FactCheck, MOpt, DataFrames
+using Base.Test, MOpt, DataFrames, DataStructures
 
 
 
@@ -22,33 +22,33 @@ pb   = Dict( "a" => [0.5,0,1] , "b" => [0.6,0,1] )
 
 moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3))
 
-facts("Testing the MProb constructor") do
+@testset "Testing the MProb constructor" begin
 
 	mprob = MProb()
-	@fact isa(mprob, MProb) --> true
+	@test isa(mprob, MProb) == true
 
 end
 
 
-facts("testing MProb methods") do
+@testset "testing MProb methods" begin
 
-	p   = Dict(
+	p   = OrderedDict(
 		"a" => 0.1 , 
 		"b" => 0.2 ,
 		"c" => 0.5 )
-	pb   = Dict(
+	pb   = OrderedDict(
 		"a" => [0.1; 0; 1] , 
 		"b" => [0.2; 0; 1] )
 	mprob = MProb();
 
 	addParam!(mprob,p)	
-	@fact sort(collect(MOpt.ps_names(mprob))) == sort(Any[:a,:b,:c]) --> true
-	@fact length(mprob.params_to_sample) --> 0
+	@test collect(MOpt.ps_names(mprob)) == Any[:a,:b,:c]
+	@test length(mprob.params_to_sample) == 0
 
 	mprob = MProb();
 	addSampledParam!(mprob,pb)	
-	@fact sort(collect(MOpt.ps_names(mprob))) == sort(Any[:a,:b]) --> true
-	@fact sort(collect(MOpt.ps2s_names(mprob))) == sort(Any[:a,:b]) --> true
+	@test collect(MOpt.ps_names(mprob)) == Any[:a,:b]
+	@test collect(MOpt.ps2s_names(mprob)) == Any[:a,:b]
 
 	mprob = MProb();
 	addSampledParam!(mprob,"a",0.1,0,1)
@@ -56,10 +56,10 @@ facts("testing MProb methods") do
 	addMoment!(mprob,moms)
 	addEvalFunc!(mprob,MOpt.Testobj2)
 
-	@fact isa(mprob.objfunc,Function) --> true
+	@test isa(mprob.objfunc,Function)
 
-	@fact sort(collect(MOpt.ps_names(mprob))) == sort(Any[:a,:b]) --> true
-	@fact sort(collect(MOpt.ms_names(mprob))) == sort(Any[:alpha,:beta,:gamma]) --> true
+	@test collect(MOpt.ps_names(mprob)) == Any[:a,:b]
+	@test collect(MOpt.ms_names(mprob)) == Any[:alpha,:beta,:gamma]
 
 end
 

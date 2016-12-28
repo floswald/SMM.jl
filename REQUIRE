@@ -1,12 +1,9 @@
 julia 0.5
 DataFrames
 DataFramesMeta
-FactCheck
 Distributions
 HDF5
-Lazy
 Sobol
 GLM
-Lumberjack
+Logging
 Roots
-RCall

@@ -12,19 +12,20 @@ import Base.show, Base.std
 using GLM
 using DataStructures
 using PDMats
+using Roots
 
 @Logging.configure(level=DEBUG)
 
 
 # exports: Types
-export MProb
-# export MProb, Chain, BGPChain, MAlgo, MAlgoBGP, Testobj, Eval, AbstractChain
+export MProb, Eval,MAlgo, MAlgoBGP 
+# export MProb, Chain, BGPChain, Testobj, Eval, AbstractChain
 
 # exports: methods
-export addParam!, addSampledParam!, addMoment!, addEvalFunc!
+export addParam!, addSampledParam!, addMoment!, addEvalFunc!, setMoment, start, finish, param, paramd , setValue, readEval,write, readEvalArray , dataMoment,dataMomentW
+#        dataMomentd, dataMomentWd,setMoment
 # export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
-       # runMOpt!, save, slices, transpose, addParam!, addSampledParam!, addMoment!, addEvalFunc!, start, finish, param, paramd, 
-#        dataMoment,dataMomentd, dataMomentW, dataMomentWd,setMoment, setValue, readEval, readEvalArray, readEvalArrayRemote, write
+       # runMOpt!, save, slices, transpose, , readEvalArrayRemote, 
 
 
 # load files

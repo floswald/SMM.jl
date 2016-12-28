@@ -1,6 +1,6 @@
 module TestBGPChain
 
-using FactCheck, DataFrames, MOpt, Lazy
+using Base.Test, DataFrames, MOpt, Lazy
 
 
 
@@ -9,43 +9,48 @@ using FactCheck, DataFrames, MOpt, Lazy
 pb   = Dict( "a" => [0.3; 0;1] , "b" => [4.9;0;1] )
 moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3))
 
-facts("Testing BGPChain constructor") do
+@testset "Testing BGPChain constructor" begin
 	
-	mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj)
-	L = 9
-	temp = 100.0
-	shock = 12.0
-	dist_tol = 0.001
-	jumpprob = 0.05
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	addMoment!(mprob,moms) 
+	addEvalFunc!(mprob,MOpt.Testobj)
 	id = 180
-	chain = BGPChain(id,mprob,L,temp,shock,dist_tol,jumpprob)
+	n = 23
+	sig = rand(length(pb))
+	sig2 = rand(length(pb))
+	upd = 5
+	chain = MOpt.BGPChain(id,n,mprob,sig,upd)
 
-	@fact chain.i --> 0 
-	@fact chain.id --> id
+	@test chain.id == id
+	@test chain.accept_rate == 0.0
+	@test chain.iter == 0
+	@test chain.accepted == falses(n)
+	@test chain.exchanged == zeros(Int,n)
+	@test diag(chain.sigma) == sig
+	@test chain.update_sigma == upd
 
-	context("length of members") do
+	@testset "methods" begin
+		chain.iter = 1
+		ev = Eval(mprob)
+		v = rand()
+		ev.value = v
+		ev.accepted = true
+		MOpt.set_eval!(chain,ev)
+		@test isa(chain.evals[1],Eval)
+		@test chain.evals[1].value == v 
+		@test chain.accepted[1]
+		MOpt.set_acceptRate!(chain)
+		@test chain.accept_rate == 1.0
 
-		# test that all member except i are L long
-		@fact length(chain.infos[:evals])  --> L
-		@fact length(chain.infos[:accept]) --> L
-		for nm in MOpt.ps2s_names(mprob)
-			@fact nrow(chain.parameters) --> L
-		end
-		for nm in MOpt.ms_names(mprob)
-			@fact nrow(chain.moments) --> L
-		end
-		@fact chain.tempering --> temp
-		@fact chain.shock_sd --> shock
-		@fact chain.jump_prob --> jumpprob
-		@fact chain.dist_tol --> dist_tol
+		MOpt.set_sigma!(chain,sig2)
+		@test diag(chain.sigma) == sig2
+
+		MOpt.getLastEval(chain) == ev
+
+
 	end
 
-	context("get correct dataframe labels") do
-		@fact names(MOpt.parameters(chain)) --> MOpt.ps2s_names(mprob)
-		for nm in MOpt.ms_names(mprob)
-			@fact nm in names(MOpt.moments(chain))[2:end] --> true
-		end
-	end
 
 end
 
