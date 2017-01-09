@@ -26,11 +26,11 @@ addEvalFunc!(mprob,MOpt.Testobj)
 		@test length(MA.chains) == 3
 
 		for ix = 1:length(MA.chains)
-			@test MA.current_param[ix] == mprob.initial_value
+			@test isa( MA.chains[ix] , MOpt.BGPChain)
 		end
-
 	end
 
+	
 end
 
 

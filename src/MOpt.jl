@@ -18,7 +18,7 @@ using Roots
 
 
 # exports: Types
-export MProb, Eval,MAlgo, MAlgoBGP 
+export MProb, Eval,MAlgo, MAlgoBGP
 # export MProb, Chain, BGPChain, Testobj, Eval, AbstractChain
 
 # exports: methods
