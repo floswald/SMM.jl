@@ -13,12 +13,13 @@ using GLM
 using DataStructures
 using PDMats
 using Roots
+using Documenter
 
 @Logging.configure(level=DEBUG)
 
 
 # exports: Types
-export MProb, Eval,MAlgo, MAlgoBGP
+export MProb, Eval,MAlgo, MAlgoBGP, Chain
 # export MProb, Chain, BGPChain, Testobj, Eval, AbstractChain
 
 # exports: methods

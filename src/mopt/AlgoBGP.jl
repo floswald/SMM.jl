@@ -19,6 +19,7 @@ abstract AbstractChain
 
 type BGPChain <: AbstractChain
     evals     :: Array{Eval}
+    mprob     :: MProb
     id        :: Int64
     iter      :: Int64
     accepted  :: Array{Bool}
@@ -26,12 +27,14 @@ type BGPChain <: AbstractChain
     exchanged :: Array{Int}
     m         :: MProb
     sigma     :: PDiagMat{Float64}
-    update_sigma :: Int64   # update sampling vars every x periods
+    sigma_update_steps :: Int64   # update sampling vars every sigma_update_steps iterations
+    sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
     smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
 
-    function BGPChain(id::Int,n::Int,m::MProb,sig::Vector{Float64},upd::Int64,smpl_iters::Int)
+    function BGPChain(id::Int=1,n::Int=10,m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000)
         @assert length(sig) == length(m.params_to_sample)
         this           = new()
+        this.mprob     = m
         this.evals     = Array{Eval}(n)
         this.evals[1]  = Eval(m)    # set first eval
         this.accepted  = falses(n)
@@ -41,7 +44,8 @@ type BGPChain <: AbstractChain
         this.iter      = 0
         this.m         = m
         this.sigma     = PDiagMat(sig)
-        this.update_sigma = upd
+        this.sigma_update_steps = upd
+        this.sigma_adjust_by = upd_by
         this.smpl_iters = smpl_iters
         return this
     end
@@ -76,6 +80,7 @@ function next_eval!(c::BGPChain)
     # increment interation
     c.iter += 1
 
+    # returns an OrderedDict
     pp = getNewCandidates(c)
 
     # evaluate objective 
@@ -135,14 +140,14 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
         # and only if you are not BGPChain number 1
 
-        if (c.id>1) && (mod(c.iter,c.update_sigma) == 0)
+        if (c.id>1) && (mod(c.iter,c.sigma_update_steps) == 0)
             too_high = c.accept_rate > 0.234
             if too_high
-                @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by 2%.")
-                set_sigma!(c,diag(c.sigma) .* 1.02 )
+                @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(c.sigma_adjust_by)%.")
+                set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
             else
-                @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by 2%.")
-                set_sigma!(c,diag(c.sigma) .* 0.98 )
+                @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(c.sigma_adjust_by)%.")
+                set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
             end
         end
     end
@@ -200,7 +205,7 @@ type MAlgoBGP <: MAlgo
     i               :: Int 	# iteration
     chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
   
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1,"update_sigma"=>10))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000))
 
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
@@ -211,14 +216,14 @@ type MAlgoBGP <: MAlgo
             for (k,v) in m.params_to_sample
                 init_sd[k] = MOpt.initvar(v[:lb],(v[:lb]+v[:ub])/2,opts["bound_prob"])
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],opts["update_sigma"],opts["smpl_iters"]) for i in 1:opts["N"]]
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"]) for i in 1:opts["N"]]
           else
             temps     = [1.0]
             init_sd = OrderedDict()
             for (k,v) in m.params_to_sample
                 init_sd[k] = MOpt.initvar(v[:lb],(v[:lb]+v[:ub])/2,opts["bound_prob"],opts["smpl_iters"])
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)),opts["update_sigma"],opts["smpl_iters"])]
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)),opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"])]
         end
 	    return new(m,opts,0,BGPChains)
     end
@@ -238,17 +243,18 @@ function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
 
-    incrementBGPChainIter!(algo.chains)
+    # incrementBGPChainIter!(algo.chains)
 
-    # check algo index is the same on all BGPChains
-    for ic in 1:algo["N"]
-        @assert algo.i == algo.chains[ic].i
-    end
 
     # TODO 
     # this on each BGPChain
     # START=========================================================
     pmap( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+
+    # check algo index is the same on all BGPChains
+    for ic in 1:algo["N"]
+        @assert algo.i == algo.chains[ic].i
+    end
 
     # Part 2) EXCHANGE MOVES only on master
     # ----------------------
