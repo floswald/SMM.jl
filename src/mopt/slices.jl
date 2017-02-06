@@ -1,6 +1,38 @@
 
 # TODO
 # add plot slices
+type MyT
+    data :: Dict
+end
+
+m = MyT(Dict(k => 
+             Dict(j => Dict(:value=>rand(),
+                            :moments=>rand(3)) for j in linspace(-1,1,10))
+            for k in [:a, :b])
+    )
+
+@recipe function f(::Type{MyT}, r::MyT )
+function values(r::MyT )
+    n = length(r.data)  # num of subplots
+    z = sqrt(n)
+    rows, cols = (floor(Int,z), ceil(Int,z))
+    x = Dict(k => collect(keys(r.data[k])) for k in keys(r.data))
+
+    p = Any[]
+    for (k,v) in r.data 
+        d = MOpt.get(r, :k , :value)
+        push!(p,plot(d[:x],d[:y]))
+    end
+    plot(p...,layout=grid(rows,cols))
+end
+
+# @recipe function f{T<:Distribution}(::Type{T}, dist::T; func = pdf)
+#     xi -> func(dist, xi)
+# end
+
+
+
+
 
 
 export Slice,slices,add!,get
