@@ -37,10 +37,6 @@ function serialNormal(logmode="debug")
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
-	# setup Lumberjack logging
-	MOpt.add_truck(MOpt.LumberjackTruck(STDOUT, "info"), "new-logger")
-	MOpt.add_truck(MOpt.LumberjackTruck(joinpath(pwd(),"MA.log"), "debug"), "dbg-logger")
-
 	# run the estimation
 	runMOpt!(MA)
 	fig = figure("parameter histograms") 

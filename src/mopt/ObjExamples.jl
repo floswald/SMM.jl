@@ -1,45 +1,3 @@
-#'.. py:function:: Testobj
-#'
-#'   define a Test objective function
-function Testobj(x::Dict,mom::DataFrame,whichmom::Array{String,1},vargs...)
-
-	t0 = time()
-
-    if length(vargs) > 0
-        if get(vargs[1],"printlevel",0) > 0
-            Base.info("in Test objective function")
-        end
-    end
-
-    mm = deepcopy(mom)
-    nm0 = names(mm)
-    DataFrames.insert_single_column!(mm,zeros(nrow(mm)),ncol(mm)+1)
-    names!(mm,[nm0,:model_value])
-
-    for ir in eachrow(mm)
-        ir[:model_value] = ir[:data_value] + 2.2
-    end
-
-	# output all moments
-    mout = transpose(mm[[:moment,:model_value]],1)
-
-	# subset mm to required moments to compute function value
-	mm = mm[findin(mm[:moment],whichmom),:]
-
-	# compute distance
-	v = sum((mm[:data_value] - mm[:model_value]).^2)
-
-	# status
-	status = 1
-
-	# time out
-	t0 = time() - t0
-
-	# return a dict
-	ret = Dict("value" => v, "params" => deepcopy(x), "time" => t0, "status" => status, "moments" => mout)
-	return ret
-
-end
 
 
 export Testobj2,Testobj3,objfunc_norm
@@ -94,9 +52,12 @@ function objfunc_BGP(ev::Eval)
     return(ev)
 end
 
-#'.. py:function:: objfunc_norm
-#'
-#'   define a Test objective function
+
+"""
+    objfunc_norm(ev::Eval)
+
+Test objective function. This is a bivariate normal distribution that simumlates data from the parameters in `ev`. From this simulated data, sample means are computed, which should be close to the empirical moments on `ev`. The aim is to minimize this function.
+"""
 function objfunc_norm(ev::Eval)
     
 	start(ev)
@@ -145,9 +106,6 @@ end
 
 
 
-#'.. py:function:: banana
-#'
-#'   define a Test objective function
 function banana(ev::Eval)
 
     start(ev)

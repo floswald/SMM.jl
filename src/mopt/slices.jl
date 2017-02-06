@@ -5,19 +5,42 @@
 
 export Slice,slices,add!,get
 
-type Slice
-    res  :: Dict    # result
-    p0   :: Dict    # initial param
-    m0   :: Dict    # data moments
 
-    function Slice(p::Dict,m::Dict)
+"""
+    Slice 
+
+A *slice* in dimension ``j`` of a function ``f \in \mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = linspace(lower[j],upper[j],npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
+
+## Fields
+
+* `res`: `Dict` of resulting slices. For each parameter ``p_j`` there is a `Dict` with as many entries as `npoints` chosen in [`doSlices`](@ref)
+* `p0`: Initial parameter vector dict
+* `m0`: data moments dict
+
+# Examples
+
+```julia
+julia> using MOpt
+julia> m = MProb()
+julia> p = OrderedDict(:p1=>1.1,:p2=>pi)
+julia> m = OrderedDict(:m1=>rand(),:m2=>e)
+julia> Slice(p,m)
+
+```
+
+"""
+type Slice
+    res  :: Union{Dict,OrderedDict}    # result
+    p0   :: Union{Dict,OrderedDict}    # initial param
+    m0   :: Union{Dict,OrderedDict}    # data moments
+
+    function Slice(p::Union{Dict,OrderedDict},m::Union{Dict,OrderedDict})
         this = new()
         this.res = Dict( k => Dict() for k in keys(p) )
         this.p0=deepcopy(p)
         this.m0=deepcopy(m)
         return this
     end
-
 end
 
 function add!(s::Slice, p::Symbol, ev::Eval)
@@ -52,11 +75,12 @@ end
 #     return [ :x => convert(Array{Float64,1},x) , :y => convert(Array{Float64,1},y) ]
 # end
 
+"""
+    doSlices(m::MProb,npoints::Int,pad=0.1)
 
-#'.. py:function:: slices(m,pad)
-#'
-#'   computes slices for the objective function
-function slices(m::MProb,npoints::Int,pad=0.1)
+Computes [`Slice`](@ref)s of an [`MProb`](@ref)
+"""
+function doSlices(m::MProb,npoints::Int,pad=0.1)
 
     t0 = time()
     res = Slice(m.initial_value, m.moments)
@@ -66,7 +90,7 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        Lumberjack.info("slicing along $pp")
+        @info("slicing along $pp")
 
         vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
             ev2 = deepcopy(ev)
@@ -77,14 +101,14 @@ function slices(m::MProb,npoints::Int,pad=0.1)
 
         for v in vv 
             if (typeof(v) <: Exception)
-                Lumberjack.warn("exception received. value not stored.")
+                @warn("exception received. value not stored.")
             else
                 add!( res, pp, v)
             end
         end
     end  
     t1 = round((time()-t0)/60)
-    Lumberjack.info("done after $t1 minutes")
+    @info("done after $t1 minutes")
 
     return res 
 end

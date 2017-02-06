@@ -1,30 +1,19 @@
 module TestBGPChain
 
-using Base.Test, DataFrames, MOpt, Lazy
+using Base.Test, DataFrames, MOpt
 
 
 
 # TESTING Chains
 # ==============
-pb   = Dict( "a" => [0.3; 0;1] , "b" => [0.9;0;1] )
-moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3))
+
+include("test-include.jl")
 
 @testset "Testing BGPChains constructor" begin
 	
 	@testset "constructor" begin
-		mprob = MProb() 
-		addSampledParam!(mprob,pb) 
-		addMoment!(mprob,moms) 
-		addEvalFunc!(mprob,MOpt.Testobj)
-		id = 180
-		n = 23
-		sig = rand(length(pb))
-		sig2 = rand(length(pb))
-		upd = 5
-		upd_by = rand()
-		ite = 10
-		chain = MOpt.BGPChain(id,n,mprob,sig,upd,upd_by,ite)
 
+	    (chain, id, n, mprob, sig,sig2,  upd, upd_by, ite) = test_chain()
 		@test chain.id == id
 		@test chain.accept_rate == 0.0
 		@test chain.iter == 0
@@ -38,18 +27,7 @@ moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3
 	end
 
 	@testset "basic methods" begin
-		mprob = MProb() 
-		addSampledParam!(mprob,pb) 
-		addMoment!(mprob,moms) 
-		addEvalFunc!(mprob,MOpt.Testobj)
-		id = 180
-		n = 23
-		sig = rand(length(pb))
-		sig2 = rand(length(pb))
-		upd = 5
-		upd_by = rand()
-		ite = 10
-		chain = MOpt.BGPChain(id,n,mprob,sig,upd,upd_by,ite)
+	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
 		@test chain.iter == 0
 		chain.iter = 1
 		ev = Eval(mprob)
@@ -89,17 +67,7 @@ moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3
  	end
 
 	@testset "getNewCandidates" begin
-		mprob = MProb() 
-		addSampledParam!(mprob,pb) 
-		addMoment!(mprob,moms) 
-		addEvalFunc!(mprob,MOpt.Testobj)
-		id = 180
-		n = 23
-		sig = rand(length(pb))
-		upd = 5
-		upd_by = rand()
-		ite = 5000
-		chain = MOpt.BGPChain(id,n,mprob,sig,upd,upd_by,ite)
+	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
 		@test chain.iter == 0
 		chain.iter = 1
 		pp = MOpt.getNewCandidates(chain)
@@ -119,13 +87,10 @@ moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3
 	end
 
 	@testset "testing accept reject" begin
-
+	    (c, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
 
 		@testset "testing initial period" begin
 			# nothing gets rejected in period 1
-			c = MOpt.BGPChain()
-
-		    # increment interation
 		    c.iter += 1
 
 			# get a getNewCandidates
@@ -142,93 +107,38 @@ moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3
 
 		end
 
-		# @testset "testing whether params get accept/rejected" begin
+		@testset "test correct accept/reject" begin
 
-		# 	# first iteration
-		# 	MA = MAlgoBGP(mprob,opts)
-		# 	MA.i = 1
-		# 	MOpt.incrementChainIter!(MA.MChains)
-		# 	v = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
+		    c.iter += 1
+		    @test c.iter == 2
+			# get 2 Evals: one with good, one with bad value
+			# want to accept good and reject bad.
 
-		# 	MOpt.doAcceptRecject!(MA,v)
+			ev_0 = MOpt.getLastEval(c)
+			ev_good = Eval()
+			ev_bad  = Eval()
 
-		# 	# second iteration
-		# 	MA.i = 2
-		# 	MOpt.incrementChainIter!(MA.MChains)
+			ev_good.value = ev_0.value - 10.0
+			ev_bad.value  = ev_0.value + 10.0
+			ev_good.status = 1
+			ev_bad.status  = 1
 
-		# 	# get randome parameters
-		# 	for i in 1:length(v) 
-		# 		for (k,va) in MA.current_param[i]
-		# 			MA.current_param[i][k] = va + rand()
-		# 		end
-		# 	end
 
-		# 	# get 2 return values
-		# 	v1 = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
-		# 	v2 = map( x -> MOpt.evaluateObjective(MA.m,x), MA.current_param)
+			MOpt.doAcceptReject!(c,ev_bad)
+			@test ev_bad.prob < 1
+			if ev_bad.prob > c.probs_acc[c.iter]
+				@test ev_bad.accepted
+				@test c.accepted[c.iter]
+			end
 
-		# 	# assign a very good bad value on each chain: 
-		# 	for i in 1:length(v) 
-		# 		v1[i].value = v1[i].value - 100.0
-		# 		setMoment(v1[i],  Dict( :alpha => rand(), :beta => rand(), :gamma => rand() ))
-		# 		v2[i].value = v2[i].value + 100.0
-		# 		setMoment(v2[i],  Dict( :alpha => rand(), :beta => rand(), :gamma => rand() ) )
-		# 	end
-		# 	MAs = MAlgo[]
-		# 	push!(MAs,deepcopy(MA),deepcopy(MA))
-		# 	MOpt.doAcceptRecject!(MAs[1],v1)
-		# 	MOpt.doAcceptRecject!(MAs[1],v2)
+			MOpt.doAcceptReject!(c,ev_good)
+			@test ev_good.prob == 1.0
+			@test ev_good.accepted
+			@test c.accepted[c.iter]
 
-		# 	for ma in MAs
-		# 		for ch in 1:ma["N"]
-		# 			ev= getEval(ma.MChains[ch],ma.i)
-		# 			Last_ev= getEval(ma.MChains[ch],ma.i-1)
+		end
 
-		# 			if infos(ma.MChains[ch],ma.i)[:accept][1]
-		# 				# if accepted, the parameter vector in ev is equal to current_param on that chain
-		# 				ev_p = paramd(ev)
-		# 				ev_m = ev.simMoments
-		# 				for (k,v) in ev_p
-		# 					@test v == ma.current_param[ch][k]
-		# 				end
-		# 			else
-		# 				# if not, parameters(ma.MChains[ch],ma.i) == parameters(ma.MChains[ch],ma.i-1)
-		# 				ev_p = paramd(Last_ev)
-		# 				ev_m = Last_ev.simMoments
-		# 				for (k,v) in ev_p
-		# 					@test v == not(ma.current_param[ch][k])
-		# 				end
-		# 			end
-		# 		end
-		# 	end
-		# end
 	end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 end
 
 

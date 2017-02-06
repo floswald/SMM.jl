@@ -2,14 +2,14 @@
 """
 # Minimisation Problem: `MProb`
 
-A moment minimsation problem is defined by an objective function that
+A moment **minimsation** problem is defined by an objective function that
 depends on a vector of unknown parameters `params_to_sample`, and a set
 of datamoments `moments`. 
 
 ## Fields:
 
 * `initial_value`: initial parameter value as a dict
-* `params_to_sample`: Dict with lower and upper bounds
+* `params_to_sample`: OrderedDict with lower and upper bounds
 * `objfunc`: objective function
 * `objfunc_opts`: options passed to the objective function, e.g. printlevel
 * `moments`: a dictionary of data moments to track
@@ -40,7 +40,11 @@ type MProb
     this = new()
     this.initial_value       = OrderedDict()
     this.params_to_sample    = OrderedDict()
-    this.objfunc             = x -> x
+    function def(x)
+      info("default objfunc, returns input")
+      x
+    end
+    this.objfunc             = def
     this.objfunc_opts        = Dict()
     this.moments             = OrderedDict()
     return(this)
@@ -135,13 +139,13 @@ function addEvalFunc!(m::MProb,f::Function)
 end
 
 # evalute objective function
-function evaluateObjective(m::MProb,p::Dict)
+function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict})
     ev = Eval(m,p)
     try
        # ev = eval(Expr(:call,m.objfunc,ev))
       ev = m.objfunc(ev)
     catch ex
-      Base.info("caught exception $ex")
+      @warn("caught exception $ex")
       ev.status = -2
     end
     gc()
@@ -154,7 +158,7 @@ function evaluateObjective(m::MProb,ev)
        # ev = eval(Expr(:call,m.objfunc,ev))
        ev = m.objfunc(ev)
     catch ex
-      Base.info("caught excpetion $ex")
+      @warn("caught exception $ex")
       ev.status = -2
     end
     gc()

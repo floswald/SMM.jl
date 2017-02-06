@@ -32,7 +32,7 @@ type Eval
 
 	function Eval()
 		this              = new()
-		this.value        = -1
+		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
@@ -45,9 +45,9 @@ type Eval
 		return this
 	end
 
-	function Eval(p::Dict,mom::DataFrame)
+	function Eval(p::Union{Dict,OrderedDict},mom::DataFrame)
 		this = new()
-		this.value        = -1
+		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
@@ -80,9 +80,9 @@ type Eval
 		return this
 	end
 
-	function Eval(mprob::MProb,p::Dict)
+	function Eval(mprob::MProb,p::Union{Dict,OrderedDict})
 		this              = new()
-		this.value        = -1
+		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
 		this.dataMoments  = Dict{Symbol,Float64}()
@@ -107,7 +107,7 @@ type Eval
 	end
     function Eval(mprob::MProb)
         this              = new()
-        this.value        = -1
+        this.value        = -1.0
         this.time         = time()
         this.status       = -1
         this.dataMoments  = Dict{Symbol,Float64}()
@@ -131,9 +131,9 @@ type Eval
         return this
     end
 
-	function Eval(p::Dict,m::Dict{Symbol,Float64})
+	function Eval(p::Union{Dict,OrderedDict},m::Dict{Symbol,Float64})
 		this              = Eval()
-		this.value        = -1
+		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
 		this.dataMoments  = m

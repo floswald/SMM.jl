@@ -19,6 +19,7 @@ abstract AbstractChain
 
 type BGPChain <: AbstractChain
     evals     :: Array{Eval}
+    probs_acc :: Vector{Float64}    # vector of probabilities with which to accept
     mprob     :: MProb
     id        :: Int64
     iter      :: Int64
@@ -36,6 +37,7 @@ type BGPChain <: AbstractChain
         this           = new()
         this.mprob     = m
         this.evals     = Array{Eval}(n)
+        this.probs_acc = rand(n)
         this.evals[1]  = Eval(m)    # set first eval
         this.accepted  = falses(n)
         this.accept_rate = 0.0
@@ -99,6 +101,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         # accept everything.
         eval_new.prob =1.0
         eval_new.accepted = true
+        eval_new.status = 1
         c.accepted[c.iter] = eval_new.accepted
         set_acceptRate!(c)
     else
@@ -110,6 +113,8 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         else
 
             eval_new.prob = minimum([1.0,exp( ( eval_old.value - eval_new.value) )])
+            # @debug("eval_new.prob = $(eval_new.prob)")
+            # @debug("c.probs_acc[c.iter] = $(c.probs_acc[c.iter])")
 
             if isna(eval_new.prob)
                 eval_new.prob = 0.0
@@ -122,7 +127,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
                 eval_new.accepted = true 
             else 
                 # status = 1
-                if eval_new.prob > rand()
+                if eval_new.prob > c.probs_acc[c.iter]
                     eval_new.accepted = true 
                 else
                     eval_new.accepted = false

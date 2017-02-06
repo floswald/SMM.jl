@@ -12,6 +12,9 @@ moms = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=rand(3))
 p2    = Dict(:a => 3.1 , :b => 4.9)
 moms2 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
+p3    = MOpt.OrderedDict(:a => 3.1 , :b => 4.9)
+moms3 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
+
 type MyP
 	a :: Float64 
 	b :: Float64 
@@ -30,6 +33,9 @@ end
 	ev2= Eval(p2,moms2)	
 	setMoment(ev2,moms2)
 	ev2.status=1
+	ev3= Eval(p3,moms3)	
+	# setMoment(ev3,moms3)
+	ev3.status=1
 
 	@testset "testing param" begin
 
@@ -38,7 +44,11 @@ end
 
 		@test param(ev2,:a) == 3.1
 		@test param(ev2,[:a;:b]) == [3.1;4.9]
-		@test paramd(ev) == Dict(:a => 3.1 , :b => 4.9)
+		@test paramd(ev2) == Dict(:a => 3.1 , :b => 4.9)
+
+		@test param(ev3,:a) == 3.1
+		@test param(ev3,[:a;:b]) == [3.1;4.9]
+		@test paramd(ev3) == Dict(:a => 3.1 , :b => 4.9)
 
 		myp = MyP()
 		MOpt.fill(myp,ev)

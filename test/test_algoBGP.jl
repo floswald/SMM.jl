@@ -5,12 +5,12 @@ module TestAlgoBGP
 
 using Base.Test, DataFrames, MOpt
 
-pb   = Dict( "a" => [0.3; 0;1] , "b" => [0.4;0;1])
-moms = DataFrame(name=["alpha","beta","gamma"],value=[0.8;0.7;0.5],weight=rand(3))
+pb   = Dict( "a" => [0.3; -1;1] , "b" => [-0.9;-2;2] )
+moms = DataFrame(name=["mu1","mu2"],value=[0.0;0.0],weight=rand(2))
 mprob = MProb() 
 addSampledParam!(mprob,pb) 
 addMoment!(mprob,moms) 
-addEvalFunc!(mprob,MOpt.Testobj)
+addEvalFunc!(mprob,MOpt.objfunc_norm)
 
 @testset "AlgoBGP" begin
 
