@@ -56,7 +56,7 @@ function runMOpt!( algo::MAlgo )
 			# 	end
 			# end
 		catch e
-			@info("caught exception $e")
+			@warn("caught exception $e")
 			throw(e)
 		end
 	end

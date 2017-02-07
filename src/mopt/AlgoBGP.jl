@@ -148,10 +148,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         if (c.id>1) && (mod(c.iter,c.sigma_update_steps) == 0)
             too_high = c.accept_rate > 0.234
             if too_high
-                @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(c.sigma_adjust_by)%.")
+                @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
                 set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
             else
-                @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(c.sigma_adjust_by)%.")
+                @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
                 set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
             end
         end
@@ -167,14 +167,13 @@ sample from distribution `d` until all poins are in support
 function sample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},ub::Vector{Float64},iters::Int)
 
     # draw until all points are in support
-    n = iters
-    for i in 1:n
+    for i in 1:iters
         x = rand(d)
         if all(x.>=lb) && all(x.<=ub)
             return x
         end
     end
-    error("no draw in support after $n trials. increase either opts[smpl_iters] or opts[bound_prob].")
+    error("no draw in support after $iters trials. increase either opts[smpl_iters] or opts[bound_prob].")
 end
 
 function getNewCandidates(c::BGPChain)
@@ -210,7 +209,7 @@ type MAlgoBGP <: MAlgo
     i               :: Int 	# iteration
     chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
   
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false))
 
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
@@ -234,7 +233,20 @@ type MAlgoBGP <: MAlgo
     end
 end
 
+# return current param spaces on algo
+function cur_param(m::MAlgoBGP)
+    r = Dict()
+    for ic in 1:length(m.chains)
+        if m.i == 0
+            r[ic] = Dict(:mu => m.m.initial_value,:sigma => m.chains[ic].sigma)
+        else
+            ev_old = getLastEval(m.chains[ic])
+            r[ic] = Dict(:mu => paramd(ev_old),:sigma => m.chains[ic].sigma)
 
+        end
+    end
+    r
+end
 
 
 
@@ -254,11 +266,15 @@ function computeNextIteration!( algo::MAlgoBGP )
     # TODO 
     # this on each BGPChain
     # START=========================================================
-    pmap( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+    if get(algo.opts, "parallel", false) 
+        pmap( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+    else
+        map( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+    end
 
     # check algo index is the same on all BGPChains
     for ic in 1:algo["N"]
-        @assert algo.i == algo.chains[ic].i
+        @assert algo.i == algo.chains[ic].iter
     end
 
     # Part 2) EXCHANGE MOVES only on master
@@ -283,7 +299,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 				tmp = abs(e2.value - e1.value) / abs(e1.value)
 				# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
 				if tmp < dtol 
-                    @debug("perc dist $ch and $ch2 is $tmp. label close.")
+                    @debug("perc dist $ch and $ch2 is $tmp. will label that `close`.")
 					push!(close,ch2)
 				end
 			end
@@ -291,8 +307,8 @@ function exchangeMoves!(algo::MAlgoBGP)
 		# 2) with y% probability exchange with a randomly chosen BGPChain from close
 		if length(close) > 0
 			ex_with = rand(close)
-			@debug("making an exchange move for BGPChain $ch with BGPChain $ex_with set:$close")
-			swap_ev!(algo,Pair(ch,ex_with),algo.i)
+			@debug("making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
+			swap_ev!(algo,Pair(ch,ex_with))
 		end
 	end
 
@@ -385,8 +401,4 @@ function show(io::IO,MA::MAlgoBGP)
 	print(io,"Number of params to estimate: $(length(MA.m.params_to_sample))\n")
 	print(io,"Number of moments to match: $(length(MA.m.moments))\n")
 	print(io,"\n")
-	print(io,"BGPChains\n")
-	print(io,"------\n")
-	print(io,"Tempering range: [$(MA.chains[1].tempering),$(MA.chains[end].tempering)]\n")
-	print(io,"Jump probability range: [$(MA.chains[1].jump_prob),$(MA.chains[end].jump_prob)]\n")
 end

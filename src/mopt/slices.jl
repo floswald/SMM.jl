@@ -5,27 +5,6 @@ type MyT
     data :: Dict
 end
 
-m = MyT(Dict(k => 
-             Dict(j => Dict(:value=>rand(),
-                            :moments=>rand(3)) for j in linspace(-1,1,10))
-            for k in [:a, :b])
-    )
-
-@recipe function f(::Type{MyT}, r::MyT )
-function values(r::MyT )
-    n = length(r.data)  # num of subplots
-    z = sqrt(n)
-    rows, cols = (floor(Int,z), ceil(Int,z))
-    x = Dict(k => collect(keys(r.data[k])) for k in keys(r.data))
-
-    p = Any[]
-    for (k,v) in r.data 
-        d = MOpt.get(r, :k , :value)
-        push!(p,plot(d[:x],d[:y]))
-    end
-    plot(p...,layout=grid(rows,cols))
-end
-
 # @recipe function f{T<:Distribution}(::Type{T}, dist::T; func = pdf)
 #     xi -> func(dist, xi)
 # end
@@ -80,7 +59,8 @@ function add!(s::Slice, p::Symbol, ev::Eval)
 end
 
 function get(s::Slice, p::Symbol, m::Symbol)
-    x = [ k for (k,v) in s.res[p] ]
+    # x = [ k for (k,v) in s.res[p] ]
+    x = collect(keys(s.res[p]))
 
     if (m == :value)
         y =  [ v[:value] for (k,v) in s.res[p] ]
@@ -94,6 +74,22 @@ function get(s::Slice, p::Symbol, m::Symbol)
     return Dict( :x => xx[ix] , :y => convert(Array{Float64,1},y)[ix] )
 end
 
+# @recipe function f(s::Slice , w::Symbol )
+# # function plotit( s::Slice , w::Symbol)
+#     n = length(s.res)  # num of subplots
+#     z = sqrt(n)
+#     rows, cols = (floor(Int,z), ceil(Int,z))
+#     p = Any[]
+#     for (k,v) in s.res 
+#         d = get(s, k , w )
+#         push!(p,plot(d[:x],d[:y],xlabel="$k",ylabel="$w",legend=false,linecolor=:black))
+#     end
+#     plot(p...,layout=grid(rows,cols))
+# end
+
+
+
+# MOpt.plotit(s,:value)
 # function get(s::Slice, p::Symbol)
 #     rr = Dict()
 
@@ -108,11 +104,11 @@ end
 # end
 
 """
-    doSlices(m::MProb,npoints::Int,pad=0.1)
+    doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref)
 """
-function doSlices(m::MProb,npoints::Int,pad=0.1)
+function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
 
     t0 = time()
     res = Slice(m.initial_value, m.moments)
@@ -124,11 +120,20 @@ function doSlices(m::MProb,npoints::Int,pad=0.1)
         ev = Eval(m,m.initial_value)
         @info("slicing along $pp")
 
-        vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
-            ev2 = deepcopy(ev)
-            ev2.params[pp] = pval
-            ev2 = evaluateObjective(m,ev2)
-            return(ev2)
+        if parallel
+            vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                ev2 = deepcopy(ev)
+                ev2.params[pp] = pval
+                ev2 = evaluateObjective(m,ev2)
+                return(ev2)
+            end
+        else
+            vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                ev2 = deepcopy(ev)
+                ev2.params[pp] = pval
+                ev2 = evaluateObjective(m,ev2)
+                return(ev2)
+            end
         end
 
         for v in vv 

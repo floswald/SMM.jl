@@ -21,10 +21,10 @@ type Eval
 
 	value        :: Float64
 	time         :: Float64
-	params       :: Dict
-	simMoments   :: Dict
-	dataMoments  :: Dict
-	dataMomentsW :: Dict
+	params       :: OrderedDict
+	simMoments   :: OrderedDict
+	dataMoments  :: OrderedDict
+	dataMomentsW :: OrderedDict
 	status       :: Int64
     prob         :: Float64
     accepted     :: Bool
@@ -35,10 +35,10 @@ type Eval
 		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
-		this.dataMoments  = Dict{Symbol,Float64}()
-		this.dataMomentsW = Dict{Symbol,Float64}()
-		this.params       = Dict{Symbol,Float64}()
-		this.simMoments   = Dict{Symbol,Float64}()
+		this.dataMoments  = OrderedDict{Symbol,Float64}()
+		this.dataMomentsW = OrderedDict{Symbol,Float64}()
+		this.params       = OrderedDict{Symbol,Float64}()
+		this.simMoments   = OrderedDict{Symbol,Float64}()
         this.prob = 0.0
         this.accepted = false
 		this.options      = Dict()
@@ -50,10 +50,10 @@ type Eval
 		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
-		this.dataMoments  = Dict{Symbol,Float64}()
-		this.dataMomentsW = Dict{Symbol,Float64}()
-		this.params       = Dict()
-		this.simMoments      = Dict{Symbol,Float64}()
+		this.dataMoments  = OrderedDict{Symbol,Float64}()
+		this.dataMomentsW = OrderedDict{Symbol,Float64}()
+		this.params       = OrderedDict()
+		this.simMoments   = OrderedDict{Symbol,Float64}()
 		this.options      = Dict()
         this.prob = 0.0
         this.accepted = false
@@ -85,10 +85,10 @@ type Eval
 		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
-		this.dataMoments  = Dict{Symbol,Float64}()
-		this.dataMomentsW = Dict{Symbol,Float64}()
-		this.params       = Dict{Symbol,Float64}()
-		this.simMoments   = Dict{Symbol,Float64}()
+		this.dataMoments  = OrderedDict{Symbol,Float64}()
+		this.dataMomentsW = OrderedDict{Symbol,Float64}()
+		this.params       = OrderedDict{Symbol,Float64}()
+		this.simMoments   = OrderedDict{Symbol,Float64}()
 		this.options      = Dict()
         this.prob = 0.0
         this.accepted = false
@@ -110,10 +110,10 @@ type Eval
         this.value        = -1.0
         this.time         = time()
         this.status       = -1
-        this.dataMoments  = Dict{Symbol,Float64}()
-        this.dataMomentsW = Dict{Symbol,Float64}()
-        this.params       = Dict{Symbol,Float64}()
-        this.simMoments   = Dict{Symbol,Float64}()
+        this.dataMoments  = OrderedDict{Symbol,Float64}()
+        this.dataMomentsW = OrderedDict{Symbol,Float64}()
+        this.params       = OrderedDict{Symbol,Float64}()
+        this.simMoments   = OrderedDict{Symbol,Float64}()
         this.options      = Dict()
         this.prob = 0.0
         this.accepted = false
@@ -137,9 +137,9 @@ type Eval
 		this.time         = time()
 		this.status       = -1
 		this.dataMoments  = m
-		this.dataMomentsW = Dict{Symbol,Float64}()
-		this.params       = p
-		this.simMoments   = Dict{Symbol,Float64}()
+        this.params       = p
+		this.dataMomentsW = OrderedDict{Symbol,Float64}()
+		this.simMoments   = OrderedDict{Symbol,Float64}()
 		this.options      = Dict()
         this.prob = 0.0
         this.accepted = false

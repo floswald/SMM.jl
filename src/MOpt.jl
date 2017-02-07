@@ -14,9 +14,11 @@ using DataStructures
 using PDMats
 using Roots
 using Documenter
+using Plots
 
 @Logging.configure(level=DEBUG)
 
+import Base.get
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP, Chain
@@ -40,13 +42,13 @@ include("mopt/slices.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
-# include("mopt/Examples.jl")
+include("mopt/Examples.jl")
 # include("mopt/sobolsearch.jl")
 # include("mopt/econometrics.jl")
 
 # if is_apple()
 #        using PyPlot
-#        include("mopt/plotting.jl")
+       include("mopt/plotting.jl")
 # end
 
 
