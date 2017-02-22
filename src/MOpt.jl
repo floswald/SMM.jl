@@ -16,20 +16,25 @@ using Roots
 using Documenter
 using Plots
 pyplot(reuse=true)
+using FreqTables
 
 @Logging.configure(level=DEBUG)
 
 import Base.get, Base.mean
 
 # exports: Types
-export MProb, Eval,MAlgo, MAlgoBGP, Chain
-# export MProb, Chain, BGPChain, Testobj, Eval, AbstractChain
+export MProb, Eval,MAlgo, MAlgoBGP 
 
 # exports: methods
-export addParam!, addSampledParam!, addMoment!, addEvalFunc!, setMoment, start, finish, param, paramd , setValue, readEval,write, readEvalArray , dataMoment,dataMomentW
-#        dataMomentd, dataMomentWd,setMoment
-# export getindex, setindex, parameters, evals, infos, allstats, moments, hist,
-       # runMOpt!, save, slices, transpose, , readEvalArrayRemote, 
+export addParam!, 
+       addSampledParam!, 
+       addMoment!, 
+       addEvalFunc!, 
+       setMoment, 
+       readEvalArray , 
+       dataMoment,
+       dataMomentW,
+       summary
 
 
 # load files

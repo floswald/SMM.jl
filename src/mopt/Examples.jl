@@ -18,17 +18,22 @@ function serialNormal(logmode="debug")
 	addMoment!(mprob,moms) 
 	addEvalFunc!(mprob,objfunc_norm)
 
-	opts =Dict("N"=>3,
-		"maxiter"=>100,
-		"maxtemp"=> 10,
-            # such that Pr( x \in [init*(1-bound),init*(1+bound)]) = 0.975
-		"bound"=>0.05,  #
-		"disttol"=>0.01,
+	nchains = 3
+
+	opts =Dict("N"=>nchains,
+		"maxiter"=>200,
+		"maxtemp"=> 5,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.025,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
 		"sigma_update_steps"=>10,
 		"sigma_adjust_by"=>0.01,
 		"smpl_iters"=>1000,
 		"parallel"=>false,
-		"maxdists"=>[0.2 for i in 1:3])
+		"maxdists"=>[0.05 for i in 1:nchains],
+		"mixprob"=>0.3,
+		"acc_tuner"=>12.0)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
@@ -40,7 +45,9 @@ function serialNormal(logmode="debug")
 	# fig = figure("parameter histograms") 
 	# plt[:hist](convert(Array,MOpt.parameters(MA.MChains[1])),15)
 	# histogram(MOpt.param(MA))
+	@show summary(MA)
 	display(histogram(MA.chains[1]))
+	display(plot(MA.chains[1]))
 	return MA
 end
 

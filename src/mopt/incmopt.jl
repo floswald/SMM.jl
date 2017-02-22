@@ -88,6 +88,7 @@ finds standard deviation `sigma` of N(init,sigma) such that `prob` of the result
 """
 function initsd(upper::Float64,init::Float64;prob::Float64=0.975)
     @assert (prob < 1) && (prob > 0)
+    @assert upper > init
     (upper - init) / quantile(Normal(),prob)
 end
 

@@ -69,7 +69,7 @@ function objfunc_norm(ev::Eval)
 	# use paramd(ev) to get as a dict.
 
 	# compute simulated moments
-	ns = 10000
+	ns = 5000
 	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
 	randMultiNormal = MOpt.MvNormal(mu,sigma) 
 	simM            = mean(rand(randMultiNormal,ns),2)

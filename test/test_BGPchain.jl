@@ -53,7 +53,7 @@ include("test-include.jl")
 		d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
 		lb = [-0.5 for i in 1:n]
 		ub = [ 0.5 for i in 1:n]
-		x = MOpt.sample(d,lb,ub,1000)
+		x = MOpt.mysample(d,lb,ub,1000)
 		@test length(x)==n
  	end
 	@testset "sample non-similar variances" begin
@@ -62,7 +62,7 @@ include("test-include.jl")
 		d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
 		lb = -2 * sig
 		ub =  2 * sig
-		x = MOpt.sample(d,lb,ub,1000)
+		x = MOpt.mysample(d,lb,ub,1000)
 		@test length(x)==n
  	end
 
