@@ -31,8 +31,9 @@ type BGPChain <: AbstractChain
     sigma_update_steps :: Int64   # update sampling vars every sigma_update_steps iterations
     sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
     smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
+    maxdist  :: Float64  # what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
 
-    function BGPChain(id::Int=1,n::Int=10,m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000)
+    function BGPChain(id::Int=1,n::Int=10,m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist=10.0)
         @assert length(sig) == length(m.params_to_sample)
         this           = new()
         this.mprob     = m
@@ -49,17 +50,33 @@ type BGPChain <: AbstractChain
         this.sigma_update_steps = upd
         this.sigma_adjust_by = upd_by
         this.smpl_iters = smpl_iters
+        this.maxdist = maxdist
         return this
     end
 end
+
+allAccepted(c::BGPChain) = c.evals[c.accepted]
+# return a dict of arrays
+function params(c::BGPChain)
+    e = allAccepted(c)
+    d = Dict{Symbol,Vector{Float64}}()
+    for k in keys(e[1].params)
+        d[k] = Float64[e[i].params[k] for i in 1:length(e)]
+    end
+    return d
+end
+
+mean(c::BGPChain) = Dict(k => mean(v) for (k,v) in params(c))
+
 
 function lastAccepted(c::BGPChain)
     if c.iter==1
         return 1
     else
-        return find(c.accepted[(c.iter-1):-1:1])[1]
+        return find(c.accepted[1:(c.iter-1)])[end]
     end
 end
+getIterEval(c::BGPChain,i::Int) = c.evals[i]
 getLastEval(c::BGPChain) = c.evals[lastAccepted(c)]
 set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(c.m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
 function set_eval!(c::BGPChain,ev::Eval)
@@ -81,6 +98,7 @@ function next_eval!(c::BGPChain)
 
     # increment interation
     c.iter += 1
+    @debug("iteration = $(c.iter)")
 
     # returns an OrderedDict
     pp = getNewCandidates(c)
@@ -95,8 +113,27 @@ function next_eval!(c::BGPChain)
     set_eval!(c,ev)
 
 end
+# function Remote_next_eval!(conn,pp::OrderedDict)
+#     # generate new parameter vector from last accepted param
+
+#     write(conn, pp)
+
+#     # other stuff needs to be moved to master
+#     # ev = evaluateObjective(c.m,pp)
+
+#     # # accept reject 
+#     # doAcceptReject!(c,ev)
+
+#     # # save eval on BGPChain 
+#     # set_eval!(c,ev)
+
+# end
+
+
 
 function doAcceptReject!(c::BGPChain,eval_new::Eval)
+            @debug("")
+            @debug("doAcceptReject!")
     if c.iter == 1
         # accept everything.
         eval_new.prob =1.0
@@ -112,9 +149,13 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
             eval_new.accepted = false
         else
 
-            eval_new.prob = minimum([1.0,exp( ( eval_old.value - eval_new.value) )])
-            # @debug("eval_new.prob = $(eval_new.prob)")
-            # @debug("c.probs_acc[c.iter] = $(c.probs_acc[c.iter])")
+            # this forumulation: old - new
+            # because we are MINIMIZING the value of the objective function            
+            eval_new.prob = minimum([1.0,exp( 10*( eval_old.value - eval_new.value) )]) #* (eval_new.value < )
+            @debug("eval_new.value = $(eval_new.value)")
+            @debug("eval_old.value = $(eval_old.value)")
+            @debug("eval_new.prob = $(round(eval_new.prob,2))")
+            @debug("c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))")
 
             if isna(eval_new.prob)
                 eval_new.prob = 0.0
@@ -133,6 +174,9 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
                     eval_new.accepted = false
                 end
             end 
+            @debug("eval_new.accepted = $(eval_new.accepted)")
+            @debug("")
+            @debug("")
 
         end
 
@@ -145,16 +189,18 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
         # and only if you are not BGPChain number 1
 
-        if (c.id>1) && (mod(c.iter,c.sigma_update_steps) == 0)
-            too_high = c.accept_rate > 0.234
-            if too_high
-                @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
-                set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
-            else
-                @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
-                set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
-            end
-        end
+        # if (c.id>1) && (mod(c.iter,c.sigma_update_steps) == 0)
+
+        # if mod(c.iter,c.sigma_update_steps) == 0
+        #     too_high = c.accept_rate > 0.234
+        #     if too_high
+        #         @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
+        #         set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
+        #     else
+        #         @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
+        #         set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
+        #     end
+        # end
     end
 end
 
@@ -188,8 +234,9 @@ function getNewCandidates(c::BGPChain)
         ub = [v[:ub] for (k,v) in c.m.params_to_sample]
 
         newp = Dict(zip(collect(keys(mu)),sample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
-        @debug("old param: $(ev_old.params)")
-        @debug("new param: $newp")
+        # @debug("iteration $(c.iter)")
+        # @debug("old param: $(ev_old.params)")
+        # @debug("new param: $newp")
 
         return newp
     end
@@ -209,43 +256,61 @@ type MAlgoBGP <: MAlgo
     i               :: Int 	# iteration
     chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
   
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound_prob"=>0.15,"disttol"=>0.1,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"bound"=>0.125,"disttol"=>0.1,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3]))
 
+        init_sd = OrderedDict{Symbol,Float64}()
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
             # println("opts=$opts")
             # println("pars = $( m.params_to_sample)")
-            init_sd = OrderedDict()
+
+            # choose inital sd for each parameter
+            # such that Pr( x \in [init*(1-bound),init*(1+bound)]) = 0.975
             for (k,v) in m.params_to_sample
-                init_sd[k] = MOpt.initvar(v[:lb],(v[:lb]+v[:ub])/2,opts["bound_prob"])
+                init_sd[k] = MOpt.initsd((v[:ub]-v[:lb])*opts["bound"],(v[:lb]+v[:ub])/2)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"]) for i in 1:opts["N"]]
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"],opts["maxdists"][i]) for i in 1:opts["N"]]
           else
             temps     = [1.0]
-            init_sd = OrderedDict()
             for (k,v) in m.params_to_sample
-                init_sd[k] = MOpt.initvar(v[:lb],(v[:lb]+v[:ub])/2,opts["bound_prob"],opts["smpl_iters"])
+                init_sd[k] = MOpt.initsd((v[:ub]-v[:lb])*opts["bound"],(v[:lb]+v[:ub])/2)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)),opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"])]
+            # println(init_sd)
+            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)),opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"],opts["maxdists"][1])]
         end
 	    return new(m,opts,0,BGPChains)
     end
 end
 
 # return current param spaces on algo
-function cur_param(m::MAlgoBGP)
+cur_param(m::MAlgoBGP) = iter_param(m,m.i)
+
+#     r = Dict()
+#     for ic in 1:length(m.chains)
+#         if m.i == 0
+#             r[ic] = Dict(:mu => m.m.initial_value,:sigma => m.chains[ic].sigma)
+#         else
+#             ev_old = getLastEval(m.chains[ic])
+#             r[ic] = Dict(:mu => paramd(ev_old),:sigma => m.chains[ic].sigma)
+#         end
+#     end
+#     r
+# end
+
+# return param spaces on algo at iter 
+function iter_param(m::MAlgoBGP,iter::Int)
     r = Dict()
     for ic in 1:length(m.chains)
         if m.i == 0
             r[ic] = Dict(:mu => m.m.initial_value,:sigma => m.chains[ic].sigma)
         else
-            ev_old = getLastEval(m.chains[ic])
+            ev_old = getIterEval(m.chains[ic],iter)
             r[ic] = Dict(:mu => paramd(ev_old),:sigma => m.chains[ic].sigma)
-
         end
     end
     r
+
 end
 
 
@@ -269,8 +334,17 @@ function computeNextIteration!( algo::MAlgoBGP )
     if get(algo.opts, "parallel", false) 
         pmap( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
     else
-        map( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
+        for i in algo.chains
+            @debug(" ")
+            @debug(" ")
+            @debug("debugging chain id $(i.id)")
+            next_eval!(i)
+        end
+        # map( x->next_eval!(x), algo.chains ) # this does getNewCandidates, evaluateObjective, doAcceptRecject
     end
+    # p = plot(algo,1)
+    # display(p)
+    # sleep(.1)
 
     # check algo index is the same on all BGPChains
     for ic in 1:algo["N"]
@@ -287,37 +361,54 @@ end
 
 
 function exchangeMoves!(algo::MAlgoBGP)
-	# for all BGPChains
-    dtol = get(algo.opts,"disttol",0.1)
-	for ch in 1:algo["N"]
-        e1 = getLastEval(algo.chains[ch])
-		# 1) find all other BGPChains with value +/- x% of BGPChain ch
-		close = Int64[]  # vector of indices of "close" BGPChains
-		for ch2 in 1:algo["N"]
-			if ch != ch2
-				e2 = getLastEval(algo.chains[ch2])
-				tmp = abs(e2.value - e1.value) / abs(e1.value)
-				# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
-				if tmp < dtol 
-                    @debug("perc dist $ch and $ch2 is $tmp. will label that `close`.")
-					push!(close,ch2)
-				end
-			end
-		end
-		# 2) with y% probability exchange with a randomly chosen BGPChain from close
-		if length(close) > 0
-			ex_with = rand(close)
-			@debug("making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
-			swap_ev!(algo,Pair(ch,ex_with))
-		end
-	end
+
+    # algo["N"] exchange moves are proposed
+    props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (j<i)]
+    # N pairs of chains are chosen uniformly in all possibel pairs with replacement
+    pairs = rand(props,algo["N"])
+
+    for p in pairs
+        i = getLastEval(algo.chains[p[1]])
+        j = getLastEval(algo.chains[p[2]])
+        # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
+        if abs(j.value) < algo.chains[p[1]].maxdist # notice: tolerance on chain i!
+            @debug("")
+            @debug("exchangeMoves:")
+            @debug("$(p[2])'s value is less than $(p[1])'s threshold:")
+            @debug("$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
+            swap_ev!(algo,p)
+        end
+    end
+
+	# for ch in 1:algo["N"]
+ #        e1 = getLastEval(algo.chains[ch])
+	# 	# 1) find all other BGPChains with value +/- x% of BGPChain ch
+	# 	close = Int64[]  # vector of indices of "close" BGPChains
+	# 	for ch2 in 1:algo["N"]
+	# 		if ch != ch2
+	# 			e2 = getLastEval(algo.chains[ch2])
+	# 			tmp = abs(e2.value - e1.value) / abs(e1.value)
+	# 			# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
+	# 			if tmp < dtol 
+ #                    @debug("perc dist $ch and $ch2 is $tmp. will label that `close`.")
+	# 				push!(close,ch2)
+	# 			end
+	# 		end
+	# 	end
+	# 	# 2) with y% probability exchange with a randomly chosen BGPChain from close
+	# 	if length(close) > 0
+	# 		ex_with = rand(close)
+	# 		@debug("making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
+	# 		swap_ev!(algo,Pair(ch,ex_with))
+	# 	end
+	# end
 
 end
 
-function swap_ev!(algo::MAlgoBGP,ch_id::Pair)
-    @debug("swapping evs for $(ch_id.first) and $(ch_id.second)")
-    c1 = algo.chains[ch_id.first] 
-    c2 = algo.chains[ch_id.second]
+function swap_ev!(algo::MAlgoBGP,ch_id::Tuple{Int,Int})
+    @debug("swapping evs for $(ch_id[1]) and $(ch_id[2])")
+    c1 = algo.chains[ch_id[1]] 
+    c2 = algo.chains[ch_id[2]]
 
 	e1 = getLastEval(c1)
 	e2 = getLastEval(c2)
@@ -327,8 +418,8 @@ function swap_ev!(algo::MAlgoBGP,ch_id::Pair)
     set_eval!(c2,e1)
 
 	# make a note 
-    set_exchanged!(c1,ch_id.second)
-    set_exchanged!(c2,ch_id.first)
+    set_exchanged!(c1,ch_id[2])
+    set_exchanged!(c2,ch_id[1])
 end
 
 

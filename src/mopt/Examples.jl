@@ -11,8 +11,8 @@ function serialNormal(logmode="debug")
 	# 3) S([a,b]) returns a summary of features of the data
 
 	# initial value
-	pb    = Dict("p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] )
-	moms = DataFrame(name=["mu2","mu1"],value=[-1.0,1.0],weight=ones(2))
+	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	addMoment!(mprob,moms) 
@@ -20,30 +20,34 @@ function serialNormal(logmode="debug")
 
 	opts =Dict("N"=>3,
 		"maxiter"=>100,
-		"maxtemp"=> 2,
-		"bound_prob"=>0.15,
-		"disttol"=>0.00,
-		"sigma_update_steps"=>1,
-		"sigma_adjust_by"=>0.1,
+		"maxtemp"=> 10,
+            # such that Pr( x \in [init*(1-bound),init*(1+bound)]) = 0.975
+		"bound"=>0.05,  #
+		"disttol"=>0.01,
+		"sigma_update_steps"=>10,
+		"sigma_adjust_by"=>0.01,
 		"smpl_iters"=>1000,
-		"parallel"=>false)
+		"parallel"=>false,
+		"maxdists"=>[0.2 for i in 1:3])
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 	# MOpt.cur_param(MA)
-	plot(MA,1)
+	# plot(MA,1)
 
 	# run the estimation
-	# runMOpt!(MA)
+	runMOpt!(MA)
 	# fig = figure("parameter histograms") 
 	# plt[:hist](convert(Array,MOpt.parameters(MA.MChains[1])),15)
-	# return MA
+	# histogram(MOpt.param(MA))
+	display(histogram(MA.chains[1]))
+	return MA
 end
 
 
 function BGP_example()
 
-	p = Dict("theta" => [2.0,-2,10])
+	p = OrderedDict("theta" => [2.0,-2,10])
 	mprob = MProb()
 	addSampledParam!(mprob,p)
 	addEvalFunc!(mprob,MOpt.objfunc_BGP)
@@ -70,4 +74,27 @@ function BGP_example()
 	fig = figure("parameter histograms") 
 	plt[:hist](convert(Array,MOpt.parameters(MA.MChains[1])),15)
 	return MA
+end
+
+function serialSlices()
+	# data are generated from a bivariate normal
+	# with mu = [a,b] = [0,0]
+	# aim: 
+	# 1) sample [a',b'] from a space [-1,1] x [-1,1] and
+	# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
+	#    and accepting/rejecting [a',b'] according to BGP
+	# 3) S([a,b]) returns a summary of features of the data
+
+	# initial value
+	pb    = OrderedDict("p1" => [-1.0,-3,3] , "p2" => [1.0,-2,2] )
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	addMoment!(mprob,moms) 
+	addEvalFunc!(mprob,objfunc_norm)
+
+	s = doSlices(mprob,50)
+	p =plot(s,:value)
+	display(p)
+	return s
 end

@@ -67,10 +67,10 @@ end
 # end
 
 
-
-@recipe function f(ma::MAlgoBGP,chain::Int)
-    # produce a subplot for each parameter
-    n = length(ma.m.params_to_sample)  # num of subplots
+# get a grid of plots for an ma
+# this shows a subplot for each parameter
+function param_grid(p::Union{Dict,OrderedDict})
+    n = length(p)  # num of subplots
     rows,cols = best_grid(n)
     mat = zeros(Int,rows,cols)
     empty = mod(length(mat),n)
@@ -88,11 +88,59 @@ end
     end
     spidx = 1
     indices = Dict()
-    for (k,v) in ma.m.params_to_sample
+    for (k,v) in p
         indices[k] = spidx
         spidx += 1
     end
-    layout := g    
+    return (indices,g)
+end
+
+
+@recipe function f(c::BGPChain)
+    # ma = m.args[1]  # your ma algo
+    indices,ly = param_grid(c.m.initial_value)
+    layout := ly
+
+    # defaults 
+    margin    --> 1mm
+    titlefont --> font(11)
+    grid      --> false 
+    link      --> :none
+    xticks     := true
+    xguidefont := font(10)
+    legend     := false
+
+    # data
+    dat = params(c)
+
+
+    if get(d,:seriestype, :path) == :histogram
+        # do hist
+        for (k,v) in dat
+            @series begin
+                subplot    := indices[k]
+                fillcolor --> :blue
+                fillrange --> 0
+                fillalpha --> 0.5
+                # seriestype := histogram
+                xguide     := "$k"
+                v
+            end
+        end
+    else
+        # do path
+        println("not implemented yet")
+    end
+
+end
+
+
+# plot current proposal distribution for each parameter
+@recipe function f(ma::MAlgoBGP,chain::Int)
+    
+    indices,ly = param_grid(ma.m.initial_value)
+    layout := ly
+
     # foreground_color_border := nothing
     margin    --> 1mm
     titlefont --> font(11)
@@ -102,58 +150,40 @@ end
     grid      --> false 
     link      --> :none
     xticks     := true
-    xguidefont  := font(10)
-    legend := false
+    xguidefont := font(10)
+    legend     := false
+    # plot_title --> "Param dists on chain $chain"
 
-    dd = MOpt.cur_param(ma)[chain]
-    for (k,v) in ma.m.params_to_sample
-        dist = Normal(dd[:mu][k],diag(dd[:sigma])[indices[k]])
-        println(dist)
-        x = linspace(v[:lb],v[:ub],100)
-        @series begin
-            seriestype := :path
-            subplot := indices[k]
-            x,pdf(dist,x)
+
+    # @gif for i in 1:ma["maxiter"]
+        dd = MOpt.cur_param(ma)[chain]
+        acc = ma.chains[chain].accepted[ma.i]
+        for (k,v) in ma.m.params_to_sample
+            dist = Normal(dd[:mu][k],diag(dd[:sigma])[indices[k]])
+            x = linspace(v[:lb],v[:ub],100)
+            @series begin
+                seriestype := :path
+                subplot    := indices[k]
+                x,pdf(dist,x)
+            end
+            @series begin
+                subplot    := indices[k]
+                seriestype := :line
+                linetype   := :vline
+                linecolor  := :red
+                xguide     := "$k"
+                title := "iter $(ma.i) was accepted: $acc \n (mu,sigma)=$(map(x->round(x,2),Distributions.params(dist)))"
+                [dd[:mu][k]]
+            end
         end
-        @series begin
-            subplot := indices[k]
-            seriestype := :line
-            linetype := :vline
-            linecolor := :red
-            xguide     := "$k"
-            [dd[:mu][k]]
-        end
-    end
+    # end
 
 end
 
 
 @recipe function f(s::Slice , w::Symbol )
-    n = length(s.res)  # num of subplots
-    rows,cols = best_grid(n)
-    mat = zeros(Int,rows,cols)
-    empty = mod(length(mat),n)
-
-
-    # build a grid
-    g = grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)
-    if empty > 0
-        idx = 1
-        for i=1:rows,j=1:cols
-            if idx > length(mat) - empty
-                g[i,j].attr[:blank] = true
-            end
-            idx += 1
-        end
-    end
-
-    spidx = 1
-    indices = Dict()
-    for (k,v) in s.res 
-        indices[k] = spidx
-        spidx += 1
-    end
-    layout := g
+    indices,ly = param_grid(s.p0)
+    layout := ly  # ly is a layout object
 
     # labels
     # labs = pop!(d, :label, [""])  # d is a special KW Dict
@@ -179,7 +209,7 @@ end
             xguide     := "$k"
             # xticks     := pos[k][1]==rows ? true : false
             # xguide     := pos[k][1]==rows ? "$k" : nothing
-            yguide     := mod(indices[k],cols)==1 ? "$w" : ""
+            yguide     := mod(indices[k],size(ly.grid,2))==1 ? "$w" : ""
             da[:x], da[:y]
         end
         if haskey(d,:markersize)
@@ -189,7 +219,7 @@ end
                 xguide     := "$k"
                 # xticks     := pos[k][1]==rows ? true : false
                 # xguide     := pos[k][1]==rows ? "$k" : nothing
-                yguide     := mod(indices[k],cols)==1 ? "$w" : ""
+                yguide     := mod(indices[k],size(ly.grid,2))==1 ? "$w" : ""
                 da[:x], da[:y]
             end
         end

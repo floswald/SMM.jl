@@ -81,6 +81,15 @@ function df2dict(df::DataFrame)
   return out
 end
 
+"""
+    initsd(upper::Float64,init::Float64;prob::Float64=0.975)
+
+finds standard deviation `sigma` of N(init,sigma) such that `prob` of the resulting pdf lies within `[init-upper,init+upper]`. This assumes a **symmetric** box around `init`.
+"""
+function initsd(upper::Float64,init::Float64;prob::Float64=0.975)
+    @assert (prob < 1) && (prob > 0)
+    (upper - init) / quantile(Normal(),prob)
+end
 
 """
     initvar(bound::Float64,init::Float64,prob::Float64;low_var::Float64=0.01,hi_var::Float64=100.0)

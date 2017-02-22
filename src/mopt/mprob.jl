@@ -90,7 +90,7 @@ Add parameters to be sampled to an `MProb`.
 
 `d`: a Dict with a triple (init,lb,ub) as value for each key.
 """
-function addSampledParam!(m::MProb,d=Dict{Any,Array{Any,1}})
+function addSampledParam!(m::MProb,d=OrderedDict{Any,Array{Any,1}})
   for k in keys(d)
     addSampledParam!(m,Symbol(k),d[k][1],d[k][2],d[k][3])
   end

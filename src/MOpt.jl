@@ -15,10 +15,11 @@ using PDMats
 using Roots
 using Documenter
 using Plots
+pyplot(reuse=true)
 
 @Logging.configure(level=DEBUG)
 
-import Base.get
+import Base.get, Base.mean
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP, Chain
