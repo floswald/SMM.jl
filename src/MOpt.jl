@@ -15,7 +15,8 @@ using PDMats
 using Documenter
 using Plots
 # pyplot(reuse=true,dpi=150)
-plotly()
+# plotly()
+pyplot()
 # using FreqTables
 
 @Logging.configure(level=INFO)
