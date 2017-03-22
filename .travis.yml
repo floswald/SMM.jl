@@ -4,9 +4,12 @@ os:
   - osx
 julia:
   - 0.5
+before_install:
+    - sudo apt-get update -qq -y
+    - sudo apt-get install python-matplotlib
 notifications:
   email: false
-after_success:
-  - julia -e 'cd(Pkg.dir("MOpt")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())';
+# after_success:
+#   - julia -e 'cd(Pkg.dir("MOpt")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())';
 
 
