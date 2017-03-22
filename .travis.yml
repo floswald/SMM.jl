@@ -1,12 +1,8 @@
 language: julia
 os:
-  - linux
   - osx
 julia:
   - 0.5
-before_install:
-    - sudo apt-get update -qq -y
-    - sudo apt-get install python-matplotlib
 notifications:
   email: false
 # after_success:
