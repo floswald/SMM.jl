@@ -70,8 +70,8 @@ function objfunc_norm(ev::Eval)
 
 	# compute simulated moments
 	ns = 5000
-	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
-	randMultiNormal = MOpt.MvNormal(mu,sigma) 
+	sigma           = [1.0;1.0]
+	randMultiNormal = MOpt.MvNormal(mu,MOpt.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
 	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 

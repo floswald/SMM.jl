@@ -9,16 +9,16 @@ using Logging
 using DataFrames, DataFramesMeta
 using HDF5
 import Base.show, Base.std
-using GLM
 using DataStructures
 using PDMats
-using Roots
+# using Roots
 using Documenter
 using Plots
-pyplot(reuse=true)
-using FreqTables
+# pyplot(reuse=true,dpi=150)
+plotly()
+# using FreqTables
 
-@Logging.configure(level=DEBUG)
+@Logging.configure(level=INFO)
 
 import Base.get, Base.mean
 
@@ -34,7 +34,10 @@ export addParam!,
        readEvalArray , 
        dataMoment,
        dataMomentW,
-       summary
+       summary,
+       param,
+       paramd
+
 
 
 # load files

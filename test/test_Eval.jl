@@ -69,7 +69,7 @@ end
 		setMoment(ev,Dict( :alpha => 0.78, :beta => 0.81) )	
 		@test ev.simMoments[:beta] == 0.81
 
-		setValue(ev,4.2)
+		MOpt.setValue(ev,4.2)
 		@test ev.value == 4.2
 	end
 
@@ -81,9 +81,9 @@ end
 			close(ff)
 		end
 		h5open("test5.h5", "r") do ff
-			ev2 = readEval(ff,"eval_test")
+			ev2 = MOpt.readEval(ff,"eval_test")
 			@test ev2.status == ev.status
-			evs = readEvalArray(ff,"eval_list")
+			evs = MOpt.readEvalArray(ff,"eval_list")
 			@test evs[1].simMoments[:alpha] == ev.simMoments[:alpha]
 			close(ff)
 			# readEval(ff,"eval_test",ev)

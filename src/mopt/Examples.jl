@@ -1,7 +1,7 @@
 	
 
 
-function serialNormal(logmode="debug")
+function serialNormal()
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 

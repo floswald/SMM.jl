@@ -44,7 +44,6 @@ type Eval
 		this.options      = Dict()
 		return this
 	end
-
 	function Eval(p::Union{Dict,OrderedDict},mom::DataFrame)
 		this = new()
 		this.value        = -1.0
@@ -136,8 +135,14 @@ type Eval
 		this.value        = -1.0
 		this.time         = time()
 		this.status       = -1
-		this.dataMoments  = m
-        this.params       = p
+        this.dataMoments  = OrderedDict{Symbol,Float64}()
+        this.params       = OrderedDict{Symbol,Float64}()
+        for (k,v) in p
+            this.params[k] = v
+        end
+        for (k,v) in m
+            this.dataMoments[k] = v
+        end
 		this.dataMomentsW = OrderedDict{Symbol,Float64}()
 		this.simMoments   = OrderedDict{Symbol,Float64}()
 		this.options      = Dict()
@@ -389,10 +394,10 @@ if !haskey(ENV,"IGNORE_HDF5")
 		# saving parameters 
     	kk         = HDF5.read(ff5, joinpath(path,"params_keys"))
     	vv         = HDF5.read(ff5, joinpath(path,"params_vals"))
-    	ev.params  = Dict( zip( [ Symbol(k) for k in kk] , vv) )
+    	ev.params  = OrderedDict( zip( [ Symbol(k) for k in kk] , vv) )
     	kk         = HDF5.read(ff5, joinpath(path,"moments_keys"))
     	vv         = HDF5.read(ff5, joinpath(path,"moments_vals"))
-    	ev.simMoments = Dict( zip( [ Symbol(k) for k in kk] , vv) )
+    	ev.simMoments = OrderedDict( zip( [ Symbol(k) for k in kk] , vv) )
 
     	return(ev)
     end

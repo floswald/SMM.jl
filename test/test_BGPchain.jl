@@ -44,33 +44,33 @@ include("test-include.jl")
 		MOpt.set_sigma!(chain,sig2)
 		@test diag(chain.sigma) == sig2
 
-		MOpt.getLastEval(chain) == ev
+		MOpt.getLastAccepted(chain) == ev
 	end
 
-	@testset "sample similar variances" begin
-		n = 10
-		sig = rand(n)
-		d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
-		lb = [-0.5 for i in 1:n]
-		ub = [ 0.5 for i in 1:n]
-		x = MOpt.mysample(d,lb,ub,1000)
-		@test length(x)==n
- 	end
-	@testset "sample non-similar variances" begin
-		n = 10
-		sig = collect(linspace(1.0,10.0,n))
-		d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
-		lb = -2 * sig
-		ub =  2 * sig
-		x = MOpt.mysample(d,lb,ub,1000)
-		@test length(x)==n
- 	end
+	# @testset "sample similar variances" begin
+	# 	n = 10
+	# 	sig = rand(n)
+	# 	d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
+	# 	lb = [-0.5 for i in 1:n]
+	# 	ub = [ 0.5 for i in 1:n]
+	# 	x = MOpt.mysample(d,lb,ub,1000)
+	# 	@test length(x)==n
+ # 	end
+	# @testset "sample non-similar variances" begin
+	# 	n = 10
+	# 	sig = collect(linspace(1.0,10.0,n))
+	# 	d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
+	# 	lb = -2 * sig
+	# 	ub =  2 * sig
+	# 	x = MOpt.mysample(d,lb,ub,1000)
+	# 	@test length(x)==n
+ # 	end
 
-	@testset "getNewCandidates" begin
+	@testset "proposal" begin
 	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
 		@test chain.iter == 0
 		chain.iter = 1
-		pp = MOpt.getNewCandidates(chain)
+		pp = MOpt.proposal(chain)
 		@test pp == mprob.initial_value
 
 		#  set a value:
@@ -81,7 +81,7 @@ include("test-include.jl")
 		MOpt.set_eval!(chain,ev)
 		# next period:
 		chain.iter += 1
-		pp = MOpt.getNewCandidates(chain)
+		pp = MOpt.proposal(chain)
 		@test pp != mprob.initial_value
 
 	end
@@ -94,7 +94,7 @@ include("test-include.jl")
 		    c.iter += 1
 
 			# get a getNewCandidates
-		    pp = MOpt.getNewCandidates(c)
+		    pp = MOpt.proposal(c)
 		    # evaluate objective 
 		    ev = MOpt.evaluateObjective(c.m,pp)
 
@@ -114,7 +114,7 @@ include("test-include.jl")
 			# get 2 Evals: one with good, one with bad value
 			# want to accept good and reject bad.
 
-			ev_0 = MOpt.getLastEval(c)
+			ev_0 = MOpt.getLastAccepted(c)
 			ev_good = Eval()
 			ev_bad  = Eval()
 

@@ -3,7 +3,9 @@ DataFrames
 DataFramesMeta
 Distributions
 HDF5
-Sobol
 GLM
 Logging
+PDMats
 Roots
+Documenter
+Plots

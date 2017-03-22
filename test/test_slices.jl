@@ -14,7 +14,7 @@ module TestSlices
 		# initial value
 
 		# compute the slices
-		sl = MOpt.slices(mprob,30);
+		sl = MOpt.doSlices(mprob,30);
 
 		MOpt.write(sl,"slices.h5")
 
@@ -44,7 +44,7 @@ module TestSlices
 			addprocs(1)
 			remotecall_fetch(include,workers()[1],joinpath(Pkg.dir("MOpt"),"src","MOpt.jl"))
 
-			sl = MOpt.slices(mprob_fail,30);
+			sl = MOpt.doSlices(mprob_fail,30);
 
 			rmprocs(workers())
 

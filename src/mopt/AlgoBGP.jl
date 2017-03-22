@@ -332,7 +332,7 @@ type MAlgoBGP <: MAlgo
     i               :: Int 	# iteration
     chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
   
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"mixprob"=>0.5,"acc_tuner"=>2))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"mixprob"=>0.5,"acc_tuner"=>2.0))
 
         init_sd = OrderedDict{Symbol,Float64}()
         if opts["N"] > 1
