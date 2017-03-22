@@ -11,13 +11,11 @@ using HDF5
 import Base.show, Base.std
 using DataStructures
 using PDMats
-# using Roots
 using Documenter
 using Plots
-# pyplot(reuse=true,dpi=150)
-# plotly()
+
 pyplot()
-# using FreqTables
+
 
 @Logging.configure(level=INFO)
 
@@ -38,7 +36,6 @@ export addParam!,
        summary,
        param,
        paramd
-
 
 
 # load files
