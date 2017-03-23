@@ -4,7 +4,7 @@ require("nodes.jl")
 
 root = joinpath(ENV["HOME"],"git/MOpt.jl")
 
-opts =[
+opts =Dict(
 	"N"               => length(workers()),							# number of MCMC chains
 	"maxiter"         => 500,						# max number of iterations
 	"savefile"        => joinpath(root,"MA.h5"),	# filename to save results
@@ -18,7 +18,7 @@ opts =[
 	"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
 	"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
 	"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
-	"max_jump_prob"   => 0.2]						# prob of jumps from hottest chain
+	"max_jump_prob"   => 0.2)					# prob of jumps from hottest chain
 
 # setup the BGP algorithm
 MA = MAlgoBGP(mprob,opts)

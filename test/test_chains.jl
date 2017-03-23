@@ -27,10 +27,10 @@ facts("Testing Default Chains constructor") do
 		@fact length(chain.infos[:evals])  --> L
 		@fact length(chain.infos[:accept]) --> L
 		for nm in MOpt.ps2s_names(mprob)
-			@fact length(chain.parameters[symbol(nm)]) --> L
+			@fact length(chain.parameters[Symbol(nm)]) --> L
 		end
 		for nm in MOpt.ms_names(mprob)
-			@fact length(chain.moments[symbol(nm)]) --> L
+			@fact length(chain.moments[Symbol(nm)]) --> L
 		end
 	end
 
@@ -105,7 +105,7 @@ facts("testing Chain/MChain methods") do
 		@fact chain.infos[:evals][1] --> ev.value
 		@fact chain.infos[:accept][1] --> true
 		for nm in MOpt.ps2s_names(mprob)
-			@fact chain.parameters[chain.i,symbol(nm)][1] --> ev.params[nm]
+			@fact chain.parameters[chain.i,Symbol(nm)][1] --> ev.params[nm]
 		end
 	end
 
@@ -140,7 +140,7 @@ facts("testing Chain/MChain methods") do
 		@fact isnan(chain.infos[:evals][1]) --> true
 		@fact chain.infos[:accept][1] --> false
 		for nm in MOpt.ps2s_names(mprob)
-			@fact isnan(chain.parameters[chain.i,symbol(nm)][1]) --> true
+			@fact isnan(chain.parameters[chain.i,Symbol(nm)][1]) --> true
 		end
 	end
 end

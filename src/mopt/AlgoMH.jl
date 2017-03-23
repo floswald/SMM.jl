@@ -212,13 +212,13 @@ end
 
 
 # save algo chains component-wise to HDF5 file
-function save(algo::MAlgoBGP, filename::ASCIIString)
+function save(algo::MAlgoBGP, filename::String)
     # step 1, create the file if it does not exist
     ff5 = h5open(filename, "w")
 
 	# saving the opts dict: complicated because values are numbers and strings.
-    vals = ASCIIString[]
-    keys = ASCIIString[]
+    vals = String[]
+    keys = String[]
 	for (k,v) in algo.opts
 		if typeof(v) <: Number
 			push!(vals,"$v")

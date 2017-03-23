@@ -1,45 +1,3 @@
-#'.. py:function:: Testobj
-#'
-#'   define a Test objective function
-function Testobj(x::Dict,mom::DataFrame,whichmom::Array{ASCIIString,1},vargs...)
-
-	t0 = time()
-
-    if length(vargs) > 0
-        if get(vargs[1],"printlevel",0) > 0
-            Base.info("in Test objective function")
-        end
-    end
-
-    mm = deepcopy(mom)
-    nm0 = names(mm)
-    DataFrames.insert_single_column!(mm,zeros(nrow(mm)),ncol(mm)+1)
-    names!(mm,[nm0,:model_value])
-
-    for ir in eachrow(mm)
-        ir[:model_value] = ir[:data_value] + 2.2
-    end
-
-	# output all moments
-    mout = transpose(mm[[:moment,:model_value]],1)
-
-	# subset mm to required moments to compute function value
-	mm = mm[findin(mm[:moment],whichmom),:]
-
-	# compute distance
-	v = sum((mm[:data_value] - mm[:model_value]).^2)
-
-	# status
-	status = 1
-
-	# time out
-	t0 = time() - t0
-
-	# return a dict
-	ret = Dict("value" => v, "params" => deepcopy(x), "time" => t0, "status" => status, "moments" => mout)
-	return ret
-
-end
 
 
 export Testobj2,Testobj3,objfunc_norm
@@ -70,22 +28,50 @@ function Testobj_fails(ev::Eval)
 
 end
 
-#'.. py:function:: objfunc_norm
-#'
-#'   define a Test objective function
+function BGP_rand(x::Float64)
+    r1 = Normal(x,1.0)
+    r100 = Normal(x,0.01)
+    r1_5 = Normal(x-5.0,1)
+    0.45 * rand(r1) + 0.45 * rand(r100) + 0.1 * rand(r1_5)
+end
+function BGP_posterior(x::Vector{Float64})
+    r1 = Normal(0,1.0)
+    r100 = Normal(0,0.01)
+    r1_5 = Normal(5.0,1)
+    0.45 * pdf(r1,x) + 0.45 * pdf(r100,x) + 0.1 * pdf(r1_5,x)
+end
+
+function objfunc_BGP(ev::Eval)
+    start(ev)
+    p = paramd(ev)  # param vector as dict
+    y = BGP_posterior([p[:theta]])
+    setMoment(ev,y)
+    setValue(ev,-y)
+    ev.status=1
+    finish(ev)
+    return(ev)
+end
+
+
+"""
+    objfunc_norm(ev::Eval)
+
+Test objective function. This is a bivariate normal distribution that simumlates data from the parameters in `ev`. From this simulated data, sample means are computed, which should be close to the empirical moments on `ev`. The aim is to minimize this function.
+"""
 function objfunc_norm(ev::Eval)
     
 	start(ev)
 	# info("in Test objective function objfunc_norm")
 
 	# extract parameters    
-	mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
+    # mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
+	mu  = collect(values(ev.params))
 	# use paramd(ev) to get as a dict.
 
 	# compute simulated moments
 	ns = 5000
-	sigma           = convert(Matrix,Diagonal([1.0,1.0]))
-	randMultiNormal = MOpt.MvNormal(mu,sigma) 
+	sigma           = [1.0;1.0]
+	randMultiNormal = MOpt.MvNormal(mu,MOpt.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
 	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
@@ -121,9 +107,6 @@ end
 
 
 
-#'.. py:function:: banana
-#'
-#'   define a Test objective function
 function banana(ev::Eval)
 
     start(ev)

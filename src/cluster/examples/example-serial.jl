@@ -39,11 +39,11 @@ opts =[
 # setup the BGP algorithm
 MA = MOpt.MAlgoBGP(mprob,opts)
 
-MOpt.remove_truck("console")
+# MOpt.remove_truck("console")
 
-mt = MOpt.LumberjackTruck("serial-log.log")
-MOpt.configure(mt;mode="debug")
-MOpt.add_truck(mt,"debuglogger")
+# mt = MOpt.LumberjackTruck("serial-log.log")
+# MOpt.configure(mt;mode="debug")
+# MOpt.add_truck(mt,"debuglogger")
 
 # run the estimation
 MOpt.runMOpt!(MA)

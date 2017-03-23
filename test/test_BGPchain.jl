@@ -1,52 +1,144 @@
 module TestBGPChain
 
-using FactCheck, DataFrames, MOpt, Lazy
+using Base.Test, DataFrames, MOpt
 
 
 
 # TESTING Chains
 # ==============
-pb   = Dict( "a" => [0.3; 0;1] , "b" => [4.9;0;1] )
-moms = DataFrame(name=["alpha";"beta";"gamma"],value=[0.8;0.7;0.5],weight=rand(3))
 
-facts("Testing BGPChain constructor") do
+include("test-include.jl")
+
+@testset "Testing BGPChains constructor" begin
 	
-	mprob = @> MProb() addSampledParam!(pb) addMoment!(moms) addEvalFunc!(MOpt.Testobj)
-	L = 9
-	temp = 100.0
-	shock = 12.0
-	dist_tol = 0.001
-	jumpprob = 0.05
-	id = 180
-	chain = BGPChain(id,mprob,L,temp,shock,dist_tol,jumpprob)
+	@testset "constructor" begin
 
-	@fact chain.i --> 0 
-	@fact chain.id --> id
+	    (chain, id, n, mprob, sig,sig2,  upd, upd_by, ite) = test_chain()
+		@test chain.id == id
+		@test chain.accept_rate == 0.0
+		@test chain.iter == 0
+		@test chain.smpl_iters == ite
+		@test chain.accepted == falses(n)
+		@test chain.exchanged == zeros(Int,n)
+		@test diag(chain.sigma) == sig
+		@test chain.sigma_update_steps == upd
+		@test chain.sigma_adjust_by == upd_by
 
-	context("length of members") do
-
-		# test that all member except i are L long
-		@fact length(chain.infos[:evals])  --> L
-		@fact length(chain.infos[:accept]) --> L
-		for nm in MOpt.ps2s_names(mprob)
-			@fact nrow(chain.parameters) --> L
-		end
-		for nm in MOpt.ms_names(mprob)
-			@fact nrow(chain.moments) --> L
-		end
-		@fact chain.tempering --> temp
-		@fact chain.shock_sd --> shock
-		@fact chain.jump_prob --> jumpprob
-		@fact chain.dist_tol --> dist_tol
 	end
 
-	context("get correct dataframe labels") do
-		@fact names(MOpt.parameters(chain)) --> MOpt.ps2s_names(mprob)
-		for nm in MOpt.ms_names(mprob)
-			@fact nm in names(MOpt.moments(chain))[2:end] --> true
-		end
+	@testset "basic methods" begin
+	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
+		@test chain.iter == 0
+		chain.iter = 1
+		ev = Eval(mprob)
+		v = rand()
+		ev.value = v
+		ev.accepted = true
+		MOpt.set_eval!(chain,ev)
+		@test isa(chain.evals[1],Eval)
+		@test chain.evals[1].value == v 
+		@test chain.accepted[1]
+		MOpt.set_acceptRate!(chain)
+		@test chain.accept_rate == 1.0
+
+		MOpt.set_sigma!(chain,sig2)
+		@test diag(chain.sigma) == sig2
+
+		MOpt.getLastAccepted(chain) == ev
 	end
 
+	# @testset "sample similar variances" begin
+	# 	n = 10
+	# 	sig = rand(n)
+	# 	d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
+	# 	lb = [-0.5 for i in 1:n]
+	# 	ub = [ 0.5 for i in 1:n]
+	# 	x = MOpt.mysample(d,lb,ub,1000)
+	# 	@test length(x)==n
+ # 	end
+	# @testset "sample non-similar variances" begin
+	# 	n = 10
+	# 	sig = collect(linspace(1.0,10.0,n))
+	# 	d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
+	# 	lb = -2 * sig
+	# 	ub =  2 * sig
+	# 	x = MOpt.mysample(d,lb,ub,1000)
+	# 	@test length(x)==n
+ # 	end
+
+	@testset "proposal" begin
+	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
+		@test chain.iter == 0
+		chain.iter = 1
+		pp = MOpt.proposal(chain)
+		@test pp == mprob.initial_value
+
+		#  set a value:
+		ev = Eval(mprob)
+		v = rand()
+		ev.value = v
+		ev.accepted = true
+		MOpt.set_eval!(chain,ev)
+		# next period:
+		chain.iter += 1
+		pp = MOpt.proposal(chain)
+		@test pp != mprob.initial_value
+
+	end
+
+	@testset "testing accept reject" begin
+	    (c, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
+
+		@testset "testing initial period" begin
+			# nothing gets rejected in period 1
+		    c.iter += 1
+
+			# get a getNewCandidates
+		    pp = MOpt.proposal(c)
+		    # evaluate objective 
+		    ev = MOpt.evaluateObjective(c.m,pp)
+
+		    MOpt.doAcceptReject!(c,ev)
+
+			# is accepted: 
+			@test c.accepted[c.iter]
+			@test ev.prob == 1
+			@test ev.accepted
+
+		end
+
+		@testset "test correct accept/reject" begin
+
+		    c.iter += 1
+		    @test c.iter == 2
+			# get 2 Evals: one with good, one with bad value
+			# want to accept good and reject bad.
+
+			ev_0 = MOpt.getLastAccepted(c)
+			ev_good = Eval()
+			ev_bad  = Eval()
+
+			ev_good.value = ev_0.value - 10.0
+			ev_bad.value  = ev_0.value + 10.0
+			ev_good.status = 1
+			ev_bad.status  = 1
+
+
+			MOpt.doAcceptReject!(c,ev_bad)
+			@test ev_bad.prob < 1
+			if ev_bad.prob > c.probs_acc[c.iter]
+				@test ev_bad.accepted
+				@test c.accepted[c.iter]
+			end
+
+			MOpt.doAcceptReject!(c,ev_good)
+			@test ev_good.prob == 1.0
+			@test ev_good.accepted
+			@test c.accepted[c.iter]
+
+		end
+
+	end
 end
 
 

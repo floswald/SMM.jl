@@ -1,23 +1,57 @@
 
 # TODO
 # add plot slices
+type MyT
+    data :: Dict
+end
+
+# @recipe function f{T<:Distribution}(::Type{T}, dist::T; func = pdf)
+#     xi -> func(dist, xi)
+# end
+
+
+
+
 
 
 export Slice,slices,add!,get
 
-type Slice
-    res  :: Dict    # result
-    p0   :: Dict    # initial param
-    m0   :: Dict    # data moments
 
-    function Slice(p::Dict,m::Dict)
+"""
+    Slice 
+
+A *slice* in dimension ``j`` of a function ``f \in \mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = linspace(lower[j],upper[j],npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
+
+## Fields
+
+* `res`: `Dict` of resulting slices. For each parameter ``p_j`` there is a `Dict` with as many entries as `npoints` chosen in [`doSlices`](@ref)
+* `p0`: Initial parameter vector dict
+* `m0`: data moments dict
+
+# Examples
+
+```julia
+julia> using MOpt
+julia> m = MProb()
+julia> p = OrderedDict(:p1=>1.1,:p2=>pi)
+julia> m = OrderedDict(:m1=>rand(),:m2=>e)
+julia> Slice(p,m)
+
+```
+
+"""
+type Slice
+    res  :: Union{Dict,OrderedDict}    # result
+    p0   :: Union{Dict,OrderedDict}    # initial param
+    m0   :: Union{Dict,OrderedDict}    # data moments
+
+    function Slice(p::Union{Dict,OrderedDict},m::Union{Dict,OrderedDict})
         this = new()
-        this.res = [ k => Dict() for k in keys(p) ]
+        this.res = Dict( k => Dict() for k in keys(p) )
         this.p0=deepcopy(p)
         this.m0=deepcopy(m)
         return this
     end
-
 end
 
 function add!(s::Slice, p::Symbol, ev::Eval)
@@ -25,7 +59,8 @@ function add!(s::Slice, p::Symbol, ev::Eval)
 end
 
 function get(s::Slice, p::Symbol, m::Symbol)
-    x = [ k for (k,v) in s.res[p] ]
+    # x = [ k for (k,v) in s.res[p] ]
+    x = collect(keys(s.res[p]))
 
     if (m == :value)
         y =  [ v[:value] for (k,v) in s.res[p] ]
@@ -39,6 +74,22 @@ function get(s::Slice, p::Symbol, m::Symbol)
     return Dict( :x => xx[ix] , :y => convert(Array{Float64,1},y)[ix] )
 end
 
+# @recipe function f(s::Slice , w::Symbol )
+# # function plotit( s::Slice , w::Symbol)
+#     n = length(s.res)  # num of subplots
+#     z = sqrt(n)
+#     rows, cols = (floor(Int,z), ceil(Int,z))
+#     p = Any[]
+#     for (k,v) in s.res 
+#         d = get(s, k , w )
+#         push!(p,plot(d[:x],d[:y],xlabel="$k",ylabel="$w",legend=false,linecolor=:black))
+#     end
+#     plot(p...,layout=grid(rows,cols))
+# end
+
+
+
+# MOpt.plotit(s,:value)
 # function get(s::Slice, p::Symbol)
 #     rr = Dict()
 
@@ -52,11 +103,12 @@ end
 #     return [ :x => convert(Array{Float64,1},x) , :y => convert(Array{Float64,1},y) ]
 # end
 
+"""
+    doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
 
-#'.. py:function:: slices(m,pad)
-#'
-#'   computes slices for the objective function
-function slices(m::MProb,npoints::Int,pad=0.1)
+Computes [`Slice`](@ref)s of an [`MProb`](@ref)
+"""
+function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
 
     t0 = time()
     res = Slice(m.initial_value, m.moments)
@@ -66,30 +118,39 @@ function slices(m::MProb,npoints::Int,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        Lumberjack.info("slicing along $pp")
+        @info("slicing along $pp")
 
-        vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
-            ev2 = deepcopy(ev)
-            ev2.params[pp] = pval
-            ev2 = evaluateObjective(m,ev2)
-            return(ev2)
+        if parallel
+            vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                ev2 = deepcopy(ev)
+                ev2.params[pp] = pval
+                ev2 = evaluateObjective(m,ev2)
+                return(ev2)
+            end
+        else
+            vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                ev2 = deepcopy(ev)
+                ev2.params[pp] = pval
+                ev2 = evaluateObjective(m,ev2)
+                return(ev2)
+            end
         end
 
-        for (v in vv) 
+        for v in vv 
             if (typeof(v) <: Exception)
-                Lumberjack.info("exception received. value not stored.")
+                @warn("exception received. value not stored.")
             else
                 add!( res, pp, v)
             end
         end
     end  
     t1 = round((time()-t0)/60)
-    Lumberjack.info("done after $t1 minutes")
+    @info("done after $t1 minutes")
 
     return res 
 end
 
-function write(s::Slice,fname::ASCIIString)
+function write(s::Slice,fname::String)
 
     ff5 = h5open(fname, "w") 
     # save res
@@ -108,7 +169,7 @@ function write(s::Slice,fname::ASCIIString)
     close(ff5)
 end
 
-function readSlice(fname::ASCIIString)
+function readSlice(fname::String)
 
     # get data
     ff5 = h5open(fname, "r") 
@@ -120,15 +181,15 @@ function readSlice(fname::ASCIIString)
 
     for p in pnames
         g = ff5[p]
-        res[symbol(p)] = Dict()
+        res[Symbol(p)] = Dict()
         for pp in names(g) 
-            res[symbol(p)][float(pp)] = Dict()
-            res[symbol(p)][float(pp)][:value] = read(g[pp]["value"])
-            res[symbol(p)][float(pp)][:moments] = Dict()
+            res[Symbol(p)][float(pp)] = Dict()
+            res[Symbol(p)][float(pp)][:value] = read(g[pp]["value"])
+            res[Symbol(p)][float(pp)][:moments] = Dict()
             mnames = names(g[pp]["moments"])
             for mn in mnames
                 md = g[pp]["moments"][mn]
-                res[symbol(p)][float(pp)][:moments][symbol(mn)] = read(md)
+                res[Symbol(p)][float(pp)][:moments][Symbol(mn)] = read(md)
             end
         end
     end
@@ -137,7 +198,7 @@ function readSlice(fname::ASCIIString)
     return sl
 end
 
-function readSliceRemote(remote::ASCIIString) 
+function readSliceRemote(remote::String) 
     a = tempname()
     run(`scp $remote $a`)
     println("saving locally to $a")

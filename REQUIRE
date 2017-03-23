@@ -1,10 +1,13 @@
-julia 0.4
+julia 0.5
 DataFrames
-Reexport
-FactCheck
+DataFramesMeta
 Distributions
 HDF5
-Lumberjack
-Lazy
-Sobol
 GLM
+Logging
+PDMats
+Roots
+Documenter
+Conda
+PyPlot
+Plots

@@ -21,9 +21,9 @@ type Chain <: AbstractChain
   
     function Chain(MProb,L)
         infos      = DataFrame(iter=1:L, evals =zeros(Float64,L), accept = zeros(Bool,L), status = zeros(Int,L), exhanged_with=zeros(Int,L), prob=zeros(Float64,L), eval_time=zeros(Float64,L))
-        par_nms    = Symbol[ symbol(x) for x in ps_names(MProb) ]
-        par2s_nms  = Symbol[ symbol(x) for x in ps2s_names(MProb) ]
-        mom_nms    = Symbol[ symbol(x) for x in ms_names(MProb) ]
+        par_nms    = Symbol[ Symbol(x) for x in ps_names(MProb) ]
+        par2s_nms  = Symbol[ Symbol(x) for x in ps2s_names(MProb) ]
+        mom_nms    = Symbol[ Symbol(x) for x in ms_names(MProb) ]
         parameters = convert(DataFrame,zeros(L,length(par2s_nms)+1))
         moments    = convert(DataFrame,zeros(L,length(mom_nms)+1))
         names!(parameters,[:iter; par2s_nms])
@@ -249,7 +249,7 @@ end
 
 function simpleDataFrameRead(ff5::HDF5File, path::AbstractString)
     colnames = names(ff5[path])
-    symnames = map(x->symbol(x),colnames)
+    symnames = map(x->Symbol(x),colnames)
     n =  length(colnames)
 
     columns = Array(Any, n)

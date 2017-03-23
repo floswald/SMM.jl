@@ -3,6 +3,21 @@
 
 
 
+"""
+load algo from file and compute simple standard errors as in Lise, Meghir, Robin (2016)
+Because of lack of numerical precision in numerical approx of gradient, function [`score`](@ref MOpt.score), this reports simply the standard deviation of the coldest chain.
+"""
+function get_simple_std(f::String)
+	x = readAlgoBGP(f)
+	nms = setdiff(names(x["params"]),[:chain_id,:iter])
+	m = colwise(mean,@where(x["params"],:chain_id.==1)[nms])
+	s = colwise(std,@where(x["params"],:chain_id.==1)[nms])
+	m = Float64[m[im][1] for im in 1:length(m)]
+	s = Float64[s[im][1] for im in 1:length(s)]
+	out = DataFrame(param=string.(nms),estimate=m,sd=s)
+end
+
+
 
 
 """
@@ -12,6 +27,7 @@ Computes an approximation to the simulated score of moments at the optimal param
 
 """
 function score(MA::MAlgo)
+	using GLM
 
 	p = parameters_ID(MA.MChains)
 	inf = infos(MA.MChains)

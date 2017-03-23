@@ -40,7 +40,7 @@ function collectFields(dict::Dict, I::UnitRange{Int}, df::Bool=false)
         cnames = Symbol[x for x in dk]
         return DataFrame(cols, cnames)
     else ## ==== return as collection
-        return([ k => v[I] for (k,v) in dict ])
+        return(Dict( k => v[I] for (k,v) in dict ))
     end
 end
 
@@ -77,10 +77,42 @@ end
 function df2dict(df::DataFrame)
   nm = names(df)
   snm = map(x->string(x),nm)
-  out = [i => df[symbol(i)] for i in snm]
+  out = Dict(i => df[symbol(i)] for i in snm)
   return out
 end
 
+"""
+    initsd(upper::Float64,init::Float64;prob::Float64=0.975)
+
+finds standard deviation `sigma` of N(init,sigma) such that `prob` of the resulting pdf lies within `[init-upper,init+upper]`. This assumes a **symmetric** box around `init`.
+"""
+function initsd(upper::Float64,init::Float64;prob::Float64=0.975)
+    @assert (prob < 1) && (prob > 0)
+    @assert upper > init
+    (upper - init) / quantile(Normal(),prob)
+end
+
+"""
+    initvar(bound::Float64,init::Float64,prob::Float64;low_var::Float64=0.01,hi_var::Float64=100.0)
+
+finds standard deviation `sigma` of mean zero univariate normal such that `cdf(Normal(init,sigma),bound) = prob`. 
+Use this function to specify the variance when sampling from a symmetrically bounded normal distribution when you want 
+to have a mass of `prob` at the bounds.
+"""
+function initvar(bound::Float64,init::Float64,prob::Float64;low_var::Float64=eps(),hi_var::Float64=100.0)
+    @assert (prob < 1) && (prob > 0)
+    fzero(x->distvar(x,init,bound,prob),low_var,hi_var)
+end
+
+"""
+   distvar(sig::Float64,p::Float64)  
+
+helper function for `initvar`
+"""
+function distvar(sig::Float64,mu::Float64,b::Float64,p::Float64)
+    N = Normal(mu,sig)
+    cdf(N,b) - p
+end
 
 
 
@@ -127,24 +159,6 @@ function fitMirror!(x::DataFrame,b::Dict)
 end
 
 
-
-function findInterval{T<:Number}(x::T,vec::Array{T})
-
-    out = zeros(Int,length(x))
-    vec = unique(vec)
-    sort!(vec)
-
-    for j in 1:length(x)
-        if x[j] < vec[1]
-            out[1] = 0
-        elseif x[j] > vec[end]
-            out[end] = 0
-        else
-            out[j] = searchsortedfirst(vec,x[j])-1 
-        end
-    end
-    return out
-end
 function findInterval{T<:Number}(x::T,vec::Array{T})
 
     out = zeros(Int,length(x))
