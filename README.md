@@ -8,7 +8,7 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 
 **Track proposals by iteration**  
 
-![Poposals](https://github.com/floswald/MOpt.jl/master/proposals.gif)
+![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
 
 ## Installation
 
@@ -82,21 +82,21 @@ runMOpt!(MA)
 
 ** param histogram **  
 
-![Histogram](https://github.com/floswald/MOpt.jl/master/histogram.png)  
+![Histogram](https://rawgithub.com/floswald/MOpt.jl/master/histogram.png)  
 
 
 ** param history **  
 
-![Lines](https://github.com/floswald/MOpt.jl/master/lines.png)  
+![Lines](https://rawgithub.com/floswald/MOpt.jl/master/lines.png)  
 
 ** Slices of objective function **  
 
-![Slices](https://github.com/floswald/MOpt.jl/master/slices-v.png)  
+![Slices](https://rawgithub.com/floswald/MOpt.jl/master/slices-v.png)  
 
 ** param histogram **  
 
-![Slices1](https://github.com/floswald/MOpt.jl/master/slices-m.png)  
-![Slices2](https://github.com/floswald/MOpt.jl/master/slices-m2.png)  
+![Slices1](https://rawgithub.com/floswald/MOpt.jl/master/slices-m.png)  
+![Slices2](https://rawgithub.com/floswald/MOpt.jl/master/slices-m2.png)  
 
 
 ## Contributing
