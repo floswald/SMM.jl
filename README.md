@@ -108,11 +108,11 @@ end
 
 ![Lines](https://rawgithub.com/floswald/MOpt.jl/master/lines.png)  
 
-**Slices of objective function**  
+**Slices of objective function wrt parameters**  
 
 ![Slices](https://rawgithub.com/floswald/MOpt.jl/master/slices-v.png)  
 
-**param histogram**  
+**Slices of moments wrt parameters**  
 
 ![Slices1](https://rawgithub.com/floswald/MOpt.jl/master/slices-m.png)  
 ![Slices2](https://rawgithub.com/floswald/MOpt.jl/master/slices-m2.png)  
