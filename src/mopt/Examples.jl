@@ -5,10 +5,10 @@ function serialNormal()
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 
-	# 1) sample [a',b'] from a space [-1,1] x [-1,1] and
+	# 1) sample [a',b'] from a space [-3,3] x [-2,2] and
 	# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
 	#    and accepting/rejecting [a',b'] according to BGP
-	# 3) S([a,b]) returns a summary of features of the data
+	# 3) S([a,b]) returns a summary of features of the data: 2 means
 
 	# initial value
 	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
@@ -33,21 +33,29 @@ function serialNormal()
 		"parallel"=>false,
 		"maxdists"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
-		"acc_tuner"=>12.0)
+		"acc_tuner"=>12.0,
+		"animate"=>true)
+
+	# plot slices of objective function
+	s = MOpt.doSlices(mprob,30)
+	plot(s,:value)  # plot objective function over param values
+	savefig(joinpath(Pkg.dir("MOpt"),"slices-v.png"))
+	plot(s,:mu1)  # plot value of moment :mu1 over param values
+	savefig(joinpath(Pkg.dir("MOpt"),"slices-m.png"))
+	plot(s,:mu2)  # plot value of moment :mu1 over param values
+	savefig(joinpath(Pkg.dir("MOpt"),"slices-m2.png"))
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
-	# MOpt.cur_param(MA)
-	# plot(MA,1)
 
 	# run the estimation
 	runMOpt!(MA)
-	# fig = figure("parameter histograms") 
-	# plt[:hist](convert(Array,MOpt.parameters(MA.MChains[1])),15)
-	# histogram(MOpt.param(MA))
 	@show summary(MA)
-	display(histogram(MA.chains[1]))
-	display(plot(MA.chains[1]))
+
+	histogram(MA.chains[1]);
+	savefig(joinpath(Pkg.dir("MOpt"),"histogram.png"))
+	plot(MA.chains[1]);
+	savefig(joinpath(Pkg.dir("MOpt"),"lines.png"))
 	return MA
 end
 

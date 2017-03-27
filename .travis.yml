@@ -5,7 +5,5 @@ julia:
   - 0.5
 notifications:
   email: false
-# after_success:
-#   - julia -e 'cd(Pkg.dir("MOpt")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())';
 
 

@@ -1,9 +1,24 @@
 using Documenter, MOpt
 
 makedocs(
-    modules = [MOpt]
-    )
-
+    modules = [MOpt],
+    format = Documenter.Formats.HTML,
+    sitename = "MOpt.jl",
+    pages = [
+        "Introduction" => "index.md",
+        "Getting Started" => "gettingstarted.md",
+        "Query Commands" => "querycommands.md",
+        "Data Sources" => "sources.md",
+        "Data Sinks" => "sinks.md",
+        "Internals" => "internals.md"]
+)
+deploydocs(
+    deps = nothing,
+    make = nothing,
+    target = "build",
+    repo = "github.com/floswald/MOpt.jl.git",
+    julia = "0.5"
+)
 
 # using Documenter, Query
 
