@@ -36,7 +36,6 @@ function runMOpt!( algo::MAlgo )
 			computeNextIteration!( algo )
 
 			# save at certain frequency
-			# TODO look into HDF5 chunk saving?
 			if haskey(algo.opts,"save_frequency")
 				@assert haskey(algo.opts,"filename")
 				if mod(i,algo["save_frequency"]) == 0
@@ -45,16 +44,6 @@ function runMOpt!( algo::MAlgo )
 				end
 			end
 
-			# printing progress
-			# if Base.get(algo.opts,"print_level",0) > 1
-			# 	if mod(algo.i,10) == 0
-			# 		println(infos(algo.MChains,algo.i))
-			# 	end
-			# elseif Base.get(algo.opts,"print_level",0) > 0
-			# 	if mod(algo.i,100) == 0
-			# 		println(infos(algo.MChains,algo.i))
-			# 	end
-			# end
 		catch e
 			@warn("caught exception $e")
 			throw(e)
@@ -68,6 +57,11 @@ function runMOpt!( algo::MAlgo )
 		@warn("could not find 'filename' and did not save")
 	end
 	@info("Done with estimation after $t1 minutes")
+
+	if get(algo.opts,"animate",false)
+		gif(algo.anim,joinpath(Pkg.dir("MOpt"),"proposals.gif"),fps=2)
+	end
+
 end
 
 # function ps2s_names(algo::MAlgo)

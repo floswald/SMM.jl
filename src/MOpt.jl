@@ -15,11 +15,13 @@ using Documenter
 using Plots
 
 pyplot()
+# plotlyjs()
+# gr()
 
 
 @Logging.configure(level=INFO)
 
-import Base.get, Base.mean
+import Base.get, Base.mean, Base.write
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 

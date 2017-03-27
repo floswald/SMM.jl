@@ -76,7 +76,8 @@ function param_grid(p::Union{Dict,OrderedDict})
     empty = mod(length(mat),n)
 
     # build a grid
-    g = grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)
+    # g = grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)
+    g = grid(rows,cols)
     if empty > 0
         idx = 1
         for i=1:rows,j=1:cols
@@ -102,12 +103,12 @@ end
     # ma = m.args[1]  # your ma algo
 
     # defaults 
-    margin    --> 1mm
-    titlefont --> font(11)
+    margin    --> 5mm
+    # titlefont --> font(11)
     grid      --> true 
     link      --> :none
     xticks     := true
-    xguidefont := font(10)
+    # xguidefont := font(10)
     legend     := false
 
 
@@ -133,7 +134,8 @@ end
         n = length(c.m.initial_value)
         rows,cols = best_grid(n)
         # build a grid
-        layout := @layout [ one{0.3h}; grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)]
+        # layout := @layout [ one{0.3h}; grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)]
+        layout := @layout [ one{0.3h}; grid(rows,cols)]
         dat = history(c)
         ex = convert(Array{Float64},dat[:exchanged])
         ex[ex.==0] = NaN
@@ -188,8 +190,8 @@ end
     layout := ly
 
     # foreground_color_border := nothing
-    margin    --> 1mm
-    titlefont --> font(11)
+    margin    --> 5mm
+    titlefont --> font(11)  # should depend on number of params you have
     fillcolor --> :orange
     fillrange --> 0
     fillalpha --> 0.5
@@ -237,18 +239,38 @@ end
     # some defaults
     legend    := false
     # foreground_color_border := nothing
-    margin    --> 1mm
-    titlefont --> font(11)
+    margin    --> 5mm
+    # titlefont --> font(11)
     fillcolor --> Plots.fg_color(d)
     linecolor --> Plots.fg_color(d)
     grid      --> true
     link      --> :x
     xticks     := true
-    xguidefont  := font(10)
+    # xguidefont  := font(10)
 
     # build series
     for (k,v) in s.res 
         da = get(s,k,w)
+        if haskey(d,:markersize)
+            @series begin
+                seriestype := :scatter
+                subplot    := indices[k]
+                # xticks     := pos[k][1]==rows ? true : false
+                # xguide     := pos[k][1]==rows ? "$k" : nothing
+                da[:x], da[:y]
+            end
+        end
+        #  add true moment value 
+        if w != :value
+            @series begin
+                # seriestype := :line
+                subplot    := indices[k]
+                seriestype := :line
+                linestyle  := :dash
+                linecolor  := :red
+                da[:x], Float64[s.m0[w][:value] for i in 1:length(da[:x])]
+            end
+        end
         @series begin
             seriestype := :line
             subplot    := indices[k]
@@ -258,25 +280,15 @@ end
             yguide     := mod(indices[k],size(ly.grid,2))==1 ? "$w" : ""
             da[:x], da[:y]
         end
-        if haskey(d,:markersize)
-            @series begin
-                seriestype := :scatter
-                subplot    := indices[k]
-                xguide     := "$k"
-                # xticks     := pos[k][1]==rows ? true : false
-                # xguide     := pos[k][1]==rows ? "$k" : nothing
-                yguide     := mod(indices[k],size(ly.grid,2))==1 ? "$w" : ""
-                da[:x], da[:y]
-            end
-        end
     end
 end
 
 function testslice()
 
 s = Slice(Dict(:p1=>1, :p2=>0.0),Dict(:m1=>rand(),:m2=>rand()))
-s.res = Dict(k => Dict(j => Dict(:value=>rand(),:moments=>Dict(:m1=>rand(),:m2=>rand())) for j in linspace(-1,1,10)) for k in [Symbol("p$i") for i in 1:17])
-MOpt.plot(s,:value)
+s.res = Dict(k => Dict(j => Dict(:value=>rand(),:moments=>Dict(:m1=>rand(),:m2=>rand())) for j in linspace(-1,1,10)) for k in [Symbol("p$i") for i in 1:2])
+display(MOpt.plot(s,:m1))
+return s
 # MOpt.plot(s,:value,markersize=10,markercolor=:red,link=:both)
 end
 

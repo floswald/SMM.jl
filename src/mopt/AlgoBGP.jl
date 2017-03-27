@@ -17,6 +17,35 @@ abstract AbstractChain
 # Start defining BGPChain
 ###################################
 
+
+
+
+"""
+# `BGPChain`
+
+MCMC Chain storage for BGP algorithm.
+
+## Fields
+
+* `evals`: Array of `Eval`s
+* `best_id`: index of best `eval.value` so far
+* `best_val`: best eval.value so far
+* `curr_val` : current value
+* `probs_acc`: vector of probabilities with which to accept current value
+* `id`: Chain identifier
+* `iter`: current iteration
+* `accepted`: `Array{Bool}` of `length(evals)`
+* `accept_rate`: current acceptance rate
+* `acc_tuner`: Acceptance tuner
+* `exchanged`: `Array{Int}` of `length(evals)` with index of chain that was exchanged with
+* `m`: `MProb`
+* `sigma`: `PDiagMat{Float64}` matrix of variances for shock
+* `sigma_update_steps`:  update sampling vars every `sigma_update_steps` iterations
+* `sigma_adjust_by`: adjust sampling vars by `sigma_adjust_by` percent up or down
+* `smpl_iters`: max number of trials to get a new parameter from MvNormal that lies within support
+* `maxdist`: what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
+
+"""
 type BGPChain <: AbstractChain
     evals     :: Array{Eval}
     best_id   :: Vector{Int}   # index of best eval.value so far
@@ -40,7 +69,6 @@ type BGPChain <: AbstractChain
     function BGPChain(id::Int=1,n::Int=10,m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0)
         @assert length(sig) == length(m.params_to_sample)
         this           = new()
-        this.mprob     = m
         this.evals     = Array{Eval}(n)
         this.best_val  = ones(n) * Inf
         this.best_id   = -ones(Int,n)
@@ -75,7 +103,11 @@ function params(c::BGPChain)
     return d
 end
 
-# make a dataframe with acc/rej history
+"""
+    history(c::BGPChain)
+
+Returns a `DataFrame` with a history of the chain.
+"""
 function history(c::BGPChain)
     N = length(c.evals)
     cols = Any[]
@@ -100,9 +132,25 @@ function history(c::BGPChain)
     return d[[:iter,:value,:accepted,:curr_val, :best_val, :prob, :exchanged,collect(keys(c.evals[1].params))...]]
 end
 
+"""
+    best(c::BGPChain) -> (val,idx)
+
+Returns the smallest value and index stored of the chain.
+"""
 best(c::BGPChain) = findmin([c.evals[i].value for i in 1:length(c.evals)])
+
+"""
+    mean(c::BGPChain) 
+
+Returns the mean of all values stored on the chain.
+"""
 mean(c::BGPChain) = Dict(k => mean(v) for (k,v) in params(c))
 
+"""
+    summary(c::BGPChain) 
+
+Returns a summary of the chain. Condensed [`history](@ref)
+"""
 function summary(c::BGPChain) 
     ex_with = c.exchanged[c.exchanged .!= 0]
     if length(ex_with) == 1
@@ -331,7 +379,8 @@ type MAlgoBGP <: MAlgo
     opts            :: Dict	# list of options
     i               :: Int 	# iteration
     chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
-  
+    anim           :: Plots.Animation
+
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"mixprob"=>0.5,"acc_tuner"=>2.0))
 
         init_sd = OrderedDict{Symbol,Float64}()
@@ -361,7 +410,7 @@ type MAlgoBGP <: MAlgo
             # println(init_sd)
             BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)),opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"],opts["maxdists"][1],opts["acc_tuner"])]
         end
-	    return new(m,opts,0,BGPChains)
+	    return new(m,opts,0,BGPChains, Animation())
     end
 end
 
@@ -438,6 +487,10 @@ function computeNextIteration!( algo::MAlgoBGP )
         #     next_eval!(i)
         # end
         map( x->next_eval!(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+    end
+    if get(algo.opts, "animate", false)
+        p = plot(algo,1);
+        frame(algo.anim)
     end
     # p = plot(algo,1)
     # display(p)
