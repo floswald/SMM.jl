@@ -8,6 +8,8 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 
 **Track proposals by iteration**  
 
+We can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1.
+
 ![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
 
 ## Installation
@@ -80,20 +82,20 @@ runMOpt!(MA)
 
 ### Example Output
 
-** param histogram **  
+**param histogram**  
 
 ![Histogram](https://rawgithub.com/floswald/MOpt.jl/master/histogram.png)  
 
 
-** param history **  
+**param history**  
 
 ![Lines](https://rawgithub.com/floswald/MOpt.jl/master/lines.png)  
 
-** Slices of objective function **  
+**Slices of objective function**  
 
 ![Slices](https://rawgithub.com/floswald/MOpt.jl/master/slices-v.png)  
 
-** param histogram **  
+**param histogram**  
 
 ![Slices1](https://rawgithub.com/floswald/MOpt.jl/master/slices-m.png)  
 ![Slices2](https://rawgithub.com/floswald/MOpt.jl/master/slices-m2.png)  
