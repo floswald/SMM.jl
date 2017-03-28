@@ -6,11 +6,6 @@
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
-**Track proposals by iteration**  
-
-We can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1.
-
-![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
 
 ## Installation
 
@@ -20,12 +15,18 @@ Pkg.clone("https://github.com/floswald/MOpt.jl")
 
 ## Documentation
 
-Still work in progress. :-(  
+Still work in progres, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL.
 I recommend to look at `src/Examples.jl`:
 
 ### Example Usage of the BGP Algorithm
 
-Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](http://arxiv.org/abs/1108.3423) propose an approximate Bayesian Computation (ABC) algorithm that incorporates the parallel tempering idea of Geyer (1991). We provide the BGP algorithm as a template called `MAlgoBGP`. Here we use it to run a simple toy example.
+Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](http://arxiv.org/abs/1108.3423) propose an approximate Bayesian Computation (ABC) algorithm that incorporates the parallel tempering idea of Geyer (1991). We provide the BGP algorithm as a template called `MAlgoBGP`. Here we use it to run a simple toy example where we want to estimate the means of a bivariate normal distribution by using MCMC. We use 3 parallel chains, each with different temperature. The chains can exchange locations along the process if this is suitable.
+
+**Track BGP proposals by iteration**  
+
+We can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1.
+
+![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
 
 ```julia
 
@@ -123,8 +124,7 @@ end
 We encourage user contributions. Please submit a pull request for any improvements you would like to suggest, or a new algorithm you implemented. 
 
 New algorithms:
-*You can model your algo on the basis of `src/AlgoBGP.jl` - 
-* your algorithm needs a storage system for chains, derived from the default type `Chain` in `src/chains.jl`
+* You can model your algo on the basis of `src/AlgoBGP.jl` - 
 * you need to implement the function `computeNextIteration!( algo )` for your `algo`
 
 
