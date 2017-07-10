@@ -204,7 +204,7 @@ end
 
 
     # @gif for i in 1:ma["maxiter"]
-        dd = MOpt.cur_param(ma)[chain]
+        dd = MomentOpt.cur_param(ma)[chain]
         acc = ma.chains[chain].accepted[ma.i]
         for (k,v) in ma.m.params_to_sample
             dist = Normal(dd[:mu][k],diag(dd[:sigma])[indices[k]])
@@ -287,25 +287,25 @@ function testslice()
 
 s = Slice(Dict(:p1=>1, :p2=>0.0),Dict(:m1=>rand(),:m2=>rand()))
 s.res = Dict(k => Dict(j => Dict(:value=>rand(),:moments=>Dict(:m1=>rand(),:m2=>rand())) for j in linspace(-1,1,10)) for k in [Symbol("p$i") for i in 1:2])
-display(MOpt.plot(s,:m1))
+display(MomentOpt.plot(s,:m1))
 return s
-# MOpt.plot(s,:value,markersize=10,markercolor=:red,link=:both)
+# MomentOpt.plot(s,:value,markersize=10,markercolor=:red,link=:both)
 end
 
 function plotExample(s::Slice)
 
     subplot(231)
-    r = MOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
     subplot(232)
-    r = MOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
     subplot(233)
-    r = MOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
     subplot(234)
-    r = MOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
     subplot(235)
-    r = MOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
     subplot(236)
-    r = MOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
 
 
 end

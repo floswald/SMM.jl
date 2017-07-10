@@ -1,10 +1,10 @@
 
 
 # main dev routine for Mopt.jl
-cd(Pkg.dir("MOpt"))
+cd(Pkg.dir("MomentOpt"))
 
 # load the source of the package
-include("src/MOpt.jl")
+include("src/MomentOpt.jl")
 
 # test a full example
 mm = MOpt.serialNormal()

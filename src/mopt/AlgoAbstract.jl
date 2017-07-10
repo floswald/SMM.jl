@@ -29,6 +29,7 @@ function runMOpt!( algo::MAlgo )
 
 	# do iteration
 	for i in 1:algo["maxiter"]
+		@debug("iteration $i")
 
 		algo.i = i
 
@@ -59,7 +60,7 @@ function runMOpt!( algo::MAlgo )
 	@info("Done with estimation after $t1 minutes")
 
 	if get(algo.opts,"animate",false)
-		gif(algo.anim,joinpath(Pkg.dir("MOpt"),"proposals.gif"),fps=2)
+		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)
 	end
 
 end

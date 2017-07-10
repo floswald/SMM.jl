@@ -1,4 +1,4 @@
-using DataFrames, MOpt
+using DataFrames, MomentOpt
 
 function test_chain()
     pb   = Dict( "a" => [0.3; -1;1] , "b" => [-0.9;-2;2] )
@@ -6,7 +6,7 @@ function test_chain()
     mprob = MProb() 
     addSampledParam!(mprob,pb) 
     addMoment!(mprob,moms) 
-    addEvalFunc!(mprob,MOpt.objfunc_norm)
+    addEvalFunc!(mprob,MomentOpt.objfunc_norm)
     id = 180
     n = 23
     sig = rand(length(pb))
@@ -14,6 +14,6 @@ function test_chain()
     upd = 5
     upd_by = rand()
     ite = 1000
-    chain = MOpt.BGPChain(id,n,mprob,sig,upd,upd_by,ite)
+    chain = MomentOpt.BGPChain(id,n,mprob,sig,upd,upd_by,ite)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite)
 end
