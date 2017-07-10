@@ -401,7 +401,6 @@ type MAlgoBGP <: MAlgo
                 # @assert init_sd[k] == b / quantile(Normal(),0.975)
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
-            @info("initial variances are $(collect(values(init_sd)) .* collect(temps))")
             BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:3])[i],get(opts,"acc_tuner",2.0)) for i in 1:opts["N"]]
           else
             temps     = [1.0]
