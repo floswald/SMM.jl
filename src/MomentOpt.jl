@@ -48,19 +48,12 @@ export addParam!,
 include("mopt/mprob.jl")
 include("mopt/incmopt.jl")
 include("mopt/Eval.jl")
-# include("mopt/chains.jl")
 include("mopt/slices.jl")
 include("mopt/AlgoAbstract.jl")
 include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
 include("mopt/Examples.jl")
-# include("mopt/sobolsearch.jl")
-# include("mopt/econometrics.jl")
-
-# if is_apple()
-#        using PyPlot
-       include("mopt/plotting.jl")
-# end
+include("mopt/plotting.jl")
 
 
 end 	# module
