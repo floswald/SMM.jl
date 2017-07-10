@@ -37,13 +37,13 @@ function serialNormal()
 		"animate"=>true)
 
 	# plot slices of objective function
-	s = MOpt.doSlices(mprob,30)
+	s = doSlices(mprob,30)
 	plot(s,:value)  # plot objective function over param values
-	savefig(joinpath(Pkg.dir("MOpt"),"slices-v.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
 	plot(s,:mu1)  # plot value of moment :mu1 over param values
-	savefig(joinpath(Pkg.dir("MOpt"),"slices-m.png"))
-	plot(s,:mu2)  # plot value of moment :mu1 over param values
-	savefig(joinpath(Pkg.dir("MOpt"),"slices-m2.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
+	plot(s,:mu2)  # plot value of moment :mu2 over param values
+	savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
@@ -53,9 +53,9 @@ function serialNormal()
 	@show summary(MA)
 
 	histogram(MA.chains[1]);
-	savefig(joinpath(Pkg.dir("MOpt"),"histogram.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
 	plot(MA.chains[1]);
-	savefig(joinpath(Pkg.dir("MOpt"),"lines.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
 	return MA
 end
 
@@ -65,30 +65,28 @@ function BGP_example()
 	p = OrderedDict("theta" => [2.0,-2,10])
 	mprob = MProb()
 	addSampledParam!(mprob,p)
-	addEvalFunc!(mprob,MOpt.objfunc_BGP)
+	addEvalFunc!(mprob,MomentOpt.objfunc_BGP)
 
-	opts =Dict(
-		"N"               => length(workers()),							# number of MCMC chains
-		"maxiter"         => 500,						# max number of iterations
-		"savefile"        => joinpath(pwd(),"MA.h5"),	# filename to save results
-		"print_level"     => 1,							# increasing verbosity level of output
-		"maxtemp"         => 1,							# tempering of hottest chain
-		"min_shock_sd"    => 0.1,						# initial sd of shock on coldest chain
-		"max_shock_sd"    => 0.1,						# initial sd of shock on hottest chain
-		"past_iterations" => 30,						# num of periods used to compute Cov(p)
-		"min_accept_tol"  => 100000,					# ABC-MCMC cutoff for rejecting small improvements
-		"max_accept_tol"  => 100000,					# ABC-MCMC cutoff for rejecting small improvements
-		"min_disttol"     => 0.1,						# distance tol for jumps from coldest chain
-		"max_disttol"     => 0.1,						# distance tol for jumps from hottest chain
-		"min_jump_prob"   => 0.05,						# prob of jumps from coldest chain
-		"max_jump_prob"   => 0.05)						# prob of jumps from hottest chain
+	nchains = 15
+
+	opts =Dict("N"=>nchains,
+		"maxiter"=>500,
+		"maxtemp"=> 4,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.005,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
+		"maxdists"=>linspace(0.025, 2,nchains),
+		"mixprob"=>0.3,
+		"acc_tuner"=>12.0,
+		"animate"=>false)
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 	# run the estimation
 	runMOpt!(MA)
-	fig = figure("parameter histograms") 
-	plt[:hist](convert(Array,MOpt.parameters(MA.MChains[1])),15)
-	return MA
+	@show summary(MA)
+
+	histogram(MA.chains[1])
 end
 
 function serialSlices()

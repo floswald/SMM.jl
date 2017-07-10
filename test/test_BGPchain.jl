@@ -1,6 +1,6 @@
 module TestBGPChain
 
-using Base.Test, DataFrames, MOpt
+using Base.Test, DataFrames, MomentOpt
 
 
 
@@ -34,35 +34,35 @@ include("test-include.jl")
 		v = rand()
 		ev.value = v
 		ev.accepted = true
-		MOpt.set_eval!(chain,ev)
+		MomentOpt.set_eval!(chain,ev)
 		@test isa(chain.evals[1],Eval)
 		@test chain.evals[1].value == v 
 		@test chain.accepted[1]
-		MOpt.set_acceptRate!(chain)
+		MomentOpt.set_acceptRate!(chain)
 		@test chain.accept_rate == 1.0
 
-		MOpt.set_sigma!(chain,sig2)
+		MomentOpt.set_sigma!(chain,sig2)
 		@test diag(chain.sigma) == sig2
 
-		MOpt.getLastAccepted(chain) == ev
+		MomentOpt.getLastAccepted(chain) == ev
 	end
 
 	# @testset "sample similar variances" begin
 	# 	n = 10
 	# 	sig = rand(n)
-	# 	d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
+	# 	d = MomentOpt.MvNormal(zeros(10),MomentOpt.PDiagMat(sig))
 	# 	lb = [-0.5 for i in 1:n]
 	# 	ub = [ 0.5 for i in 1:n]
-	# 	x = MOpt.mysample(d,lb,ub,1000)
+	# 	x = MomentOpt.mysample(d,lb,ub,1000)
 	# 	@test length(x)==n
  # 	end
 	# @testset "sample non-similar variances" begin
 	# 	n = 10
 	# 	sig = collect(linspace(1.0,10.0,n))
-	# 	d = MOpt.MvNormal(zeros(10),MOpt.PDiagMat(sig))
+	# 	d = MomentOpt.MvNormal(zeros(10),MomentOpt.PDiagMat(sig))
 	# 	lb = -2 * sig
 	# 	ub =  2 * sig
-	# 	x = MOpt.mysample(d,lb,ub,1000)
+	# 	x = MomentOpt.mysample(d,lb,ub,1000)
 	# 	@test length(x)==n
  # 	end
 
@@ -70,7 +70,7 @@ include("test-include.jl")
 	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
 		@test chain.iter == 0
 		chain.iter = 1
-		pp = MOpt.proposal(chain)
+		pp = MomentOpt.proposal(chain)
 		@test pp == mprob.initial_value
 
 		#  set a value:
@@ -78,10 +78,10 @@ include("test-include.jl")
 		v = rand()
 		ev.value = v
 		ev.accepted = true
-		MOpt.set_eval!(chain,ev)
+		MomentOpt.set_eval!(chain,ev)
 		# next period:
 		chain.iter += 1
-		pp = MOpt.proposal(chain)
+		pp = MomentOpt.proposal(chain)
 		@test pp != mprob.initial_value
 
 	end
@@ -94,11 +94,11 @@ include("test-include.jl")
 		    c.iter += 1
 
 			# get a getNewCandidates
-		    pp = MOpt.proposal(c)
+		    pp = MomentOpt.proposal(c)
 		    # evaluate objective 
-		    ev = MOpt.evaluateObjective(c.m,pp)
+		    ev = MomentOpt.evaluateObjective(c.m,pp)
 
-		    MOpt.doAcceptReject!(c,ev)
+		    MomentOpt.doAcceptReject!(c,ev)
 
 			# is accepted: 
 			@test c.accepted[c.iter]
@@ -114,7 +114,7 @@ include("test-include.jl")
 			# get 2 Evals: one with good, one with bad value
 			# want to accept good and reject bad.
 
-			ev_0 = MOpt.getLastAccepted(c)
+			ev_0 = MomentOpt.getLastAccepted(c)
 			ev_good = Eval()
 			ev_bad  = Eval()
 
@@ -124,14 +124,14 @@ include("test-include.jl")
 			ev_bad.status  = 1
 
 
-			MOpt.doAcceptReject!(c,ev_bad)
+			MomentOpt.doAcceptReject!(c,ev_bad)
 			@test ev_bad.prob < 1
 			if ev_bad.prob > c.probs_acc[c.iter]
 				@test ev_bad.accepted
 				@test c.accepted[c.iter]
 			end
 
-			MOpt.doAcceptReject!(c,ev_good)
+			MomentOpt.doAcceptReject!(c,ev_good)
 			@test ev_good.prob == 1.0
 			@test ev_good.accepted
 			@test c.accepted[c.iter]

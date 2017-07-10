@@ -1,5 +1,5 @@
 
-module MOpt
+module MomentOpt
 
 # Dependencies
 # ############
@@ -19,7 +19,7 @@ pyplot()
 # gr()
 
 
-@Logging.configure(level=INFO)
+@Logging.configure(level=DEBUG)
 
 import Base.get, Base.mean, Base.write
 
@@ -37,7 +37,9 @@ export addParam!,
        dataMomentW,
        summary,
        param,
-       paramd
+       paramd,
+       doSlices
+
 
 
 # load files

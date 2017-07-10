@@ -1,6 +1,6 @@
 module Test_objfunc
 
-	using MOpt, Base.Test,DataStructures,DataFrames
+	using MomentOpt, Base.Test,DataStructures,DataFrames
 
 	@testset "testing objfunctions" begin
 
@@ -13,9 +13,9 @@ module Test_objfunc
 			addMoment!(mprob,moms) 
 			# addEvalFunc!(mprob,objfunc_norm)
 
-			ev = MOpt.Eval( mprob, OrderedDict(:p1 => 1.0 , :p2 => 0.0))
+			ev = MomentOpt.Eval( mprob, OrderedDict(:p1 => 1.0 , :p2 => 0.0))
 			@test ev.status == -1
-			ev = MOpt.Testobj2(ev)	
+			ev = MomentOpt.Testobj2(ev)	
 			@test ev.status == 1
 			@test param(ev,:p1) == 1.0
 			@test param(ev,:p2) == 0.0
@@ -26,8 +26,8 @@ module Test_objfunc
 
 		@testset "testing bivariate normal" begin
 
-			ev = MOpt.Eval( Dict(:p1 => 1.0 , :p2 => 0.0), Dict(:mu1 =>0.0 , :mu2 => 0.0))
-			ev = MOpt.objfunc_norm(ev)	
+			ev = MomentOpt.Eval( Dict(:p1 => 1.0 , :p2 => 0.0), Dict(:mu1 =>0.0 , :mu2 => 0.0))
+			ev = MomentOpt.objfunc_norm(ev)	
 			@test abs(ev.simMoments[:mu1] - 1.0) < 0.1 
 			@test abs(ev.simMoments[:mu2] - 1.0) > 0.1 
 

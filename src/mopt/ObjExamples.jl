@@ -28,25 +28,20 @@ function Testobj_fails(ev::Eval)
 
 end
 
-function BGP_rand(x::Float64)
-    r1 = Normal(x,1.0)
-    r100 = Normal(x,0.01)
-    r1_5 = Normal(x-5.0,1)
-    0.45 * rand(r1) + 0.45 * rand(r100) + 0.1 * rand(r1_5)
-end
-function BGP_posterior(x::Vector{Float64})
-    r1 = Normal(0,1.0)
-    r100 = Normal(0,0.01)
-    r1_5 = Normal(5.0,1)
-    0.45 * pdf(r1,x) + 0.45 * pdf(r100,x) + 0.1 * pdf(r1_5,x)
+function BGP_approx_posterior(theta::Float64)
+    eps = 0.025
+    N = Normal()
+    e1 = eps - theta
+    e2 = -eps - theta
+    0.45 * ( cdf(N,e1) + cdf(N,10*e1) - cdf(N,e2) - cdf(N,10*e2)) + 0.1 * (cdf(N,e1 + 5) - cdf(N,e2 + 5))
 end
 
 function objfunc_BGP(ev::Eval)
     start(ev)
     p = paramd(ev)  # param vector as dict
-    y = BGP_posterior([p[:theta]])
-    setMoment(ev,y)
-    setValue(ev,-y)
+    y = BGP_approx_posterior(p[:theta])
+    # no moments to set...
+    setValue(ev,-y)  # want to minimize
     ev.status=1
     finish(ev)
     return(ev)
@@ -71,7 +66,7 @@ function objfunc_norm(ev::Eval)
 	# compute simulated moments
 	ns = 5000
 	sigma           = [1.0;1.0]
-	randMultiNormal = MOpt.MvNormal(mu,MOpt.PDiagMat(sigma)) 
+	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
 	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 

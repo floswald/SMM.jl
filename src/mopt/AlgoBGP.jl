@@ -380,8 +380,9 @@ type MAlgoBGP <: MAlgo
     i               :: Int 	# iteration
     chains         :: Array{BGPChain} 	# collection of BGPChains: if N==1, length(BGPChains) = 1
     anim           :: Plots.Animation
+    dist_fun   :: Function
 
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"mixprob"=>0.5,"acc_tuner"=>2.0))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"acc_tuner"=>2.0))
 
         init_sd = OrderedDict{Symbol,Float64}()
         if opts["N"] > 1
@@ -400,7 +401,8 @@ type MAlgoBGP <: MAlgo
                 # @assert init_sd[k] == b / quantile(Normal(),0.975)
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"],opts["maxdists"][i],opts["acc_tuner"]) for i in 1:opts["N"]]
+            @info("initial variances are $(collect(values(init_sd)) .* collect(temps))")
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:3])[i],get(opts,"acc_tuner",2.0)) for i in 1:opts["N"]]
           else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
@@ -408,9 +410,9 @@ type MAlgoBGP <: MAlgo
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
             # println(init_sd)
-            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)),opts["sigma_update_steps"],opts["sigma_adjust_by"],opts["smpl_iters"],opts["maxdists"][1],opts["acc_tuner"])]
+            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:3])[1],get(opts,"acc_tuner",2.0)) ]
         end
-	    return new(m,opts,0,BGPChains, Animation())
+	    return new(m,opts,0,BGPChains, Animation(),abs)
     end
 end
 
@@ -513,7 +515,7 @@ end
 function exchangeMoves!(algo::MAlgoBGP)
 
     # algo["N"] exchange moves are proposed
-    props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (j<i)]
+    props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (i<j)]
     # N pairs of chains are chosen uniformly in all possibel pairs with replacement
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
     pairs = sample(props,samples,replace=false)
@@ -526,18 +528,25 @@ function exchangeMoves!(algo::MAlgoBGP)
         i,j = p
         evi = getLastAccepted(algo.chains[p[1]])
         evj = getLastAccepted(algo.chains[p[2]])
-        if rand() < algo["mixprob"]
-            # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
-            if (evj.value < evi.value)  # if j's value is better than i's
-            # if (abs(j.value) < algo.chains[p[1]].best_val) && (rand() < algo["mixprob"]) # notice: tolerance on chain i!
-                @debug("$j better than $i")
-                # @debug("$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
-                # swap_ev!(algo,p)
-                set_ev_i2j!(algo,i,j)
-            else
-                @debug("$i better than $j")
-                set_ev_i2j!(algo,j,i)
-            end
+        # my version
+        # if rand() < algo["mixprob"]
+            # if (evj.value < evi.value)  # if j's value is better than i's
+            #     @debug("$j better than $i")
+            #     # @debug("$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
+            #     # swap_ev!(algo,p)
+            #     set_ev_i2j!(algo,i,j)
+            # else
+            #     @debug("$i better than $j")
+            #     set_ev_i2j!(algo,j,i)
+            # end
+        # end
+
+        # BGP version
+        # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
+        @debug("Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
+        @debug("Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
+        if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i] 
+            swap_ev_ij!(algo,i,j)
         end
     end
 
@@ -566,22 +575,6 @@ function exchangeMoves!(algo::MAlgoBGP)
 
 end
 
-function swap_ev!(algo::MAlgoBGP,ch_id::Tuple{Int,Int})
-    @debug("swapping evs for $(ch_id[1]) and $(ch_id[2])")
-    c1 = algo.chains[ch_id[1]] 
-    c2 = algo.chains[ch_id[2]]
-
-	e1 = getLastAccepted(c1)
-	e2 = getLastAccepted(c2)
-
-    # swap 
-    set_eval!(c1,e2)
-    set_eval!(c2,e1)
-
-	# make a note 
-    set_exchanged!(c1,ch_id[2])
-    set_exchanged!(c2,ch_id[1])
-end
 function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
     @debug("setting ev of $i to ev of $j")
     ci = algo.chains[i] 
@@ -595,6 +588,22 @@ function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
 
     # make a note 
     set_exchanged!(ci,j)
+end
+function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
+    @debug("swapping ev of $i with ev of $j")
+    ci = algo.chains[i] 
+    cj = algo.chains[j]
+
+    ei = getLastAccepted(ci)
+    ej = getLastAccepted(cj)
+
+    # set ei -> ej
+    set_eval!(ci,ej)
+    set_eval!(cj,ei)
+
+    # make a note 
+    set_exchanged!(ci,j)
+    set_exchanged!(cj,i)
 end
 
 

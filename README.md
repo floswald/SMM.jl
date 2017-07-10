@@ -1,8 +1,8 @@
 
 
-# MOpt.jl: Moment Optimization Library for [Julia](http://julialang.org)
+# MomentOpt.jl: Moment Optimization Library for Julia
 
-[![Build Status](https://travis-ci.org/floswald/MOpt.jl.png?branch=master)](https://travis-ci.org/floswald/MOpt.jl)
+[![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.png?branch=master)](https://travis-ci.org/floswald/MomentOpt.jl)
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
@@ -31,7 +31,7 @@ We can allow for the variance of the shock to be changed adaptively. Here this i
 ```julia
 
 # run this with 
-# using MOpt; MOpt.serialNormal()
+# using MomentOpt; MomentOpt.serialNormal()
 
 function serialNormal()
 	# data are generated from a bivariate normal
@@ -69,13 +69,13 @@ function serialNormal()
 		"animate"=>true)
 
 	# plot slices of objective function
-	s = MOpt.doSlices(mprob,30)
+	s = doSlices(mprob,30)
 	plot(s,:value)  # plot objective function over param values
-	savefig(joinpath(Pkg.dir("MOpt"),"slices-v.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
 	plot(s,:mu1)  # plot value of moment :mu1 over param values
-	savefig(joinpath(Pkg.dir("MOpt"),"slices-m.png"))
-	plot(s,:mu2)  # plot value of moment :mu1 over param values
-	savefig(joinpath(Pkg.dir("MOpt"),"slices-m2.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
+	plot(s,:mu2)  # plot value of moment :mu2 over param values
+	savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
@@ -83,16 +83,16 @@ function serialNormal()
 	# run the estimation
 	runMOpt!(MA)
 	@show summary(MA)
-	# │ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val   │
+   	# │ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val   │
 	# ├─────┼────┼──────────┼────────────────┼─────────────────────┼────────────┤
 	# │ 1   │ 1  │ 0.581967 │ 39.0           │ 2                   │ 1.85755e-5 │
 	# │ 2   │ 2  │ 0.346939 │ 27.0           │ 3                   │ 1.85755e-5 │
 	# │ 3   │ 3  │ 0.245399 │ 18.5           │ 2                   │ 1.85755e-5 │
 
 	histogram(MA.chains[1]);
-	savefig(joinpath(Pkg.dir("MOpt"),"histogram.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
 	plot(MA.chains[1]);
-	savefig(joinpath(Pkg.dir("MOpt"),"lines.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
 	return MA
 end
 

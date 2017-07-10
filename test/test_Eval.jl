@@ -1,6 +1,6 @@
 module TestBGPChain
 
-using Base.Test, DataFrames, MOpt, HDF5
+using Base.Test, DataFrames, MomentOpt, HDF5
 
 
 
@@ -12,7 +12,7 @@ moms = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=rand(3))
 p2    = Dict(:a => 3.1 , :b => 4.9)
 moms2 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
-p3    = MOpt.OrderedDict(:a => 3.1 , :b => 4.9)
+p3    = MomentOpt.OrderedDict(:a => 3.1 , :b => 4.9)
 moms3 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
 type MyP
@@ -51,7 +51,7 @@ end
 		@test paramd(ev3) == Dict(:a => 3.1 , :b => 4.9)
 
 		myp = MyP()
-		MOpt.fill(myp,ev)
+		MomentOpt.fill(myp,ev)
 		@test myp.a == 3.1
 	end
 
@@ -69,7 +69,7 @@ end
 		setMoment(ev,Dict( :alpha => 0.78, :beta => 0.81) )	
 		@test ev.simMoments[:beta] == 0.81
 
-		MOpt.setValue(ev,4.2)
+		MomentOpt.setValue(ev,4.2)
 		@test ev.value == 4.2
 	end
 
@@ -81,9 +81,9 @@ end
 			close(ff)
 		end
 		h5open("test5.h5", "r") do ff
-			ev2 = MOpt.readEval(ff,"eval_test")
+			ev2 = MomentOpt.readEval(ff,"eval_test")
 			@test ev2.status == ev.status
-			evs = MOpt.readEvalArray(ff,"eval_list")
+			evs = MomentOpt.readEvalArray(ff,"eval_list")
 			@test evs[1].simMoments[:alpha] == ev.simMoments[:alpha]
 			close(ff)
 			# readEval(ff,"eval_test",ev)

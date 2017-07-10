@@ -1,7 +1,7 @@
 
 module TestMProb
 
-using Base.Test, MOpt, DataFrames, DataStructures
+using Base.Test, MomentOpt, DataFrames, DataStructures
 
 
 
@@ -42,24 +42,24 @@ end
 	mprob = MProb();
 
 	addParam!(mprob,p)	
-	@test collect(MOpt.ps_names(mprob)) == Any[:a,:b,:c]
+	@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b,:c]
 	@test length(mprob.params_to_sample) == 0
 
 	mprob = MProb();
 	addSampledParam!(mprob,pb)	
-	@test collect(MOpt.ps_names(mprob)) == Any[:a,:b]
-	@test collect(MOpt.ps2s_names(mprob)) == Any[:a,:b]
+	@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b]
+	@test collect(MomentOpt.ps2s_names(mprob)) == Any[:a,:b]
 
 	mprob = MProb();
 	addSampledParam!(mprob,"a",0.1,0,1)
 	addSampledParam!(mprob,"b",0.1,0,1)
 	addMoment!(mprob,moms)
-	addEvalFunc!(mprob,MOpt.Testobj2)
+	addEvalFunc!(mprob,MomentOpt.Testobj2)
 
 	@test isa(mprob.objfunc,Function)
 
-	@test collect(MOpt.ps_names(mprob)) == Any[:a,:b]
-	@test collect(MOpt.ms_names(mprob)) == Any[:alpha,:beta,:gamma]
+	@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b]
+	@test collect(MomentOpt.ms_names(mprob)) == Any[:alpha,:beta,:gamma]
 
 end
 
