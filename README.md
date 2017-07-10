@@ -10,7 +10,7 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 ## Installation
 
 ```julia
-Pkg.clone("https://github.com/floswald/MOpt.jl")
+Pkg.clone("https://github.com/floswald/MomentOpt.jl")
 ```
 
 ## Documentation
