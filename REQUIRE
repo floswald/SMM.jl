@@ -1,10 +1,10 @@
-julia 0.5
+julia 0.6
 DataFrames
 DataFramesMeta
 Distributions
 HDF5
 GLM
-Logging
+MiniLogging
 PDMats
 Roots
 Documenter

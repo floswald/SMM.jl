@@ -145,7 +145,7 @@ function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
         end
     end  
     t1 = round((time()-t0)/60)
-    @info("done after $t1 minutes")
+    @info(logger,"done after $t1 minutes")
 
     return res 
 end

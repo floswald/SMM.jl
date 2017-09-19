@@ -1,31 +1,21 @@
-module TestBGPChain
-
-using Base.Test, DataFrames, MomentOpt, HDF5
-
 
 
 # TESTING Eval 
 # ============
-p    = Dict(:a => 3.1 , :b => 4.9)
-moms = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=rand(3))
 
-p2    = Dict(:a => 3.1 , :b => 4.9)
-moms2 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
-p3    = MomentOpt.OrderedDict(:a => 3.1 , :b => 4.9)
-moms3 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
-
-type MyP
-	a :: Float64 
-	b :: Float64 
-
-	function MyP()
-		return  new(0.0,0.0)
-	end
-end
 
 
 @testset "Testing Eval object" begin
+
+	p    = Dict(:a => 3.1 , :b => 4.9)
+	moms = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=rand(3))
+
+	p2    = Dict(:a => 3.1 , :b => 4.9)
+	moms2 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
+
+	p3    = MomentOpt.OrderedDict(:a => 3.1 , :b => 4.9)
+	moms3 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
 	ev = Eval(p,moms)
 	setMoment(ev,moms)
@@ -74,13 +64,13 @@ end
 	end
 
 	@testset "testing saving" begin
-		h5open("test5.h5", "w") do ff
+		MomentOpt.h5open("test5.h5", "w") do ff
 			print("$ev")
 			write(ff,"eval_test",ev)
 			write(ff,"eval_list",[ev,ev2])
 			close(ff)
 		end
-		h5open("test5.h5", "r") do ff
+		MomentOpt.h5open("test5.h5", "r") do ff
 			ev2 = MomentOpt.readEval(ff,"eval_test")
 			@test ev2.status == ev.status
 			evs = MomentOpt.readEvalArray(ff,"eval_list")
@@ -95,4 +85,3 @@ end
 
 
 
-end # module 

@@ -1,16 +1,10 @@
-module TestBGPChain
-
-using Base.Test, DataFrames, MomentOpt
-
-
 
 # TESTING Chains
 # ==============
 
-include("test-include.jl")
 
 @testset "Testing BGPChains constructor" begin
-	
+
 	@testset "constructor" begin
 
 	    (chain, id, n, mprob, sig,sig2,  upd, upd_by, ite) = test_chain()
@@ -143,4 +137,3 @@ end
 
 
 
-end # module 

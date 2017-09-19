@@ -1,5 +1,5 @@
 
-abstract AbstractChain
+abstract type AbstractChain end
 
 # The BGP MCMC Algorithm: Likelihood-Free Parallel Tempering
 # ==========================================================
