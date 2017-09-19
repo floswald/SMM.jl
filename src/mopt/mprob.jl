@@ -145,7 +145,7 @@ function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict})
        # ev = eval(Expr(:call,m.objfunc,ev))
       ev = m.objfunc(ev)
     catch ex
-      @warn("caught exception $ex")
+      warn("caught exception $ex")
       ev.status = -2
     end
     gc()
@@ -158,7 +158,7 @@ function evaluateObjective(m::MProb,ev)
        # ev = eval(Expr(:call,m.objfunc,ev))
        ev = m.objfunc(ev)
     catch ex
-      @warn("caught exception $ex")
+      warn("caught exception $ex")
       ev.status = -2
     end
     gc()

@@ -217,7 +217,7 @@ function next_eval!(c::BGPChain)
 
     # increment interation
     c.iter += 1
-    @debug("iteration = $(c.iter)")
+    @debug(logger,"iteration = $(c.iter)")
 
     # returns an OrderedDict
     pp = proposal(c)
@@ -251,8 +251,8 @@ end
 
 
 function doAcceptReject!(c::BGPChain,eval_new::Eval)
-            @debug("")
-            @debug("doAcceptReject!")
+            @debug(logger,"")
+            @debug(logger,"doAcceptReject!")
     if c.iter == 1
         # accept everything.
         eval_new.prob =1.0
@@ -271,10 +271,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
             # this forumulation: old - new
             # because we are MINIMIZING the value of the objective function            
             eval_new.prob = minimum([1.0,exp( c.acc_tuner * ( eval_old.value - eval_new.value) )]) #* (eval_new.value < )
-            @debug("eval_new.value = $(eval_new.value)")
-            @debug("eval_old.value = $(eval_old.value)")
-            @debug("eval_new.prob = $(round(eval_new.prob,2))")
-            @debug("c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))")
+            @debug(logger,"eval_new.value = $(eval_new.value)")
+            @debug(logger,"eval_old.value = $(eval_old.value)")
+            @debug(logger,"eval_new.prob = $(round(eval_new.prob,2))")
+            @debug(logger,"c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))")
 
             if isna(eval_new.prob) || !isfinite(eval_new.prob)
                 eval_new.prob = 0.0
@@ -283,7 +283,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
 
             elseif !isfinite(eval_old.value)
                 # should never have gotten accepted
-                @debug("eval_old is not finite")
+                @debug(logger,"eval_old is not finite")
                 eval_new.prob = 1.0
                 eval_new.accepted = true 
             else 
@@ -295,9 +295,9 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
                     eval_new.accepted = false
                 end
             end 
-            @debug("eval_new.accepted = $(eval_new.accepted)")
-            @debug("")
-            @debug("")
+            @debug(logger,"eval_new.accepted = $(eval_new.accepted)")
+            @debug(logger,"")
+            @debug(logger,"")
 
         end
 
@@ -315,10 +315,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         # if mod(c.iter,c.sigma_update_steps) == 0
         #     too_high = c.accept_rate > 0.234
         #     if too_high
-        #         @debug("acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
+        #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
         #         set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
         #     else
-        #         @debug("acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
+        #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
         #         set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
         #     end
         # end
@@ -355,9 +355,9 @@ function proposal(c::BGPChain)
 
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
         newp = Dict(zip(collect(keys(mu)),mysample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
-        # @debug("iteration $(c.iter)")
-        # @debug("old param: $(ev_old.params)")
-        # @debug("new param: $newp")
+        # @debug(logger,"iteration $(c.iter)")
+        # @debug(logger,"old param: $(ev_old.params)")
+        # @debug(logger,"new param: $newp")
 
         # flat kernel: random choice in each dimension.
         # newp = Dict(zip(collect(keys(mu)),rand(length(lb)) .* (ub .- lb))) 
@@ -482,9 +482,9 @@ function computeNextIteration!( algo::MAlgoBGP )
         pmap( x->next_eval!(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
     else
         # for i in algo.chains
-        #     @debug(" ")
-        #     @debug(" ")
-        #     @debug("debugging chain id $(i.id)")
+        #     @debug(logger," ")
+        #     @debug(logger," ")
+        #     @debug(logger,"debugging chain id $(i.id)")
         #     next_eval!(i)
         # end
         map( x->next_eval!(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
@@ -519,9 +519,9 @@ function exchangeMoves!(algo::MAlgoBGP)
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
     pairs = sample(props,samples,replace=false)
 
-    @debug("")
-    @debug("exchangeMoves: proposing pairs")
-    @debug("$pairs")
+    @debug(logger,"")
+    @debug(logger,"exchangeMoves: proposing pairs")
+    @debug(logger,"$pairs")
 
     for p in pairs
         i,j = p
@@ -530,20 +530,20 @@ function exchangeMoves!(algo::MAlgoBGP)
         # my version
         # if rand() < algo["mixprob"]
             # if (evj.value < evi.value)  # if j's value is better than i's
-            #     @debug("$j better than $i")
-            #     # @debug("$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
+            #     @debug(logger,"$j better than $i")
+            #     # @debug(logger,"$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
             #     # swap_ev!(algo,p)
             #     set_ev_i2j!(algo,i,j)
             # else
-            #     @debug("$i better than $j")
+            #     @debug(logger,"$i better than $j")
             #     set_ev_i2j!(algo,j,i)
             # end
         # end
 
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
-        @debug("Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
-        @debug("Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
+        @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
+        @debug(logger,"Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
         if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i] 
             swap_ev_ij!(algo,i,j)
         end
@@ -559,7 +559,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# 			tmp = abs(e2.value - e1.value) / abs(e1.value)
 	# 			# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
 	# 			if tmp < dtol 
- #                    @debug("perc dist $ch and $ch2 is $tmp. will label that `close`.")
+ #                    @debug(logger,"perc dist $ch and $ch2 is $tmp. will label that `close`.")
 	# 				push!(close,ch2)
 	# 			end
 	# 		end
@@ -567,7 +567,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# 	# 2) with y% probability exchange with a randomly chosen BGPChain from close
 	# 	if length(close) > 0
 	# 		ex_with = rand(close)
-	# 		@debug("making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
+	# 		@debug(logger,"making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
 	# 		swap_ev!(algo,Pair(ch,ex_with))
 	# 	end
 	# end
@@ -575,7 +575,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 end
 
 function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
-    @debug("setting ev of $i to ev of $j")
+    @debug(logger,"setting ev of $i to ev of $j")
     ci = algo.chains[i] 
     cj = algo.chains[j]
 
@@ -589,7 +589,7 @@ function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
     set_exchanged!(ci,j)
 end
 function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
-    @debug("swapping ev of $i with ev of $j")
+    @debug(logger,"swapping ev of $i with ev of $j")
     ci = algo.chains[i] 
     cj = algo.chains[j]
 
