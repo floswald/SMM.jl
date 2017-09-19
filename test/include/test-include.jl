@@ -1,4 +1,3 @@
-using DataFrames, MomentOpt
 
 function test_chain()
     pb   = Dict( "a" => [0.3; -1;1] , "b" => [-0.9;-2;2] )
@@ -16,4 +15,14 @@ function test_chain()
     ite = 1000
     chain = MomentOpt.BGPChain(id,n,mprob,sig,upd,upd_by,ite)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite)
+end
+
+
+type MyP
+    a :: Float64 
+    b :: Float64 
+
+    function MyP()
+        return  new(0.0,0.0)
+    end
 end

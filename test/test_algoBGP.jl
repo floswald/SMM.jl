@@ -1,19 +1,16 @@
 
 
 
-module TestAlgoBGP
-
-using Base.Test, DataFrames, MomentOpt
-
-pb   = Dict( "a" => [0.3; -1;1] , "b" => [-0.9;-2;2] )
-moms = DataFrame(name=["mu1","mu2"],value=[0.0;0.0],weight=rand(2))
-mprob = MProb() 
-addSampledParam!(mprob,pb) 
-addMoment!(mprob,moms) 
-addEvalFunc!(mprob,MomentOpt.objfunc_norm)
 
 @testset "AlgoBGP" begin
 
+
+	pb   = Dict( "a" => [0.3; -1;1] , "b" => [-0.9;-2;2] )
+	moms = DataFrame(name=["mu1","mu2"],value=[0.0;0.0],weight=rand(2))
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	addMoment!(mprob,moms) 
+	addEvalFunc!(mprob,MomentOpt.objfunc_norm)
 	@testset "Constructor" begin
 
 		MA = MAlgoBGP(mprob)
@@ -33,5 +30,4 @@ addEvalFunc!(mprob,MomentOpt.objfunc_norm)
 	
 end
 
-end # module
 

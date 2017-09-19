@@ -4,7 +4,7 @@
 
 
 # A Moment Optimizing Algorithm is called MAlgo
-abstract MAlgo
+abstract type MAlgo end
 
 import Base.getindex, Base.setindex!
 
