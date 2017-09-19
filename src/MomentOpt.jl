@@ -5,7 +5,7 @@ module MomentOpt
 # ############
 
 using Distributions 
-using Logging
+using MiniLogging
 using DataFrames, DataFramesMeta
 using HDF5
 import Base.show, Base.std
@@ -19,7 +19,13 @@ pyplot()
 # gr()
 
 
-@Logging.configure(level=DEBUG)
+# setup MiniLogging
+logger = get_logger()
+if isinteractive()
+    basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
+else
+    basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
+end
 
 import Base.get, Base.mean, Base.write
 

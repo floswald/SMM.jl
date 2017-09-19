@@ -118,7 +118,7 @@ function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        @info("slicing along $pp")
+        @info(logger,"slicing along $pp")
 
         if parallel
             vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
@@ -138,7 +138,7 @@ function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
 
         for v in vv 
             if (typeof(v) <: Exception)
-                @warn("exception received. value not stored.")
+                warn("exception received. value not stored.")
             else
                 add!( res, pp, v)
             end

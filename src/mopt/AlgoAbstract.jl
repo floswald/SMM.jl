@@ -29,7 +29,7 @@ function runMOpt!( algo::MAlgo )
 
 	# do iteration
 	for i in 1:algo["maxiter"]
-		@debug("iteration $i")
+		@debug(logger,"iteration $i")
 
 		algo.i = i
 
