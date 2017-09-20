@@ -26,10 +26,10 @@ module Test_objfunc
 
 		@testset "testing bivariate normal" begin
 
-			ev = MomentOpt.Eval( Dict(:p1 => 1.0 , :p2 => 0.0), Dict(:mu1 =>0.0 , :mu2 => 0.0))
+			ev = MomentOpt.Eval( Dict(:p1 => 0.0 , :p2 => 0.0), Dict(:mu1 =>0.0 , :mu2 => 0.0))
 			ev = MomentOpt.objfunc_norm(ev)	
-			@test abs(ev.simMoments[:mu1] - 1.0) < 0.1 
-			@test abs(ev.simMoments[:mu2] - 1.0) > 0.1 
+			@test isapprox(ev.simMoments[:mu1], ev.dataMoments[:mu1], atol= 0.1 )
+			@test isapprox(ev.simMoments[:mu2], ev.dataMoments[:mu2], atol= 0.1 )
 
 		end
 
