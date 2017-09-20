@@ -27,7 +27,7 @@ else
     basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
 end
 
-import Base.get, Base.mean, Base.write
+import Base.get, Base.mean, Base.write, Base.start
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 
@@ -38,13 +38,17 @@ export addParam!,
        addMoment!, 
        addEvalFunc!, 
        setMoment, 
+       setValue,
        readEvalArray , 
        dataMoment,
+       dataMomentd,
        dataMomentW,
        summary,
        param,
        paramd,
-       doSlices
+       doSlices,
+       start,
+       finish
 
 
 
