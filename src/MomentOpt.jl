@@ -14,9 +14,11 @@ using PDMats
 using Documenter
 using Plots
 
-pyplot()
-# plotlyjs()
-# gr()
+if is_apple()
+  pyplot()
+else
+  gr()
+end
 
 
 # setup MiniLogging
