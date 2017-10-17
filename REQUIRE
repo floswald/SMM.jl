@@ -9,5 +9,6 @@ PDMats
 Roots
 Documenter
 Conda
-PyPlot
 Plots
+@osx PyPlot
+@linux GR
