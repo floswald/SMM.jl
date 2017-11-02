@@ -14,12 +14,7 @@ using PDMats
 using Documenter
 using Plots
 
-if is_apple()
-  pyplot()
-else
-  gr()
-end
-
+pyplot
 
 # setup MiniLogging
 logger = get_logger()
