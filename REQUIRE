@@ -10,5 +10,4 @@ Roots
 Documenter
 Conda
 Plots
-@osx PyPlot
-@linux GR
+PyPlot
