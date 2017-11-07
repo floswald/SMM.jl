@@ -24,7 +24,7 @@ function runMOpt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
-	@info("Starting estimation loop.")
+	@info(logger,"Starting estimation loop.")
 	t0 = time()
 
 	# do iteration
@@ -41,7 +41,7 @@ function runMOpt!( algo::MAlgo )
 				@assert haskey(algo.opts,"filename")
 				if mod(i,algo["save_frequency"]) == 0
 					save(algo,algo["filename"])
-					@info("saved data at iteration $i")
+					@info(logger,"saved data at iteration $i")
 				end
 			end
 
@@ -57,7 +57,7 @@ function runMOpt!( algo::MAlgo )
 	else
 		@warn("could not find 'filename' and did not save")
 	end
-	@info("Done with estimation after $t1 minutes")
+	@info(logger,"Done with estimation after $t1 minutes")
 
 	if get(algo.opts,"animate",false)
 		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)
