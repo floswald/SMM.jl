@@ -1,7 +1,7 @@
 	
 
 
-function serialNormal()
+function serialNormal(niter=200)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 
@@ -21,7 +21,7 @@ function serialNormal()
 	nchains = 3
 
 	opts =Dict("N"=>nchains,
-		"maxiter"=>200,
+		"maxiter"=>niter,
 		"maxtemp"=> 5,
             # choose inital sd for each parameter p
             # such that Pr( x \in [init-b,init+b]) = 0.975

@@ -103,7 +103,6 @@ end
     # ma = m.args[1]  # your ma algo
 
     # defaults 
-    margin    --> 5mm
     # titlefont --> font(11)
     grid      --> true 
     link      --> :none
@@ -190,7 +189,6 @@ end
     layout := ly
 
     # foreground_color_border := nothing
-    margin    --> 5mm
     titlefont --> font(11)  # should depend on number of params you have
     fillcolor --> :orange
     fillrange --> 0
@@ -212,7 +210,7 @@ end
             @series begin
                 seriestype := :path
                 subplot    := indices[k]
-                x,pdf(dist,x)
+                x,pdf.(dist,x)
             end
             @series begin
                 subplot    := indices[k]
@@ -239,7 +237,6 @@ end
     # some defaults
     legend    := false
     # foreground_color_border := nothing
-    margin    --> 5mm
     # titlefont --> font(11)
     fillcolor --> Plots.fg_color(d)
     linecolor --> Plots.fg_color(d)

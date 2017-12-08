@@ -14,7 +14,7 @@ using PDMats
 using Documenter
 using Plots
 
-pyplot
+pyplot()
 
 # setup MiniLogging
 logger = get_logger()
