@@ -46,7 +46,7 @@ function runMOpt!( algo::MAlgo )
 			end
 
 		catch e
-			@warn("caught exception $e")
+			@warn(logger,"caught exception $e")
 			throw(e)
 		end
 	end
@@ -55,7 +55,7 @@ function runMOpt!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo["filename"])
 	else
-		@warn("could not find 'filename' and did not save")
+		@warn(logger,"could not find 'filename' and did not save")
 	end
 	@info(logger,"Done with estimation after $t1 minutes")
 

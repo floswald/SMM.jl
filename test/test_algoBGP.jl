@@ -27,6 +27,16 @@
 		end
 	end
 
+	@testset "serialNormal() runs" begin
+	    o = MomentOpt.serialNormal(20);
+	    h = MomentOpt.history(o.chains[1])
+	    @test isa(o,MAlgoBGP)
+	    @test isa(h,DataFrame)
+	    @test nrow(h) == 20
+	    @test ncol(h) == 9
+	    @test o.i == 20
+	end
+
 	
 end
 
