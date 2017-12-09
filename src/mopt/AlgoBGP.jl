@@ -212,7 +212,7 @@ function set_acceptRate!(c::BGPChain)
     c.accept_rate = mean(acc[noex])
 end
 
-function next_eval!(c::BGPChain)
+function next_eval(c::BGPChain)
     # generate new parameter vector from last accepted param
 
     # increment interation
@@ -230,6 +230,8 @@ function next_eval!(c::BGPChain)
 
     # save eval on BGPChain 
     set_eval!(c,ev)
+
+    return c
 
 end
 # function Remote_next_eval!(conn,pp::OrderedDict)
@@ -374,7 +376,7 @@ end
 
 
 
-type MAlgoBGP <: MAlgo
+mutable struct MAlgoBGP <: MAlgo
     m               :: MProb # an MProb
     opts            :: Dict	# list of options
     i               :: Int 	# iteration
@@ -401,7 +403,7 @@ type MAlgoBGP <: MAlgo
                 # @assert init_sd[k] == b / quantile(Normal(),0.975)
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:3])[i],get(opts,"acc_tuner",2.0)) for i in 1:opts["N"]]
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],get(opts,"acc_tuner",2.0)) for i in 1:opts["N"]]
           else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
@@ -409,7 +411,7 @@ type MAlgoBGP <: MAlgo
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
             # println(init_sd)
-            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:3])[1],get(opts,"acc_tuner",2.0)) ]
+            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[1],get(opts,"acc_tuner",2.0)) ]
         end
 	    return new(m,opts,0,BGPChains, Animation(),abs)
     end
@@ -476,10 +478,11 @@ function computeNextIteration!( algo::MAlgoBGP )
 
 
     # TODO 
-    # this on each BGPChain
-    # START=========================================================
+    # this is probably inefficeint
+    # ideally, would only pmap evaluateObjective, to avoid large data transfers to each worker (now we're transferring each chain back and forth to each worker.)
+
     if get(algo.opts, "parallel", false) 
-        pmap( x->next_eval!(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+        cs = pmap( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
     else
         # for i in algo.chains
         #     @debug(logger," ")
@@ -487,7 +490,12 @@ function computeNextIteration!( algo::MAlgoBGP )
         #     @debug(logger,"debugging chain id $(i.id)")
         #     next_eval!(i)
         # end
-        map( x->next_eval!(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+        cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+    end
+    # reorder and insert into algo
+    for i in 1:algo.opts["N"]
+        algo.chains[i] = cs[map(x->getfield(x,:id) == i,cs)][1]
+        @assert algo.chains[i].id == i
     end
     if get(algo.opts, "animate", false)
         p = plot(algo,1);

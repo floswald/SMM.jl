@@ -33,7 +33,7 @@ function runMOpt!( algo::MAlgo )
 
 		algo.i = i
 
-		try
+		# try
 			computeNextIteration!( algo )
 
 			# save at certain frequency
@@ -45,10 +45,10 @@ function runMOpt!( algo::MAlgo )
 				end
 			end
 
-		catch e
-			@warn(logger,"caught exception $e")
-			throw(e)
-		end
+		# catch e
+		# 	@warn(logger,"caught exception $e")
+		# 	throw(e)
+		# end
 	end
 	t1 = round((time()-t0)/60,1)
 	algo.opts["time"] = t1
