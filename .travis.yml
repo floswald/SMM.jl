@@ -26,7 +26,7 @@ git:
 
 ## uncomment the following lines to override the default test script
 before_script:
-  - julia -e 'ENV["PYTHON"]=""; Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot"); using PyPlot'
+  - julia -e 'ENV["PYTHON"]=""; Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot")'
 script:
   - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'Pkg.clone(pwd()); Pkg.build("MomentOpt"); Pkg.test("MomentOpt"; coverage=true)'
 after_success:
