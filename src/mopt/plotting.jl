@@ -190,9 +190,6 @@ end
 
     # foreground_color_border := nothing
     titlefont --> font(11)  # should depend on number of params you have
-    fillcolor --> :orange
-    fillrange --> 0
-    fillalpha --> 0.5
     grid      --> false 
     link      --> :none
     xticks     := true
@@ -210,6 +207,9 @@ end
             @series begin
                 seriestype := :path
                 subplot    := indices[k]
+                fillcolor --> :orange
+                fillrange --> 0
+                fillalpha --> 0.5
                 x,pdf.(dist,x)
             end
             @series begin
