@@ -278,7 +278,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
             @debug(logger,"eval_new.prob = $(round(eval_new.prob,2))")
             @debug(logger,"c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))")
 
-            if isna(eval_new.prob) || !isfinite(eval_new.prob)
+            if !isfinite(eval_new.prob)
                 eval_new.prob = 0.0
                 eval_new.accepted = false
                 eval_new.status = -1
