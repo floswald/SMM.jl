@@ -33,7 +33,7 @@ function parallelNormal(niter=200)
 		"maxdists"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
 		"acc_tuner"=>12.0,
-		"animate"=>true)
+		"animate"=>false)
 
 	# plot slices of objective function
 	s = doSlices(mprob,30)
@@ -91,7 +91,7 @@ function serialNormal(niter=200)
 		"maxdists"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
 		"acc_tuner"=>12.0,
-		"animate"=>true)
+		"animate"=>false)
 
 	# plot slices of objective function
 	s = doSlices(mprob,30)
