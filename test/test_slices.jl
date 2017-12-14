@@ -28,7 +28,7 @@ mprob_fail.objfunc = MomentOpt.Testobj_fails
 	@test all(sort(r1[:y]) .== sort(MomentOpt.get(disk,:p1,:mu1)[:y])) 
 	@test all(sort(r2[:x]) .== sort(MomentOpt.get(disk,:p2,:value)[:x]))
 	@test all(sort(r2[:y]) .== sort(MomentOpt.get(disk,:p2,:value)[:y]))
-	rm("slices.h5")
+	if !is_windows() rm("slices.h5") end
 end
 
 @testset "handling of failing objective on remote" begin
