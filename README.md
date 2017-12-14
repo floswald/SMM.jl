@@ -6,9 +6,6 @@ Linux/MacOS: [![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.svg?br
 
 Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt-jl/branch/master)
 
-[![Coverage Status](https://coveralls.io/repos/floswald/MomentOpt.jl/badge.svg?branch=master)](https://coveralls.io/r/floswald/MomentOpt.jl?branch=master)
-[![codecov.io](http://codecov.io/github/floswald/MomentOpt.jl/coverage.svg?branch=master)](http://codecov.io/github/floswald/MomentOpt.jl?branch=master)
-
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
 
