@@ -63,22 +63,16 @@
 		@test ev.value == 4.2
 	end
 
-	@testset "testing saving" begin
-		MomentOpt.h5open("test5.h5", "w") do ff
-			print("$ev")
-			write(ff,"eval_test",ev)
-			write(ff,"eval_list",[ev,ev2])
-			close(ff)
-		end
-		MomentOpt.h5open("test5.h5", "r") do ff
-			ev2 = MomentOpt.readEval(ff,"eval_test")
-			@test ev2.status == ev.status
-			evs = MomentOpt.readEvalArray(ff,"eval_list")
-			@test evs[1].simMoments[:alpha] == ev.simMoments[:alpha]
-			close(ff)
-			# readEval(ff,"eval_test",ev)
-		end
-		rm("test5.h5")
+	@testset "testing saving/loading" begin
+		MomentOpt.FileIO.save("test5.jld2",Dict("ev"=>ev,"evs"=>[ev,ev2]))
+		sleep(1)
+		ev2_ = MomentOpt.FileIO.load("test5.jld2", "ev")
+		@test ev2_ == ev
+
+		evs = MomentOpt.FileIO.load("test5.jld2","evs")
+		@test evs[1] == ev
+		@test evs[2] == ev2
+		rm("test5.jld2")
 
 	end
 end

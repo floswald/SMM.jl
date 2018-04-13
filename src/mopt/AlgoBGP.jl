@@ -234,21 +234,6 @@ function next_eval(c::BGPChain)
     return c
 
 end
-# function Remote_next_eval!(conn,pp::OrderedDict)
-#     # generate new parameter vector from last accepted param
-
-#     write(conn, pp)
-
-#     # other stuff needs to be moved to master
-#     # ev = evaluateObjective(c.m,pp)
-
-#     # # accept reject 
-#     # doAcceptReject!(c,ev)
-
-#     # # save eval on BGPChain 
-#     # set_eval!(c,ev)
-
-# end
 
 
 
@@ -622,53 +607,13 @@ end
 function save(algo::MAlgoBGP, filename::AbstractString)
     # step 1, create the file if it does not exist
 
-    ff5 = h5open(filename, "w")
-
-    vals = String[]
-    keys = String[]
-	for (k,v) in algo.opts
-		if typeof(v) <: Number
-			push!(vals,"$v")
-		else
-			push!(vals,v)
-		end
-		push!(keys,k)
-	end
-    write(ff5,"algo/opts/keys",keys)
-    write(ff5,"algo/opts/vals",vals)
-
-	# saving the BGPChains
-	for cc in 1:algo["N"]
-	    saveBGPChainToHDF5(algo.chains[cc], ff5, "BGPChain/$cc")
-	end
-
-    close(ff5)
+    save(filename,Dict("algo"=>algo))
 end
 
 function readAlgoBGP(filename::AbstractString)
 
-    ff5 = h5open(filename, "r")
-    keys = HDF5.read(ff5,"algo/opts/keys")
-    vals = HDF5.read(ff5,"algo/opts/vals")
-    opts = Dict()
-    for k in 1:length(keys)
-    	opts[keys[k]] = vals[k]
-    end
-
-    # each BGPChain has 3 data.frames: parameters, moments and infos
-    n = parse(Int,opts["N"])
-    params = simpleDataFrameRead(ff5,joinpath("BGPChain","1","parameters"))
-    moments = simpleDataFrameRead(ff5,joinpath("BGPChain","1","moments"))
-    infos = simpleDataFrameRead(ff5,joinpath("BGPChain","1","infos"))
-    if n>1
-    	for ich in 2:n
-    		params = vcat(params, simpleDataFrameRead(ff5,joinpath("BGPChain","$ich","parameters")))
-    		moments = vcat(moments, simpleDataFrameRead(ff5,joinpath("BGPChain","$ich","moments")))
-    		infos = vcat(infos, simpleDataFrameRead(ff5,joinpath("BGPChain","$ich","infos")))
-    	end
-    end
-    close(ff5)
-    return Dict("opts" => opts, "params"=> params, "moments"=>moments,"infos"=>infos)
+    load(filename,"algo")
+    
 end
 
 

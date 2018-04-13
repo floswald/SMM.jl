@@ -7,12 +7,12 @@ module MomentOpt
 using Distributions 
 using MiniLogging
 using DataFrames, DataFramesMeta
-using HDF5
 import Base.show, Base.std
 using DataStructures
 using PDMats
 using Documenter
 using Plots
+using FileIO
 
 gr()
 
@@ -24,7 +24,7 @@ else
     basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
 end
 
-import Base.get, Base.mean, Base.write, Base.start
+import Base.get, Base.mean, Base.write, Base.start, Base.==
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 

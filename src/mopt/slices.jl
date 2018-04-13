@@ -150,57 +150,10 @@ function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
     return res 
 end
 
-function write(s::Slice,fname::String)
-
-    ff5 = h5open(fname, "w") 
-    # save res
-    for (k,v) in s.res
-        g = HDF5.g_create(ff5,string(k))
-        attrs(g)["Description"] = "Values and moments along paramter $k"
-        for (k2,v2) in v
-            g2 = HDF5.g_create(g,string(k2))
-            g2["value"] = v2[:value]
-            m = HDF5.g_create(g2,"moments")
-            for (km,vm) in v2[:moments]
-                m[string(km)] = vm
-            end
-        end
-    end
-    close(ff5)
+function save(s::Slice,fname::String)
+    FileIO.save(fname,"s",s)
 end
 
-function readSlice(fname::String)
-
-    # get data
-    ff5 = h5open(fname, "r") 
-
-    sl = Slice(Dict("dummyp"=>0),Dict("dummym"=>2))
-    pnames = names(ff5)
-
-    res = Dict()
-
-    for p in pnames
-        g = ff5[p]
-        res[Symbol(p)] = Dict()
-        for pp in names(g) 
-            res[Symbol(p)][float(pp)] = Dict()
-            res[Symbol(p)][float(pp)][:value] = read(g[pp]["value"])
-            res[Symbol(p)][float(pp)][:moments] = Dict()
-            mnames = names(g[pp]["moments"])
-            for mn in mnames
-                md = g[pp]["moments"][mn]
-                res[Symbol(p)][float(pp)][:moments][Symbol(mn)] = read(md)
-            end
-        end
-    end
-
-    sl.res = res
-    return sl
-end
-
-function readSliceRemote(remote::String) 
-    a = tempname()
-    run(`scp $remote $a`)
-    println("saving locally to $a")
-    return readSlice(a)
+function load(fname::String)
+    FileIO.load(fname)
 end

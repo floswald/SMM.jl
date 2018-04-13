@@ -28,7 +28,7 @@ Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](h
 
 We can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1.
 
-![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
+![Poposals](proposals.gif)
 
 ```julia
 
@@ -85,11 +85,22 @@ function serialNormal()
 	# run the estimation
 	runMOpt!(MA)
 	@show summary(MA)
-   	# │ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val   │
-	# ├─────┼────┼──────────┼────────────────┼─────────────────────┼────────────┤
-	# │ 1   │ 1  │ 0.581967 │ 39.0           │ 2                   │ 1.85755e-5 │
-	# │ 2   │ 2  │ 0.346939 │ 27.0           │ 3                   │ 1.85755e-5 │
-	# │ 3   │ 3  │ 0.245399 │ 18.5           │ 2                   │ 1.85755e-5 │
+	# summary(MA) = 3×5 DataFrames.DataFrame
+	# │ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val    │
+	# ├─────┼────┼──────────┼────────────────┼─────────────────────┼─────────────┤
+	# │ 1   │ 1  │ 0.596899 │ 57.0           │ 3                   │ 0.000439814 │
+	# │ 2   │ 2  │ 0.461538 │ 61.3333        │ 3                   │ 0.000355612 │
+	# │ 3   │ 3  │ 0.388889 │ 58.3333        │ 2                   │ 0.000355612 │
+
+	# BGP Algorithm with 3 BGPChains
+	# ============================
+	# 
+	# Algorithm
+	# ---------
+	# Current iteration: 300
+	# Number of params to estimate: 2
+	# Number of moments to match: 2
+
 
 	histogram(MA.chains[1]);
 	savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
@@ -104,21 +115,21 @@ end
 
 **param histogram**  
 
-![Histogram](https://rawgithub.com/floswald/MOpt.jl/master/histogram.png)  
+![Histogram](histogram.png)  
 
 
 **param history**  
 
-![Lines](https://rawgithub.com/floswald/MOpt.jl/master/lines.png)  
+![Lines](lines.png)  
 
 **Slices of objective function wrt parameters**  
 
-![Slices](https://rawgithub.com/floswald/MOpt.jl/master/slices-v.png)  
+![Slices](slices-v.png)  
 
 **Slices of moments wrt parameters**  
 
-![Slices1](https://rawgithub.com/floswald/MOpt.jl/master/slices-m.png)  
-![Slices2](https://rawgithub.com/floswald/MOpt.jl/master/slices-m2.png)  
+![Slices1](slices-m.png)  
+![Slices2](slices-m2.png)  
 
 
 ## Contributing

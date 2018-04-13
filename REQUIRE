@@ -2,7 +2,8 @@ julia 0.6
 DataFrames
 DataFramesMeta
 Distributions
-HDF5
+JLD2
+FileIO
 GLM
 MiniLogging
 PDMats
