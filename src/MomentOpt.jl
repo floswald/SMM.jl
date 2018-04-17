@@ -18,11 +18,11 @@ gr()
 
 # setup MiniLogging
 logger = get_logger()
-if isinteractive()
-    basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
-else
+# if isinteractive()
+#     basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
+# else
     basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
-end
+# end
 
 import Base.get, Base.mean, Base.write, Base.start, Base.==
 

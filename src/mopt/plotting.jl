@@ -147,17 +147,17 @@ end
         # end
         indices,ly = param_grid(c.m.initial_value)
         # y_e   = [extrema(dat[:curr_val])...]
-        y_e   = [minimum(dat[:curr_val]);quantile(dat[:curr_val],0.5)]
-        yy = [quantile(dat[:curr_val],0.5) for i in 1:length(dat[:curr_val])]
+        y_e   = [minimum(dat[:curr_val]);quantile(dat[:curr_val],0.95)]
+        # yy = [quantile(dat[:curr_val],0.5) for i in 1:length(dat[:curr_val])]
         y_lim = diff(y_e)*0.05
-        @series begin
-            subplot := 1 
-            linetype := :line
-            linecolor := :red
-            linewidth --> 1.5
-            ylim := [y_e[1]-y_lim;y_e[2]+2*y_lim]
-            (collect(1:length(dat[:curr_val])),yy)
-        end
+        # @series begin
+        #     subplot := 1 
+        #     linetype := :line
+        #     linecolor := :red
+        #     linewidth --> 1.5
+        #     ylim := [y_e[1]-y_lim;y_e[2]+2*y_lim]
+        #     (collect(1:length(dat[:curr_val])),yy)
+        # end
         @series begin
             subplot := 1 
             linetype := :line

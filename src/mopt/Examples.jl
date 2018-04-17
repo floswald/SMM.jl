@@ -72,8 +72,8 @@ function serialNormal(niter=200)
 	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	addMoment!(mprob,moms) 
-	addEvalFunc!(mprob,objfunc_norm)
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
 	nchains = 3
 
@@ -94,13 +94,13 @@ function serialNormal(niter=200)
 		"animate"=>false)
 
 	# plot slices of objective function
-	s = doSlices(mprob,30)
-	plot(s,:value)  # plot objective function over param values
-	savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
-	plot(s,:mu1)  # plot value of moment :mu1 over param values
-	savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
-	plot(s,:mu2)  # plot value of moment :mu2 over param values
-	savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
+	# s = doSlices(mprob,30)
+	# plot(s,:value)  # plot objective function over param values
+	# savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
+	# plot(s,:mu1)  # plot value of moment :mu1 over param values
+	# savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
+	# plot(s,:mu2)  # plot value of moment :mu2 over param values
+	# savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
@@ -109,10 +109,10 @@ function serialNormal(niter=200)
 	runMOpt!(MA)
 	@show summary(MA)
 
-	histogram(MA.chains[1]);
+	histogram(MA.chains[1],nbins=19);
 	savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
 	plot(MA.chains[1]);
-	savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../lines.png")	)
 	return MA
 end
 
