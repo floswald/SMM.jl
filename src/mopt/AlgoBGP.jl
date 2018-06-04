@@ -194,7 +194,7 @@ function set_eval!(c::BGPChain,ev::Eval)
         else
             # otherwise, keep best and current from last iteration
             c.best_val[c.iter] = c.best_val[c.iter-1]
-            c.best_id[c.iter]  = c.iter
+            c.best_id[c.iter]  = c.best_id[c.iter-1]
         end
     end
     return nothing
