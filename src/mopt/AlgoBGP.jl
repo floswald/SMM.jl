@@ -8,7 +8,7 @@ abstract type AbstractChain end
 # http://fr.arxiv.org/abs/1108.3423
 #
 # Baragatti, Grimaud and Pommeret (BGP)
-# 
+#
 # Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov BGPChains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
 
 
@@ -140,18 +140,18 @@ Returns the smallest value and index stored of the chain.
 best(c::BGPChain) = findmin([c.evals[i].value for i in 1:length(c.evals)])
 
 """
-    mean(c::BGPChain) 
+    mean(c::BGPChain)
 
 Returns the mean of all values stored on the chain.
 """
 mean(c::BGPChain) = Dict(k => mean(v) for (k,v) in params(c))
 
 """
-    summary(c::BGPChain) 
+    summary(c::BGPChain)
 
 Returns a summary of the chain. Condensed [`history](@ref)
 """
-function summary(c::BGPChain) 
+function summary(c::BGPChain)
     ex_with = c.exchanged[c.exchanged .!= 0]
     if length(ex_with) == 1
         ex_with  = [ex_with]
@@ -175,26 +175,26 @@ getLastAccepted(c::BGPChain) = c.evals[lastAccepted(c)]
 set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(c.m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
 function set_eval!(c::BGPChain,ev::Eval)
     c.evals[c.iter] = deepcopy(ev)
-    c.accepted[c.iter] =  ev.accepted 
+    c.accepted[c.iter] =  ev.accepted
     # set best value
     if c.iter == 1
-        c.best_val[c.iter] = ev.value 
-        c.curr_val[c.iter] = ev.value 
+        c.best_val[c.iter] = ev.value
+        c.curr_val[c.iter] = ev.value
         c.best_id[c.iter] = c.iter
 
     else
-        if ev.accepted 
-            c.curr_val[c.iter] = ev.value 
+        if ev.accepted
+            c.curr_val[c.iter] = ev.value
         else
-            c.curr_val[c.iter] = c.curr_val[c.iter-1] 
+            c.curr_val[c.iter] = c.curr_val[c.iter-1]
         end
         if (ev.value < c.best_val[c.iter-1])
             c.best_val[c.iter] = ev.value
             c.best_id[c.iter]  = c.iter
         else
             # otherwise, keep best and current from last iteration
-            c.best_val[c.iter] = c.best_val[c.iter-1] 
-            c.best_id[c.iter]  = c.iter
+            c.best_val[c.iter] = c.best_val[c.iter-1]
+            c.best_id[c.iter]  = c.best_id[c.iter-1]
         end
     end
     return nothing
@@ -206,7 +206,7 @@ end
 
 
 "set acceptance rate on chain. considers only iterations where no exchange happened."
-function set_acceptRate!(c::BGPChain) 
+function set_acceptRate!(c::BGPChain)
     noex = c.exchanged[1:c.iter] .== 0
     acc = c.accepted[1:c.iter]
     c.accept_rate = mean(acc[noex])
@@ -222,13 +222,13 @@ function next_eval(c::BGPChain)
     # returns an OrderedDict
     pp = proposal(c)
 
-    # evaluate objective 
+    # evaluate objective
     ev = evaluateObjective(c.m,pp)
 
-    # accept reject 
+    # accept reject
     doAcceptReject!(c,ev)
 
-    # save eval on BGPChain 
+    # save eval on BGPChain
     set_eval!(c,ev)
 
     return c
@@ -256,7 +256,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         else
 
             # this forumulation: old - new
-            # because we are MINIMIZING the value of the objective function            
+            # because we are MINIMIZING the value of the objective function
             eval_new.prob = minimum([1.0,exp( c.acc_tuner * ( eval_old.value - eval_new.value) )]) #* (eval_new.value < )
             @debug(logger,"eval_new.value = $(eval_new.value)")
             @debug(logger,"eval_old.value = $(eval_old.value)")
@@ -272,16 +272,16 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
                 # should never have gotten accepted
                 @debug(logger,"eval_old is not finite")
                 eval_new.prob = 1.0
-                eval_new.accepted = true 
-            else 
+                eval_new.accepted = true
+            else
                 # status = 1
                 eval_new.status = 1
                 if eval_new.prob > c.probs_acc[c.iter]
-                    eval_new.accepted = true 
+                    eval_new.accepted = true
                 else
                     eval_new.accepted = false
                 end
-            end 
+            end
             @debug(logger,"eval_new.accepted = $(eval_new.accepted)")
             @debug(logger,"")
             @debug(logger,"")
@@ -341,13 +341,13 @@ function proposal(c::BGPChain)
         ub = [v[:ub] for (k,v) in c.m.params_to_sample]
 
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
-        newp = Dict(zip(collect(keys(mu)),mysample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
+        newp = OrderedDict(zip(collect(keys(mu)),mysample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
         # @debug(logger,"iteration $(c.iter)")
         # @debug(logger,"old param: $(ev_old.params)")
         # @debug(logger,"new param: $newp")
 
         # flat kernel: random choice in each dimension.
-        # newp = Dict(zip(collect(keys(mu)),rand(length(lb)) .* (ub .- lb))) 
+        # newp = Dict(zip(collect(keys(mu)),rand(length(lb)) .* (ub .- lb)))
 
         return newp
     end
@@ -432,7 +432,7 @@ cur_param(m::MAlgoBGP) = iter_param(m,m.i)
 #     r
 # end
 
-# return param spaces on algo at iter 
+# return param spaces on algo at iter
 function iter_param(m::MAlgoBGP,iter::Int)
     r = Dict()
     for ic in 1:length(m.chains)
@@ -462,11 +462,11 @@ function computeNextIteration!( algo::MAlgoBGP )
     # incrementBGPChainIter!(algo.chains)
 
 
-    # TODO 
+    # TODO
     # this is probably inefficeint
     # ideally, would only pmap evaluateObjective, to avoid large data transfers to each worker (now we're transferring each chain back and forth to each worker.)
 
-    if get(algo.opts, "parallel", false) 
+    if get(algo.opts, "parallel", false)
         cs = pmap( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
     else
         # for i in algo.chains
@@ -498,7 +498,7 @@ function computeNextIteration!( algo::MAlgoBGP )
     # Part 2) EXCHANGE MOVES only on master
     # ----------------------
     # starting mixing in period 3
-    if algo.i>=2 && algo["N"] > 1 
+    if algo.i>=2 && algo["N"] > 1
         exchangeMoves!(algo)
     end
 end
@@ -537,7 +537,7 @@ function exchangeMoves!(algo::MAlgoBGP)
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
         @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
         @debug(logger,"Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
-        if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i] 
+        if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i]
             swap_ev_ij!(algo,i,j)
         end
     end
@@ -551,7 +551,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# 			e2 = getLastAccepted(algo.chains[ch2])
 	# 			tmp = abs(e2.value - e1.value) / abs(e1.value)
 	# 			# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
-	# 			if tmp < dtol 
+	# 			if tmp < dtol
  #                    @debug(logger,"perc dist $ch and $ch2 is $tmp. will label that `close`.")
 	# 				push!(close,ch2)
 	# 			end
@@ -569,7 +569,7 @@ end
 
 function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
     @debug(logger,"setting ev of $i to ev of $j")
-    ci = algo.chains[i] 
+    ci = algo.chains[i]
     cj = algo.chains[j]
 
     ei = getLastAccepted(ci)
@@ -578,12 +578,12 @@ function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
     # set ei -> ej
     set_eval!(ci,ej)
 
-    # make a note 
+    # make a note
     set_exchanged!(ci,j)
 end
 function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
     @debug(logger,"swapping ev of $i with ev of $j")
-    ci = algo.chains[i] 
+    ci = algo.chains[i]
     cj = algo.chains[j]
 
     ei = getLastAccepted(ci)
@@ -593,7 +593,7 @@ function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
     set_eval!(ci,ej)
     set_eval!(cj,ei)
 
-    # make a note 
+    # make a note
     set_exchanged!(ci,j)
     set_exchanged!(cj,i)
 end
@@ -613,7 +613,7 @@ end
 function readAlgoBGP(filename::AbstractString)
 
     load(filename,"algo")
-    
+
 end
 
 
