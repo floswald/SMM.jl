@@ -2,9 +2,17 @@
 
 # MomentOpt.jl: Moment Optimization Library for Julia
 
+## Upstream
 Linux/MacOS: [![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master)](https://travis-ci.org/floswald/MomentOpt.jl)
 
 Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt-jl/branch/master)
+
+## This fork
+[![Build Status](https://travis-ci.com/JulienPascal/MomentOpt.svg?token=qvUh77uHnTEg8Fi4ytAR&branch=master)](https://travis-ci.com/JulienPascal/MomentOpt)
+
+[![Coverage Status](https://coveralls.io/repos/JulienPascal/MomentOpt.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JulienPascal/MomentOpt.jl?branch=master)
+
+[![codecov.io](http://codecov.io/github/JulienPascal/MomentOpt.jl/coverage.svg?branch=master)](http://codecov.io/github/JulienPascal/MomentOpt.jl?branch=master)
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
@@ -32,13 +40,13 @@ We can allow for the variance of the shock to be changed adaptively. Here this i
 
 ```julia
 
-# run this with 
+# run this with
 # using MomentOpt; MomentOpt.serialNormal()
 
 function serialNormal()
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
-	# aim: 
+	# aim:
 	# 1) sample [a',b'] from a space [-3,3] x [-2,2] and
 	# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
 	#    and accepting/rejecting [a',b'] according to BGP
@@ -47,9 +55,9 @@ function serialNormal()
 	# initial value
 	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
 	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
-	mprob = MProb() 
-	addSampledParam!(mprob,pb) 
-	addMoment!(mprob,moms) 
+	mprob = MProb()
+	addSampledParam!(mprob,pb)
+	addMoment!(mprob,moms)
 	addEvalFunc!(mprob,objfunc_norm)
 
 	nchains = 3
@@ -94,7 +102,7 @@ function serialNormal()
 
 	# BGP Algorithm with 3 BGPChains
 	# ============================
-	# 
+	#
 	# Algorithm
 	# ---------
 	# Current iteration: 300
@@ -134,18 +142,8 @@ end
 
 ## Contributing
 
-We encourage user contributions. Please submit a pull request for any improvements you would like to suggest, or a new algorithm you implemented. 
+We encourage user contributions. Please submit a pull request for any improvements you would like to suggest, or a new algorithm you implemented.
 
 New algorithms:
-* You can model your algo on the basis of `src/AlgoBGP.jl` - 
+* You can model your algo on the basis of `src/AlgoBGP.jl` -
 * you need to implement the function `computeNextIteration!( algo )` for your `algo`
-
-
-
-
-
-
-
-
-
-
