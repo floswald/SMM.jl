@@ -49,18 +49,18 @@
 	    @test o.i == 20
 	end
 
-	@testset "Can we recover the mean of a Normal?" begin
+@time	@testset "Can we recover the mean of a Normal?" begin
 
 		# set tolerance level
 		# to achieve a smaller tolerance level, increase niter below
 		# but takes more time
 		tolTestNormal = 0.1
 
-		# Set number of workers = 4
+		# Set number of workers = 2
 		currentWorkers = nprocs()
 		println("Initial number of workers = $(currentWorkers)")
 
-		maxNumberWorkers = 4
+		maxNumberWorkers = 2
 
 		while nprocs() < maxNumberWorkers
 		    addprocs(1)
@@ -82,11 +82,11 @@
 		#------------------------
 		# Specify the initial values for the parameters, and their support:
 		#------------------------------------------------------------------
-		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2], "p3" => [0.1,0,10], "p4" => [-0.1,-10,0])
+		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
 		# Specify moments to be matched + subjective weights:
 		#----------------------------------------------------
-		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0], "mu3" => [5.0], "mu4" => [-4.0])
-		moms = DataFrame(name=["mu1","mu2","mu3", "mu4"],value=[-1.0,1.0, 5.0, -4.0], weight=ones(4))
+		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
+		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
 
 
 		# objfunc_normal(ev::Eval)
@@ -119,13 +119,13 @@
 		    #initialize a multivariate normal N([mu], sigma)
 		    #mu is a four dimensional object
 		    #sigma is set to be the identity matrix
-		    sigma = [1.0 ;1.0; 1.0; 1.0]
+		    sigma = [1.0 ;1.0]
 		    # draw ns observations from N([mu], sigma):
 		    randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
 		    # calculate the mean of the simulated data
 		    simM            = mean(rand(randMultiNormal,ns),2)
 		    # store simulated moments in a dictionary
-		    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2], :mu3 => simM[3], :mu4 => simM[4])
+		    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
 		    # Calculate the weighted distance between empirical moments
 		    # and simulated ones:
@@ -184,10 +184,10 @@
 		# estimation options:
 		#--------------------
 		# number of iterations for each chain
-		niter = 1000
+		niter = 250
 		# number of chains
 		# nchains = nprocs()
-		nchains = 4
+		nchains = 2
 
 		opts = Dict("N"=>nchains,
 		        "maxiter"=>niter,
@@ -226,10 +226,10 @@
 		dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
 
 		# create a list with the parameters to be estimated
-		parameters = [Symbol(String("mu$(i)")) for i=1:4]
+		parameters = [Symbol(String("mu$(i)")) for i=1:2]
 		# list with the corresponding priors:
 		#------------------------------------
-		estimatedParameters = [Symbol(String("p$(i)")) for i=1:4]
+		estimatedParameters = [Symbol(String("p$(i)")) for i=1:2]
 
 
 		# Quasi Posterior mean and quasi posterior median for each parameter:
@@ -243,7 +243,7 @@
 			# quasi posterior median should be close to the true value
 			# (the problem is simple here)
 			#---------------------------------------------------------
-			@test trueValues[String(param)] ≈ median(dat_chain1[estimatedParameter]) atol = tolTestNormal
+			@test trueValues[String(param)][] ≈ median(dat_chain1[estimatedParameter]) atol = tolTestNormal
 
 		end
 
