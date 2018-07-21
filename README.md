@@ -8,7 +8,7 @@ Linux/MacOS: [![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.svg?br
 Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt-jl/branch/master)
 
 ## This fork
-[![Build Status](https://travis-ci.com/JulienPascal/MomentOpt.svg?token=qvUh77uHnTEg8Fi4ytAR&branch=master)](https://travis-ci.com/JulienPascal/MomentOpt)
+[![Build Status](https://travis-ci.com/JulienPascal/MomentOpt.jl.svg?token=qvUh77uHnTEg8Fi4ytAR&branch=master)](https://travis-ci.com/JulienPascal/MomentOpt.jl)
 
 [![Coverage Status](https://coveralls.io/repos/JulienPascal/MomentOpt.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JulienPascal/MomentOpt.jl?branch=master)
 
