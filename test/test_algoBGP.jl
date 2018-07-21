@@ -38,7 +38,19 @@
 	end
 
 	@testset "parallelNormal() runs" begin
-		addprocs()
+		# addprocs()
+
+		# Set number of workers = 2
+		#--------------------------
+		currentWorkers = nprocs()
+		println("Initial number of workers = $(currentWorkers)")
+		maxNumberWorkers = 2
+		while nprocs() < maxNumberWorkers
+		    addprocs(1)
+		end
+		currentWorkers = nprocs()
+		println("Number of workers = $(currentWorkers)")
+
 		@everywhere using MomentOpt
 	    o = MomentOpt.parallelNormal(20);
 	    h = MomentOpt.history(o.chains[1])
@@ -57,15 +69,13 @@
 		tolTestNormal = 0.1
 
 		# Set number of workers = 2
+		#--------------------------
 		currentWorkers = nprocs()
 		println("Initial number of workers = $(currentWorkers)")
-
 		maxNumberWorkers = 2
-
 		while nprocs() < maxNumberWorkers
 		    addprocs(1)
 		end
-
 		currentWorkers = nprocs()
 		println("Number of workers = $(currentWorkers)")
 
@@ -184,7 +194,7 @@
 		# estimation options:
 		#--------------------
 		# number of iterations for each chain
-		niter = 500
+		niter = 400
 		# number of chains
 		# nchains = nprocs()
 		nchains = 2
