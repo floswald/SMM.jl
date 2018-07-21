@@ -1,6 +1,7 @@
 julia 0.6
 DataFrames
 DataFramesMeta
+DataStructures
 Distributions
 JLD2
 FileIO
