@@ -20,11 +20,12 @@ git:
 #   apt: # apt-get for linux
 #     packages:
 #     - ffmpeg
-#before_script: # homebrew for mac
+before_script: # homebrew for mac
+  - apt install libxt6 libxrender1 libgl1-mesa-glx #https://github.com/jheinen/GR.jl/issues/107
 #  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
 
 ## uncomment the following lines to override the default test script
-# before_install:
+before_install:
 #   - julia -e 'ENV["PYTHON"]=""; Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot"); Pkg.build("PyPlot")'
 script:
   - julia -e 'Pkg.clone(pwd()); Pkg.test("MomentOpt"; coverage=true)'
