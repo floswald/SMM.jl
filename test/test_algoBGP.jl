@@ -184,7 +184,7 @@
 		# estimation options:
 		#--------------------
 		# number of iterations for each chain
-		niter = 250
+		niter = 500
 		# number of chains
 		# nchains = nprocs()
 		nchains = 2
