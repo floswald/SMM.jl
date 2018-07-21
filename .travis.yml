@@ -21,7 +21,7 @@ git:
 #     packages:
 #     - ffmpeg
 before_script: # homebrew for mac
-  - apt install libxt6 libxrender1 libgl1-mesa-glx #https://github.com/jheinen/GR.jl/issues/107
+  - sudo apt install libxt6 libxrender1 libgl1-mesa-glx #https://github.com/jheinen/GR.jl/issues/107
 #  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
 
 ## uncomment the following lines to override the default test script
