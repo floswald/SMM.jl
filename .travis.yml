@@ -2,7 +2,7 @@
 language: julia
 os:
   - linux
-#  - osx
+  - osx
 julia:
   - 0.6
   - nightly
@@ -13,20 +13,15 @@ git:
 
 ## uncomment the following lines to allow failures on nightly julia
 ## (tests will run but not make your overall status red)
-#matrix:
-#  allow_failures:
-#  - julia: nightly
+matrix:
+  allow_failures:
+  - julia: nightly
 
 ## uncomment and modify the following lines to manually install system packages
 #addons:
 #   apt: # apt-get for linux
 #     packages:
-#     - libxt6
-#     - libxrender1
-#     - libxrender1
-#     - libgl1-mesa-glx
 before_script: # homebrew for mac
-#  - sudo apt install libxt6 libxrender1 libgl1-mesa-glx #https://github.com/jheinen/GR.jl/issues/107
 #  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
 
 ## uncomment the following lines to override the default test script
