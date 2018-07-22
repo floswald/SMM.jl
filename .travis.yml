@@ -5,7 +5,7 @@ os:
 #  - osx
 julia:
   - 0.6
-#  - nightly
+  - nightly
 notifications:
   email: false
 git:
@@ -18,13 +18,13 @@ git:
 #  - julia: nightly
 
 ## uncomment and modify the following lines to manually install system packages
-addons:
-   apt: # apt-get for linux
-     packages:
-     - libxt6
-     - libxrender1
-     - libxrender1
-     - libgl1-mesa-glx
+#addons:
+#   apt: # apt-get for linux
+#     packages:
+#     - libxt6
+#     - libxrender1
+#     - libxrender1
+#     - libgl1-mesa-glx
 before_script: # homebrew for mac
 #  - sudo apt install libxt6 libxrender1 libgl1-mesa-glx #https://github.com/jheinen/GR.jl/issues/107
 #  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi

@@ -2,13 +2,13 @@
 
 # MomentOpt.jl: Moment Optimization Library for Julia
 
-Linux/MacOS: [![Build Status](https://travis-ci.com/JulienPascal/MomentOpt.jl.svg?token=qvUh77uHnTEg8Fi4ytAR&branch=master)](https://travis-ci.com/JulienPascal/MomentOpt.jl)
+Linux/MacOS: [![Build Status](https://travis-ci.com/floswald/MomentOpt.jl.svg?token=qvUh77uHnTEg8Fi4ytAR&branch=master)](https://travis-ci.com/floswald/MomentOpt.jl)
 
-Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt-jl/branch/master)
+Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt.jl/branch/master)
 
-[![Coverage Status](https://coveralls.io/repos/JulienPascal/MomentOpt.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JulienPascal/MomentOpt.jl?branch=master)
+[![Coverage Status](https://coveralls.io/repos/floswald/MomentOpt.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/floswald/MomentOpt.jl?branch=master)
 
-[![codecov.io](http://codecov.io/github/JulienPascal/MomentOpt.jl/coverage.svg?branch=master)](http://codecov.io/github/JulienPascal/MomentOpt.jl?branch=master)
+[![codecov.io](http://codecov.io/github/floswald/MomentOpt.jl/coverage.svg?branch=master)](http://codecov.io/github/floswald/MomentOpt.jl?branch=master)
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
@@ -21,7 +21,7 @@ Pkg.clone("https://github.com/floswald/MomentOpt.jl")
 
 ## Documentation
 
-Still work in progres, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/motp/Examples.jl` and the notebook `src/motp/Example_Parallel.ipynb`:
+Still work in progress, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/motp/Examples.jl` and the notebook `src/motp/Example_Parallel.ipynb`:
 
 ### Example Usage of the BGP Algorithm
 
