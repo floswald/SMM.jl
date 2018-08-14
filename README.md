@@ -25,173 +25,42 @@ Still work in progress, although most of the docstrings have been written - so c
 
 Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](http://arxiv.org/abs/1108.3423) propose an approximate Bayesian Computation (ABC) algorithm that incorporates the parallel tempering idea of Geyer (1991). We provide the BGP algorithm as a template called `MAlgoBGP`. Here we use it to run a simple toy example where we want to estimate the means of a bivariate normal distribution by using MCMC. We use 3 parallel chains, each with different temperature. The chains can exchange locations along the process if this is suitable.
 
-#### Preliminaries
 
-The first step is to set up the environment. MomentOpt will run chains in parallel
-if several workers are available. If you want to use MomentOpt in serial, you may
-skip the following step, and get rid of the macro `@everywhere`.
-In what follows, we increase the number of workers to 3 and we load the packages we are going to use.
+**Track BGP proposals by iteration**  
 
-#### example.ipynb
+We can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1.
 
-This is the content of example.ipynb:
+![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
+
+### Example function call
 
 ```julia
-addprocs(3)
-@everywhere using MomentOpt
-using DataStructures
-using DataFrames
-using Plots
+function parallelNormal(niter=200)
+    # data are generated from a bivariate normal
+    # with mu = [a,b] = [0,0]
+    # aim: 
+    # 1) sample [a',b'] from a space [-3,3] x [-2,2] and
+    # 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
+    #    and accepting/rejecting [a',b'] according to BGP
+    # 3) S([a,b]) returns a summary of features of the data: 2 means
 
-srand(1234);
+    # initial value
+    pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
+    moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
+    mprob = MProb() 
+    addSampledParam!(mprob,pb) 
+    addMoment!(mprob,moms) 
+    addEvalFunc!(mprob,objfunc_norm)
 
-# Define true values of parameters
-#---------------------------------
-trueValues = OrderedDict("mu1" => [-1.0], "mu2" => [1.0])
+    nchains = 3
 
-# Whether or not we want to save plots to disk
-savePlots = true
-```
-
-##### Primitives of the problem
-
-```julia
-#------------------------------------------------
-# Options
-#-------------------------------------------------
-# Boolean: do you want to save the plots to disk?
-savePlots = false
-
-#------------------------
-# initialize the problem:
-#------------------------
-
-# Specify the initial values for the parameters, and their support:
-pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
-
-# Specify moments to be matched + subjective weights:
-moms = DataFrame(name=["mu1","mu2"],value=[trueValues["mu1"][], trueValues["mu2"][]], weight=ones(2))
-
-# GMM objective function to be minized.
-# It returns a weigthed distance between empirical and simulated moments
-```
-
-##### Objective function
-
-We then define the objective function to be minimized. It has to take an `Eval`
-object as a first argument. Here `verbose` is an optional argument, used to
-display additional information when needed. The objective function has
-to set its value (`setValue()`) and the associated moments (`setMoment()`):
-
-```julia
-# GMM objective function to be minimized.
-# It returns a weighted distance between empirical and simulated moments
-@everywhere function objfunc_normal(ev::Eval; verbose = false)
-
-    start(ev)
-
-
-    # when running in parallel, display worker's id:
-    #-----------------------------------------------
-    if verbose == true
-        if nprocs() > 1
-          println(myid())
-        end
-    end
-
-    # extract parameters from ev:
-    #----------------------------
-    mu  = collect(values(ev.params))
-
-    # compute simulated moments
-    #--------------------------
-    # Monte-Carlo:
-    #-------------
-    ns = 10000 #number of i.i.d draws from N([mu], sigma)
-    #initialize a multivariate normal N([mu], sigma)
-    #mu is a four dimensional object
-    #sigma is set to be the identity matrix
-    sigma = [1.0 ;1.0]
-    # draw ns observations from N([mu], sigma):
-    randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
-    # calculate the mean of the simulated data
-    simM            = mean(rand(randMultiNormal,ns),2)
-    # store simulated moments in a dictionary
-    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
-
-    # Calculate the weighted distance between empirical moments
-    # and simulated ones:
-    #-----------------------------------------------------------
-    v = Dict{Symbol,Float64}()
-    for (k, mom) in dataMomentd(ev)
-        # If weight for moment k exists:
-        #-------------------------------
-        if haskey(MomentOpt.dataMomentWd(ev), k)
-            # divide by weight associated to moment k:
-            #----------------------------------------
-            v[k] = ((simMoments[k] .- mom) ./ MomentOpt.dataMomentW(ev,k)) .^2
-        else
-            v[k] = ((simMoments[k] .- mom) ) .^2
-        end
-    end
-
-    # Set value of the objective function:
-    #------------------------------------
-    setValue(ev, mean(collect(values(v))))
-
-    # also return the moments
-    #-----------------------
-    setMoment(ev, simMoments)
-
-    # flag for success:
-    #-------------------
-    ev.status = 1
-
-    # finish and return
-    finish(ev)
-
-    return ev
-end
-```
-
-We then create an `MProb` object, to which we add priors and supports, the moments
-to be matched, and the objective function.
-
-```julia
-# Initialize an empty MProb() object:
-#------------------------------------
-mprob = MProb()
-
-# Add structural parameters to MProb():
-# specify starting values and support
-#--------------------------------------
-addSampledParam!(mprob,pb)
-
-# Add moments to be matched to MProb():
-#--------------------------------------
-addMoment!(mprob,moms)
-
-# Attach an objective function to MProb():
-#----------------------------------------
-addEvalFunc!(mprob, objfunc_normal)
-
-```
-The last step before launching the estimation is to specify options in a dictionary.
-The `Mprob` object and the dictionary containing options are then tied together
-by defining and MAlgoBGP type.
-
-```julia
-# estimation options:
-#--------------------
-# number of iterations for each chain
-niter = 1000
-# number of chains
-nchains = 3
-
-opts = Dict("N"=>nchains,
+    opts =Dict("N"=>nchains,
         "maxiter"=>niter,
         "maxtemp"=> 5,
-        "coverage"=>0.025,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+        "coverage"=>0.025,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
         "sigma_update_steps"=>10,
         "sigma_adjust_by"=>0.01,
         "smpl_iters"=>1000,
@@ -201,130 +70,79 @@ opts = Dict("N"=>nchains,
         "acc_tuner"=>12.0,
         "animate"=>false)
 
-# set-up BGP algorithm:
-MA = MAlgoBGP(mprob,opts)
-```
+    # plot slices of objective function
+    s = doSlices(mprob,30)
+    plot(s,:value)  # plot objective function over param values
+    savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
+    plot(s,:mu1)  # plot value of moment :mu1 over param values
+    savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
+    plot(s,:mu2)  # plot value of moment :mu2 over param values
+    savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
 
-We then run the estimation and display the results
-```julia
-# run the estimation:
-@time MomentOpt.runMOpt!(MA)
+    # setup the BGP algorithm
+    MA = MAlgoBGP(mprob,opts)
 
-# show a summary of the optimization:
-@show MomentOpt.summary(MA)
-```
+    # run the estimation
+    runMOpt!(MA)
+    @show summary(MA)
 
-The series of draws and the corresponding histogram can be displayed
-```julia
-# Plot histograms for the first chain, the one with which inference should be done.
-# Other chains are used to explore the space and avoid local minima
-#-------------------------------------------------------------------------------
-p1 = histogram(MA.chains[1])
-display(p1)
-
-if savePlots == true
-    savefig(p1, joinpath(pwd(),"histogram_chain_1.svg"))
-end
-
-# Plot the realization of the first chain
-#----------------------------------------
-p2 = plot(MA.chains[1])
-if savePlots == true
-    savefig(p2, joinpath(pwd(),"history_chain_1.svg"))
-end
-display(p2)
-````
-
-##### Inference
-
-With the BGP algorithm, inference can be done with the first chain. Other
-chains are only used to explore the space to avoid local minima.
-Below we report the mean and the median of accepted draws, discarding the first
-10th observations ("burn-in"):
-```julia
-# Realization of the first chain:
-#-------------------------------
-dat_chain1 = MomentOpt.history(MA.chains[1])
-
-# discard the first 10th of the observations ("burn-in" phase):
-#--------------------------------------------------------------
-dat_chain1[round(Int, niter/10):niter, :]
-
-# keep only accepted draws:
-#--------------------------
-dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
-
-# create a list with the parameters to be estimated
-#--------------------------------------------------
-parameters = [Symbol(String("mu$(i)")) for i=1:2]
-
-# list with the corresponding priors:
-#------------------------------------
-estimatedParameters = [Symbol(String("p$(i)")) for i=1:2]
-
-# Quasi Posterior mean and quasi posterior median for each parameter:
-#-------------------------------------------------------------------
-for (estimatedParameter, param) in zip(estimatedParameters, parameters)
-
-  println("Quasi posterior mean for $(String(estimatedParameter)) = $(mean(dat_chain1[estimatedParameter]))")
-  println("Quasi posterior median for $(String(estimatedParameter)) = $(median(dat_chain1[estimatedParameter]))")
-  println("True value = $(trueValues[String(param)][])")
-
+    histogram(MA.chains[1]);
+    savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
+    plot(MA.chains[1]);
+    savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
+    return MA
 end
 ```
 
-##### Slices
-
-Slices of the objective function can be obtained using the function `doSlices`
+results in 
 
 ```julia
-# plot slices of objective function
-# grid with 20 points
-#-----------------------------------
-s = doSlices(mprob,20)
+julia> MomentOpt.parallelNormal(1000)
+11:42:40:INFO:Main:slicing along p1
+11:42:45:INFO:Main:slicing along p2
+11:42:49:INFO:Main:done after 0.0 minutes
+11:43:05:INFO:Main:Starting estimation loop.
+11:50:36:WARN:Main:could not find 'filename' and did not save
+11:50:36:INFO:Main:Done with estimation after 7.5 minutes
+summary(MA) = 3×5 DataFrames.DataFrame
+│ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val    │
+├─────┼────┼──────────┼────────────────┼─────────────────────┼─────────────┤
+│ 1   │ 1  │ 0.617318 │ 64.2           │ 3                   │ 0.000166615 │
+│ 2   │ 2  │ 0.447514 │ 63.9           │ 3                   │ 2.9476e-5   │
+│ 3   │ 3  │ 0.340116 │ 65.7           │ 2                   │ 0.000144826 │
 
-# plot slices of the objective function:
-#---------------------------------------
-p = MomentOpt.plot(s,:value)
-display(p)
+BGP Algorithm with 3 BGPChains
+============================
 
-if savePlots == true
-    Plots.savefig(p, joinpath(pwd(),"slices_Normal.svg"))
-end
-
-# Produce more precise plots with respect to each parameter:
-#-----------------------------------------------------------
-for symbol in parameters
-
-  p = MomentOpt.plot(s,symbol)
-  display(p)
-
-  if savePlots == true
-      Plots.savefig(p, joinpath(pwd(),"slices_Normal_$(String(symbol)).svg"))
-  end
-
-
-end
-
+Algorithm
+---------
+Current iteration: 1000
+Number of params to estimate: 2
+Number of moments to match: 2
 ```
+
 
 **histogram**  
 
-![Histogram](histogram.svg)  
+![Histogram](histogram.png)  
 
 
 **history**  
 
-![Lines](lines.svg)  
+![Lines](lines.png)  
 
 **Slices of objective function wrt parameters**  
 
-![Slices](slices_v.svg)  
+![Slices](slices-v.png)  
 
 **Slices of moments wrt parameters**  
 
-![Slices1](slices_v_mu1.svg)  
-![Slices2](slices_v_mu2.svg)  
+![Slices1](slices-m.png)  
+![Slices2](slices-m2.png)  
+
+### Example Notebook
+
+Please check out a fully worked example in [`src/example.ipynb`](src/example.ipynb).
 
 ## Contributing
 
