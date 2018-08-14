@@ -2,13 +2,11 @@
 
 # MomentOpt.jl: Moment Optimization Library for Julia
 
-Linux/MacOS: [![Build Status](https://travis-ci.com/floswald/MomentOpt.jl.svg?token=qvUh77uHnTEg8Fi4ytAR&branch=master)](https://travis-ci.com/floswald/MomentOpt.jl)
+Linux/MacOS: [![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master)](https://travis-ci.org/floswald/MomentOpt.jl)
 
 Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt.jl/branch/master)
 
-[![Coverage Status](https://coveralls.io/repos/floswald/MomentOpt.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/floswald/MomentOpt.jl?branch=master)
-
-[![codecov.io](http://codecov.io/github/floswald/MomentOpt.jl/coverage.svg?branch=master)](http://codecov.io/github/floswald/MomentOpt.jl?branch=master)
+[![codecov](https://codecov.io/gh/floswald/MomentOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/floswald/MomentOpt.jl)
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
@@ -21,7 +19,7 @@ Pkg.clone("https://github.com/floswald/MomentOpt.jl")
 
 ## Documentation
 
-Still work in progress, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/motp/Examples.jl` and the notebook `src/motp/Example_Parallel.ipynb`:
+Still work in progress, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/mopt/Examples.jl` and the notebook `src/mopt/Example_Parallel.ipynb`:
 
 ### Example Usage of the BGP Algorithm
 
@@ -31,62 +29,60 @@ Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](h
 
 The first step is to set up the environment. MomentOpt will run chains in parallel
 if several workers are available. If you want to use MomentOpt in serial, you may
-skip the following step, and get rid of the macro ``@everywhere`.
-In what follows, we increase the number of workers to 4 and we load the packages we are going to use.
+skip the following step, and get rid of the macro `@everywhere`.
+In what follows, we increase the number of workers to 3 and we load the packages we are going to use.
+
+#### example.ipynb
+
+This is the content of example.ipynb:
+
 ```julia
-# Current number of workers
-#--------------------------
-currentWorkers = nprocs()
-println("Initial number of workers = $(currentWorkers)")
-
-# I want to have 4 workers running
-#--------------------------------
-maxNumberWorkers = 4
-
-while nprocs() < maxNumberWorkers
-    addprocs(1)
-end
-
-# check the number of workers:
-#----------------------------
-currentWorkers = nprocs()
-println("Number of workers = $(currentWorkers)")
-
+addprocs(3)
 @everywhere using MomentOpt
-@everywhere using GLM
-@everywhere using DataStructures
-@everywhere using DataFrames
-@everywhere using Plots; plotlyjs()
+using DataStructures
+using DataFrames
+using Plots
+
+srand(1234);
+
+# Define true values of parameters
+#---------------------------------
+trueValues = OrderedDict("mu1" => [-1.0], "mu2" => [1.0])
 
 # Whether or not we want to save plots to disk
 savePlots = true
 ```
-#### Primitives of the problem
 
-We then define primitives of the problem, by specifying the moments to be matched,
-priors values, and the supports.
+##### Primitives of the problem
+
 ```julia
+#------------------------------------------------
+# Options
+#-------------------------------------------------
+# Boolean: do you want to save the plots to disk?
+savePlots = false
+
 #------------------------
 # initialize the problem:
 #------------------------
-# true Values of the parameters:
-#-------------------------------
-trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
 
 # Specify the initial values for the parameters, and their support:
-#------------------------------------------------------------------
 pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
 
 # Specify moments to be matched + subjective weights:
-#----------------------------------------------------
-moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0], weight=ones(4))
+moms = DataFrame(name=["mu1","mu2"],value=[trueValues["mu1"][], trueValues["mu2"][]], weight=ones(2))
+
+# GMM objective function to be minized.
+# It returns a weigthed distance between empirical and simulated moments
 ```
-#### Objective function
+
+##### Objective function
 
 We then define the objective function to be minimized. It has to take an `Eval`
 object as a first argument. Here `verbose` is an optional argument, used to
 display additional information when needed. The objective function has
 to set its value (`setValue()`) and the associated moments (`setMoment()`):
+
 ```julia
 # GMM objective function to be minimized.
 # It returns a weighted distance between empirical and simulated moments
@@ -158,7 +154,7 @@ to set its value (`setValue()`) and the associated moments (`setMoment()`):
 end
 ```
 
-We then create an ̀`MProb` object, to which we add priors and supports, the moments
+We then create an `MProb` object, to which we add priors and supports, the moments
 to be matched, and the objective function.
 
 ```julia
@@ -181,7 +177,7 @@ addEvalFunc!(mprob, objfunc_normal)
 
 ```
 The last step before launching the estimation is to specify options in a dictionary.
-The ̀`MProb()` object and the dictionary containing options are then tied together
+The `Mprob` object and the dictionary containing options are then tied together
 by defining and MAlgoBGP type.
 
 ```julia
@@ -237,9 +233,9 @@ if savePlots == true
     savefig(p2, joinpath(pwd(),"history_chain_1.svg"))
 end
 display(p2)
-```
+````
 
-#### inference
+##### Inference
 
 With the BGP algorithm, inference can be done with the first chain. Other
 chains are only used to explore the space to avoid local minima.
@@ -277,7 +273,7 @@ for (estimatedParameter, param) in zip(estimatedParameters, parameters)
 end
 ```
 
-#### Slices
+##### Slices
 
 Slices of the objective function can be obtained using the function `doSlices`
 
@@ -337,3 +333,8 @@ We encourage user contributions. Please submit a pull request for any improvemen
 New algorithms:
 * You can model your algo on the basis of `src/AlgoBGP.jl` -
 * you need to implement the function `computeNextIteration!( algo )` for your `algo`
+
+## Thanks to all Contributors!
+
+* [Julien Pascal](https://github.com/JulienPascal) 
+* [Edoardo Ciscato](https://github.com/edoardociscato)
