@@ -40,16 +40,7 @@
 	@testset "parallelNormal() runs" begin
 		# addprocs()
 
-		# Set number of workers = 2
-		#--------------------------
-		currentWorkers = nprocs()
-		println("Initial number of workers = $(currentWorkers)")
-		maxNumberWorkers = 2
-		while nprocs() < maxNumberWorkers
-		    addprocs(1)
-		end
-		currentWorkers = nprocs()
-		println("Number of workers = $(currentWorkers)")
+		addprocs(1)
 
 		@everywhere using MomentOpt
 	    o = MomentOpt.parallelNormal(20);
@@ -61,29 +52,20 @@
 	    @test o.i == 20
 	end
 
-@time	@testset "Can we recover the mean of a Normal?" begin
+	@testset "Can we recover the mean of a Normal?" begin
 
 		# set tolerance level
 		# to achieve a smaller tolerance level, increase niter below
 		# but takes more time
-		tolTestNormal = 0.1
+		tolTestNormal = 0.7
 
-		# Set number of workers = 2
-		#--------------------------
-		currentWorkers = nprocs()
-		println("Initial number of workers = $(currentWorkers)")
-		maxNumberWorkers = 2
-		while nprocs() < maxNumberWorkers
-		    addprocs(1)
-		end
-		currentWorkers = nprocs()
-		println("Number of workers = $(currentWorkers)")
+		addprocs(2)
 
 		@everywhere using MomentOpt
-		@everywhere using GLM
-		@everywhere using DataStructures
-		@everywhere using DataFrames
-		@everywhere using Plots
+		using GLM
+		using DataStructures
+		using DataFrames
+		using Plots
 
 		srand(1234)
 
@@ -194,7 +176,7 @@
 		# estimation options:
 		#--------------------
 		# number of iterations for each chain
-		niter = 400
+		niter = 50
 		# number of chains
 		# nchains = nprocs()
 		nchains = 2
