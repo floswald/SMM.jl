@@ -32,7 +32,7 @@ function parallelNormal(niter=200)
 		"parallel"=>true,
 		"maxdists"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
-		"acc_tuner"=>12.0,
+		"acc_tuners"=>[12.0 for i in 1:nchains],
 		"animate"=>false)
 
 	# plot slices of objective function
@@ -90,7 +90,7 @@ function serialNormal(niter=200)
 		"parallel"=>false,
 		"maxdists"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
-		"acc_tuner"=>12.0,
+		"acc_tuners"=>[0.05 for i in 1:nchains],
 		"animate"=>false)
 
 	# plot slices of objective function
@@ -135,7 +135,7 @@ function BGP_example()
 		"coverage"=>0.005,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
 		"maxdists"=>linspace(0.025, 2,nchains),
 		"mixprob"=>0.3,
-		"acc_tuner"=>12.0,
+		"acc_tuners"=>[0.05 for i in 1:nchains],
 		"animate"=>false)
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
