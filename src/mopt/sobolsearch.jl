@@ -5,7 +5,7 @@ using Sobol
 #'.. py:function:: sobolsearch(m,pad)
 #'
 #'   This is an helping function that just evaluates the
-#'   the objective function over a Sobol sequence in the 
+#'   the objective function over a Sobol sequence in the
 #'   multidimensional space of parameters. This can be useful
 #'   as a first pass.
 function sobolsearch(m::MProb,Ntot::Int64)
@@ -31,7 +31,7 @@ function sobolsearch(m::MProb,Ntot::Int64)
             ev2 = deepcopy(ev)
 
             for (param,bound) in ranges
-                ev2.params[param] = bound[:lb] + ushock[param]*(bound[:ub] - bound[:lb]) 
+                ev2.params[param] = bound[:lb] + ushock[param]*(bound[:ub] - bound[:lb])
             end
 
             ev2 = evaluateObjective(m,ev2)
@@ -51,13 +51,13 @@ function sobolsearch(m::MProb,Ntot::Int64)
 
     end
 
-    return(res)   
+    return(res)
 end
 
-# this returns a value associated with 
+# this returns a value associated with
 function rateNewPoint(x,X,V,ni)
 
-    if (ni<=0) 
+    if (ni<=0)
         return 1.0
     end
 
@@ -79,7 +79,7 @@ end
 
 function sobolWeightedSearch(m::MProb,Ntot::Int64)
     # I want to extend Sobol to decide strategically
-    # on whether to evaluate a given point based on a 
+    # on whether to evaluate a given point based on a
     # a tradeoff between discrepancy and levels
 
     ranges = m.params_to_sample
@@ -105,7 +105,7 @@ function sobolWeightedSearch(m::MProb,Ntot::Int64)
 
         # picking new points to evaluate - this part is key
         # for each new point we want to compute a local density
-        # and a local level. 
+        # and a local level.
         SS = Any[]
         i  = 1
         while (i < CK)
@@ -131,7 +131,7 @@ function sobolWeightedSearch(m::MProb,Ntot::Int64)
             ev2 = deepcopy(ev)
 
             for (param,bound) in ranges
-                ev2.params[param] = bound[:lb] + ushock[param]*(bound[:ub] - bound[:lb]) 
+                ev2.params[param] = bound[:lb] + ushock[param]*(bound[:ub] - bound[:lb])
             end
 
             ev2 = evaluateObjective(m,ev2)
@@ -161,5 +161,3 @@ function sobolWeightedSearch(m::MProb,Ntot::Int64)
 
     return Dict( :evals => res, :X => X, :V=>V)
 end
-
-

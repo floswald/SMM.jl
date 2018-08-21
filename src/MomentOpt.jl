@@ -13,6 +13,7 @@ using PDMats
 using Documenter
 using Plots
 using FileIO
+using JLD2
 
 gr()
 
@@ -45,7 +46,8 @@ export addParam!,
        paramd,
        doSlices,
        start,
-       finish
+       finish,
+       readAlgoBGP
 
 
 

@@ -37,12 +37,15 @@ function runMOpt!( algo::MAlgo )
 			computeNextIteration!( algo )
 
 			# save at certain frequency
-			if haskey(algo.opts,"save_frequency")
-				@assert haskey(algo.opts,"filename")
-				if mod(i,algo["save_frequency"]) == 0
-					save(algo,algo["filename"])
-					@info(logger,"saved data at iteration $i")
-				end
+			if haskey(algo.opts,"save_frequency") == true
+        # if the user provided a filename in the options dictionary
+				if haskey(algo.opts,"filename") == true
+  				if mod(i,algo.opts["save_frequency"]) == 0
+  					save(algo,algo.opts["filename"])
+  					@info(logger,"saved data at iteration $i")
+  				end
+        end
+
 			end
 
 		# catch e
@@ -53,10 +56,15 @@ function runMOpt!( algo::MAlgo )
 	t1 = round((time()-t0)/60,1)
 	algo.opts["time"] = t1
 	if haskey(algo.opts,"filename")
-		save(algo,algo["filename"])
+		save(algo,algo.opts["filename"])
 	else
-		@warn(logger,"could not find 'filename' and did not save")
+    # if no filename is provided, generated a random number
+    filename = string(rand(1:Int(1e8)))
+		@warn(logger,"could not find 'filename' in algo.opts")
+    @warn(logger,"generated a random name instead: $(filename)")
+    save(algo,filename)
 	end
+
 	@info(logger,"Done with estimation after $t1 minutes")
 
 	if get(algo.opts,"animate",false)
@@ -84,6 +92,3 @@ end
 # function moments(m::MAlgo, ch :: Int64, iter:: Int64)
 # 	return [ m.MChains[ch].moments[iter,p] for p in ms_names(m)]
 # end
-
-
-

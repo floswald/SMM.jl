@@ -603,16 +603,22 @@ end
 
 
 
-# save algo BGPChains component-wise to HDF5 file
+# save algo BGPChains using JLD2
 function save(algo::MAlgoBGP, filename::AbstractString)
-    # step 1, create the file if it does not exist
 
-    save(filename,Dict("algo"=>algo))
+   tempfilename = filename * ".jld2"
+   JLD2.@save tempfilename algo
+
+
 end
 
+# load algo BGPChains using JLD2
 function readAlgoBGP(filename::AbstractString)
 
-    load(filename,"algo")
+    tempfilename =  filename * ".jld2"
+    JLD2.@load tempfilename algo
+
+    return algo
 
 end
 
