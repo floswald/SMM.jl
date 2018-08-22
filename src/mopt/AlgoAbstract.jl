@@ -45,7 +45,6 @@ function runMOpt!( algo::MAlgo )
   					@info(logger,"saved data at iteration $i")
   				end
         end
-
 			end
 
 		# catch e
@@ -72,6 +71,8 @@ function runMOpt!( algo::MAlgo )
 	end
 
 end
+
+
 
 # function ps2s_names(algo::MAlgo)
 # 	return ps2s_names(algo.m)
