@@ -52,7 +52,7 @@ type BGPChain <: AbstractChain
     best_val  :: Vector{Float64}   # best eval.value so far
     curr_val  :: Vector{Float64}   # current value
     probs_acc :: Vector{Float64}    # vector of probabilities with which to accept
-    mprob     :: MProb
+    #mprob     :: MProb
     id        :: Int64
     iter      :: Int64
     accepted  :: Array{Bool}
@@ -599,37 +599,6 @@ function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
 end
 
 
-
-
-
-"""
-  save(algo::MAlgoBGP, filename::AbstractString)
-
-Save algo BGPChains to disk using JLD2
-"""
-function save(algo::MAlgoBGP, filename::AbstractString)
-
-   #with JLD2
-   tempfilename = filename * ".jld2"
-   JLD2.@save tempfilename algo
-
-
-end
-
-"""
-   readAlgoBGP(filename::AbstractString)
-
-Load algo BGPChains from disk
-"""
-function readAlgoBGP(filename::AbstractString)
-
-    #with JLD2
-    tempfilename =  filename * ".jld2"
-    JLD2.@load tempfilename algo
-
-    return algo
-
-end
 
 """
   extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)

@@ -72,6 +72,34 @@ function runMOpt!( algo::MAlgo )
 
 end
 
+"""
+  save(algo::MAlgoBGP, filename::AbstractString)
+
+Save MAlgo to disk using JLD2
+"""
+function save(algo::MAlgo, filename::AbstractString)
+
+   # saving the entire MAlgoBGP object:
+   tempfilename = filename * ".jld2"
+   JLD2.@save tempfilename algo
+
+end
+
+"""
+   load(filename::AbstractString)
+
+Load MAlgo from disk
+"""
+function readMalgo(filename::AbstractString)
+
+    # load the entire MAlgoBGP object:
+    tempfilename =  filename * ".jld2"
+    JLD2.@load tempfilename algo
+
+    return algo
+
+end
+
 
 
 # function ps2s_names(algo::MAlgo)

@@ -47,7 +47,8 @@ export addParam!,
        doSlices,
        start,
        finish,
-       readAlgoBGP,
+       save,
+       readMalgo,
        restartMOpt!,
        extendBGPChain!
 

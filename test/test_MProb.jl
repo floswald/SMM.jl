@@ -18,15 +18,15 @@
 	@testset "testing MProb methods" begin
 
 		p   = MomentOpt.OrderedDict(
-			"a" => 0.1 , 
+			"a" => 0.1 ,
 			"b" => 0.2 ,
 			"c" => 0.5 )
 		pb   = MomentOpt.OrderedDict(
-			"a" => [0.1; 0; 1] , 
+			"a" => [0.1; 0; 1] ,
 			"b" => [0.2; 0; 1] )
 		mprob = MProb();
 
-		addParam!(mprob,p)	
+		addParam!(mprob,p)
 		@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b,:c]
 		@test length(mprob.params_to_sample) == 0
 
@@ -48,12 +48,3 @@
 
 	end
 end
-
-
-
-
-
-
-
-
-
