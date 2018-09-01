@@ -52,7 +52,6 @@ type BGPChain <: AbstractChain
     best_val  :: Vector{Float64}   # best eval.value so far
     curr_val  :: Vector{Float64}   # current value
     probs_acc :: Vector{Float64}    # vector of probabilities with which to accept
-    #mprob     :: MProb
     id        :: Int64
     iter      :: Int64
     accepted  :: Array{Bool}
