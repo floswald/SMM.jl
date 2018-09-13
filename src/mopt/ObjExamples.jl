@@ -106,7 +106,7 @@ function banana(ev::Eval)
 
     start(ev)
 	p = paramd(ev)
-    model = 100 .* (p["b"] - p["a"].^2 ).^2 .+ (1.-p["a"])^2
+    model = 100 .* (p["b"] - p["a"].^2 ).^2 .+ (1 .- p["a"])^2
     data  = 0.0
 
     setValue(ev,model)

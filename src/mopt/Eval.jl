@@ -17,7 +17,7 @@
 * `options`: Dict of options and other info
 
 """ 
-type Eval
+struct Eval
 
 	value        :: Float64
 	time         :: Float64
@@ -70,7 +70,7 @@ type Eval
 		for k in keys(p)
 			kk = Symbol(k)
             if length(p[k]) > 3
-                warn("you have a parameter with more tham 3 entries. we assume p = [val,lb,ub]")
+                @warn "you have a parameter with more tham 3 entries. we assume p = [val,lb,ub]"
             end
 			this.params[kk] = p[k][1] # we take the first one, in case there are several values per param
 			# not sure about that.

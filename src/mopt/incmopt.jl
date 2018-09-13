@@ -1,4 +1,3 @@
-export fitMirror
 
 
 # transpose a 2-column dataframe to a one-row dataframe, so that 

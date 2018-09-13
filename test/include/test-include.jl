@@ -18,7 +18,7 @@ function test_chain()
 end
 
 
-type MyP
+struct MyP
     a :: Float64 
     b :: Float64 
 

@@ -4,10 +4,11 @@ module MomentOpt
 # Dependencies
 # ############
 
+using Logging
 using Distributions 
-using MiniLogging
 using DataFrames, DataFramesMeta
-import Base.show, Base.std
+import Base.show 
+using Statistics: std, mean
 using DataStructures
 using PDMats
 using Documenter
@@ -17,15 +18,11 @@ using JLD2
 
 gr()
 
-# setup MiniLogging
-logger = get_logger()
-# if isinteractive()
-#     basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
-# else
-    basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
-# end
 
-import Base.get, Base.mean, Base.write, Base.start, Base.==
+# set log level
+LogLevel(Logging.Debug)
+
+import Base.get,Base.write, Base.start, Base.==
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 
@@ -50,7 +47,8 @@ export addParam!,
        save,
        readMalgo,
        restartMOpt!,
-       extendBGPChain!
+       extendBGPChain!,
+       fitMirror
 
 
 
@@ -58,17 +56,17 @@ export addParam!,
 # ############
 
 include("mopt/mprob.jl")
-include("mopt/incmopt.jl")
+# include("mopt/incmopt.jl")
 include("mopt/Eval.jl")
-include("mopt/slices.jl")
-include("mopt/AlgoAbstract.jl")
-include("mopt/AlgoBGP.jl")
+# include("mopt/slices.jl")
+# include("mopt/AlgoAbstract.jl")
+# include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
-include("mopt/Examples.jl")
-include("mopt/plotting.jl")
+# include("mopt/Examples.jl")
+# include("mopt/plotting.jl")
 
 
-end 	# module
+end    # module
 
 
 

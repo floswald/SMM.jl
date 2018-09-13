@@ -26,7 +26,7 @@ of datamoments `moments`.
     ```
     
 """
-type MProb
+mutable struct MProb
 
   # setup
   initial_value       :: OrderedDict           # initial parameter value as a dict
@@ -41,7 +41,7 @@ type MProb
     this.initial_value       = OrderedDict()
     this.params_to_sample    = OrderedDict()
     function def(x)
-      info("default objfunc, returns input")
+      @info "default objfunc, returns input"
       x
     end
     this.objfunc             = def
@@ -145,7 +145,7 @@ function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict})
        # ev = eval(Expr(:call,m.objfunc,ev))
       ev = m.objfunc(ev)
     catch ex
-      warn("caught exception $ex")
+      @warn "caught exception $ex"
       ev.status = -2
     end
     gc()
@@ -158,7 +158,7 @@ function evaluateObjective(m::MProb,ev)
        # ev = eval(Expr(:call,m.objfunc,ev))
        ev = m.objfunc(ev)
     catch ex
-      warn("caught exception $ex")
+      @warn "caught exception $ex"
       ev.status = -2
     end
     gc()

@@ -1,8 +1,7 @@
 
 
 using MomentOpt
-using Base.Test
-using TestSetExtensions
+using Test
 using DataFrames
 
 # If we want the test to pass, we need this
@@ -16,10 +15,11 @@ using DataFrames
 # Did you start 'gksqt'?""
 ENV["GKSwstype"] = "100"
 
-include(joinpath(dirname(@__FILE__),"include","test-include.jl"))
+dir = dirname(@__FILE__)
+include(joinpath(dir,"include","test-include.jl"))
 
-@testset ExtendedTestSet "Running MomentOpt tests" begin
+@testset "Running MomentOpt tests" begin
 
-    @includetests ARGS
+    include(joinpath(dir,"test_MProb.jl"))
 
 end
