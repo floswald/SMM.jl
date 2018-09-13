@@ -52,7 +52,6 @@ type BGPChain <: AbstractChain
     best_val  :: Vector{Float64}   # best eval.value so far
     curr_val  :: Vector{Float64}   # current value
     probs_acc :: Vector{Float64}    # vector of probabilities with which to accept
-    mprob     :: MProb
     id        :: Int64
     iter      :: Int64
     accepted  :: Array{Bool}
@@ -600,21 +599,147 @@ end
 
 
 
+"""
+  extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
+
+Starting from an existing AlgoBGP, allow for additional iterations
+by extending a specific chain
+"""
+function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
+
+  initialIter = algo.i
+  finalIter = algo.i + extraIter
+
+  # stores the original chain:
+  #---------------------------
+  copyOriginalChain = deepcopy(chain)
+
+
+  # I have to change the following fields:
+  #---------------------------------------
+  # 1. Change the size:
+  #--------------------
+  chain.evals    = Array{Eval}(finalIter)
+  chain.best_val  = ones(finalIter) * Inf
+  chain.best_id   = -ones(Int, finalIter)
+  chain.curr_val  = ones(finalIter) * Inf
+  chain.probs_acc = rand(finalIter)
+  chain.accepted  = falses(finalIter)
+  chain.exchanged = zeros(Int,finalIter)
+
+
+  # 2. Push the previous values in:
+  #--------------------------------
+  for iterNumber = 1:initialIter
+    chain.evals[iterNumber] = copyOriginalChain.evals[iterNumber]
+    chain.best_val[iterNumber] = copyOriginalChain.best_val[iterNumber]
+    chain.best_id[iterNumber] =  copyOriginalChain.best_id[iterNumber]
+    chain.curr_val[iterNumber] = copyOriginalChain.curr_val[iterNumber]
+    chain.probs_acc[iterNumber] =  copyOriginalChain.probs_acc[iterNumber]
+    chain.accepted[iterNumber] = copyOriginalChain.accepted[iterNumber]
+    chain.exchanged[iterNumber] = copyOriginalChain.exchanged[iterNumber]
+  end
 
 
 
-# save algo BGPChains component-wise to HDF5 file
-function save(algo::MAlgoBGP, filename::AbstractString)
-    # step 1, create the file if it does not exist
-
-    save(filename,Dict("algo"=>algo))
 end
 
-function readAlgoBGP(filename::AbstractString)
+"""
+  restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
-    load(filename,"algo")
+Starting from an existing AlgoBGP, restart the optimization from where it
+stopeed. Add extraIter additional steps to the optimization process.
+"""
+function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
+
+  @info(logger,"Restarting estimation loop with $(extraIter) iterations.")
+  @info(logger,"Current best value on chain 1 before restarting $(MomentOpt.summary(algo)[:best_val][1])")
+  t0 = time()
+
+  # Minus 1, to follow the MomentOpt convention
+  initialIter = algo.i
+  finalIter = initialIter + extraIter
+
+  # Extend algo.chain[].evals
+  #---------------------------
+  # Loop over chains
+  for chainNumber = 1:algo.opts["N"]
+    extendBGPChain!(algo.chains[chainNumber], algo, extraIter)
+  end
+
+  # To follow the conventions in MomentOpt:
+  #----------------------------------------
+  for ic in 1:algo["N"]
+      algo.chains[ic].iter =   algo.i - 1
+   end
+
+  #change maxiter in the dictionary storing options
+  #------------------------------------------------
+  @debug(logger, "Setting algo.opts[\"maxiter\"] = $(finalIter)")
+  algo.opts["maxiter"] = finalIter
+
+  # do iterations, starting at initialIter
+  # and not at i=1, as in runMOpt!
+  for i in initialIter:finalIter
+    @debug(logger,"iteration $(i)")
+
+    algo.i = i
+
+
+    # try
+      MomentOpt.computeNextIteration!( algo )
+
+      # If the user stops the execution (control + C), save algo in a file
+      # with a special name.
+      # I leave commented for the moment
+      #-------------------------------------------------------------------
+      # catch x
+      #   @warn(logger, "Error = ", x)
+      #
+      #   if isa(x, InterruptException)
+      #     @warn(logger, "User interupted the execution")
+      #     @warn(logger, "Saving the algorithm to disk.")
+      #     save(algo, "InterruptedAlgorithm")
+      #   end
+      # end
+
+      # Save the process every $(save_frequency) iterations:
+      #----------------------------------------------------
+      # save at certain frequency
+			if haskey(algo.opts,"save_frequency") == true
+        # if the user provided a filename in the options dictionary
+				if haskey(algo.opts,"filename") == true
+  				if mod(i,algo.opts["save_frequency"]) == 0
+  					save(algo,algo.opts["filename"])
+  					@info(logger,"saved data at iteration $i")
+  				end
+        end
+			end
+
+  end
+
+
+  t1 = round((time()-t0)/60,1)
+	algo.opts["time"] = t1
+	if haskey(algo.opts,"filename")
+		save(algo,algo.opts["filename"])
+	else
+    # if no filename is provided, generated a random number
+    filename = string(rand(1:Int(1e8)))
+		@warn(logger,"could not find 'filename' in algo.opts")
+    @warn(logger,"generated a random name instead: $(filename)")
+    save(algo,filename)
+	end
+
+	@info(logger,"Done with estimation after $t1 minutes")
+  @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
+
+	if get(algo.opts,"animate",false)
+		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)
+	end
 
 end
+
 
 
 function show(io::IO,MA::MAlgoBGP)

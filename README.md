@@ -19,7 +19,7 @@ Pkg.clone("https://github.com/floswald/MomentOpt.jl")
 
 ## Documentation
 
-Still work in progress, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/mopt/Examples.jl` and the notebook `src/mopt/Example_Parallel.ipynb`:
+Still work in progress, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/mopt/Examples.jl` and the notebook `src/mopt/example.ipynb`:
 
 ### Example Usage of the BGP Algorithm
 
@@ -38,7 +38,7 @@ We can allow for the variance of the shock to be changed adaptively. Here this i
 function parallelNormal(niter=200)
     # data are generated from a bivariate normal
     # with mu = [a,b] = [0,0]
-    # aim: 
+    # aim:
     # 1) sample [a',b'] from a space [-3,3] x [-2,2] and
     # 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
     #    and accepting/rejecting [a',b'] according to BGP
@@ -47,9 +47,9 @@ function parallelNormal(niter=200)
     # initial value
     pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
     moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
-    mprob = MProb() 
-    addSampledParam!(mprob,pb) 
-    addMoment!(mprob,moms) 
+    mprob = MProb()
+    addSampledParam!(mprob,pb)
+    addMoment!(mprob,moms)
     addEvalFunc!(mprob,objfunc_norm)
 
     nchains = 3
@@ -94,7 +94,7 @@ function parallelNormal(niter=200)
 end
 ```
 
-results in 
+results in
 
 ```julia
 julia> MomentOpt.parallelNormal(1000)
@@ -154,5 +154,5 @@ New algorithms:
 
 ## Thanks to all Contributors!
 
-* [Julien Pascal](https://github.com/JulienPascal) 
+* [Julien Pascal](https://github.com/JulienPascal)
 * [Edoardo Ciscato](https://github.com/edoardociscato)
