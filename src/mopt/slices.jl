@@ -1,7 +1,6 @@
 
-# TODO
-# add plot slices
-type MyT
+
+mutable struct MyT
     data :: Dict
 end
 
@@ -20,7 +19,7 @@ export Slice,slices,add!,get
 """
     Slice 
 
-A *slice* in dimension ``j`` of a function ``f \in \mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = linspace(lower[j],upper[j],npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
+A *slice* in dimension ``j`` of a function ``f ∈ \\mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = linspace(lower[j],upper[j],npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
 
 ## Fields
 
@@ -36,11 +35,9 @@ julia> m = MProb()
 julia> p = OrderedDict(:p1=>1.1,:p2=>pi)
 julia> m = OrderedDict(:m1=>rand(),:m2=>e)
 julia> Slice(p,m)
-
 ```
-
 """
-type Slice
+mutable struct Slice
     res  :: Union{Dict,OrderedDict}    # result
     p0   :: Union{Dict,OrderedDict}    # initial param
     m0   :: Union{Dict,OrderedDict}    # data moments
@@ -118,7 +115,7 @@ function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        @info(logger,"slicing along $pp")
+        @info "slicing along $pp"
 
         if parallel
             vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
@@ -138,14 +135,14 @@ function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
 
         for v in vv 
             if (typeof(v) <: Exception)
-                warn("exception received. value not stored.")
+                @warn "exception received. value not stored."
             else
                 add!( res, pp, v)
             end
         end
     end  
     t1 = round((time()-t0)/60)
-    @info(logger,"done after $t1 minutes")
+    @info "done after $t1 minutes"
 
     return res 
 end

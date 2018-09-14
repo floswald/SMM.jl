@@ -15,6 +15,8 @@ using Documenter
 using Plots
 using FileIO
 using JLD2
+using GLM
+using Distributed
 
 gr()
 
@@ -58,7 +60,7 @@ export addParam!,
 include("mopt/mprob.jl")
 # include("mopt/incmopt.jl")
 include("mopt/Eval.jl")
-# include("mopt/slices.jl")
+include("mopt/slices.jl")
 # include("mopt/AlgoAbstract.jl")
 # include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")

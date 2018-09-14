@@ -27,7 +27,6 @@ Computes an approximation to the simulated score of moments at the optimal param
 
 """
 function score(MA::MAlgo)
-	using GLM
 
 	p = parameters_ID(MA.MChains)
 	inf = infos(MA.MChains)

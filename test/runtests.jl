@@ -21,5 +21,7 @@ include(joinpath(dir,"include","test-include.jl"))
 @testset "Running MomentOpt tests" begin
 
     include(joinpath(dir,"test_MProb.jl"))
+    include(joinpath(dir,"test_Eval.jl"))
+    include(joinpath(dir,"test_slices.jl"))
 
 end
