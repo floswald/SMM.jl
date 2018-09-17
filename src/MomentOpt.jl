@@ -1,6 +1,8 @@
 
 module MomentOpt
 
+__precompile__(false)
+
 # Dependencies
 # ############
 
