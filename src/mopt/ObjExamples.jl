@@ -67,7 +67,7 @@ function objfunc_norm(ev::Eval)
 	ns = 10000
 	sigma           = [1.0;1.0]
 	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
-	simM            = mean(rand(randMultiNormal,ns),2)
+	simM            = mean(rand(randMultiNormal,ns),dims = 2)
 	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
 

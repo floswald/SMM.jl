@@ -63,18 +63,18 @@
 		@test ev.value == 4.2
 	end
 
-	@testset "testing saving/loading" begin
-		MomentOpt.FileIO.save("test5.jld2",Dict("ev"=>ev,"evs"=>[ev,ev2]))
-		sleep(1)
-		ev2_ = MomentOpt.FileIO.load("test5.jld2", "ev")
-		@test ev2_ == ev
+	# @testset "testing saving/loading" begin
+	# 	MomentOpt.FileIO.save("test5.jld2",Dict("ev"=>ev,"evs"=>[ev,ev2]))
+	# 	sleep(1)
+	# 	ev2_ = MomentOpt.FileIO.load("test5.jld2", "ev")
+	# 	@test ev2_ == ev
 
-		evs = MomentOpt.FileIO.load("test5.jld2","evs")
-		@test evs[1] == ev
-		@test evs[2] == ev2
-		rm("test5.jld2")
+	# 	evs = MomentOpt.FileIO.load("test5.jld2","evs")
+	# 	@test evs[1] == ev
+	# 	@test evs[2] == ev2
+	# 	rm("test5.jld2")
 
-	end
+	# end
 end
 
 

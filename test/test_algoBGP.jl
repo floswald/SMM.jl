@@ -62,12 +62,11 @@
 		addprocs(2)
 
 		@everywhere using MomentOpt
-		using GLM
-		using DataStructures
-		using DataFrames
-		using Plots
+		@everywhere using Statistics
+		@everywhere using MomentOpt
 
-		srand(1234)
+
+		Random.seed!(1234)
 
 		#------------------------
 		# initialize the problem:
@@ -115,7 +114,7 @@
 		    # draw ns observations from N([mu], sigma):
 		    randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
 		    # calculate the mean of the simulated data
-		    simM            = mean(rand(randMultiNormal,ns),2)
+		    simM            = mean(rand(randMultiNormal,ns),dims = 2)
 		    # store simulated moments in a dictionary
 		    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
@@ -248,12 +247,6 @@
 	# in the first place (keeping random shocks constant)
 	@testset "Testing stopping and restarting" begin
 
-		using MomentOpt
-		using GLM
-		using DataStructures
-		using DataFrames
-		using Plots
-
 		#------------------------
 		# initialize the problem:
 		#------------------------
@@ -292,10 +285,10 @@
 		    #sigma is set to be the identity matrix
 		    sigma = [1.0 ;1.0]
 		    # draw ns observations from N([mu], sigma):
-				srand(1234)
+			Random.seed!(1234)
 		    randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
 		    # calculate the mean of the simulated data
-		    simM            = mean(rand(randMultiNormal,ns),2)
+		    simM            = mean(rand(randMultiNormal,ns),dims = 2)
 		    # store simulated moments in a dictionary
 		    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
@@ -378,7 +371,7 @@
 
 
 		# set-up BGP algorithm:
-		srand(1234)
+		Random.seed!(1234)
 		MA = MAlgoBGP(mprob,opts)
 
 		# run the estimation
@@ -430,7 +423,7 @@
 
 
 		# set-up BGP algorithm:
-		srand(1234)
+		Random.seed!(1234)
 		MA2 = MAlgoBGP(mprob2,opts2)
 
 		# run the estimation:

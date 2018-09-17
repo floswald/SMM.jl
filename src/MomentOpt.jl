@@ -10,7 +10,7 @@ using Logging
 using Distributions 
 using DataFrames, DataFramesMeta
 import Base.show 
-using Statistics: std, mean
+using Statistics
 using DataStructures
 using PDMats
 using Documenter
@@ -27,6 +27,7 @@ gr()
 LogLevel(Logging.Debug)
 
 import Base.get,Base.write, Base.start, Base.==
+import Statistics: mean
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 
@@ -60,14 +61,14 @@ export addParam!,
 # ############
 
 include("mopt/mprob.jl")
-# include("mopt/incmopt.jl")
+include("mopt/incmopt.jl")
 include("mopt/Eval.jl")
 include("mopt/slices.jl")
-# include("mopt/AlgoAbstract.jl")
-# include("mopt/AlgoBGP.jl")
+include("mopt/AlgoAbstract.jl")
+include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
-# include("mopt/Examples.jl")
-# include("mopt/plotting.jl")
+include("mopt/Examples.jl")
+include("mopt/plotting.jl")
 
 
 end    # module

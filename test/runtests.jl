@@ -3,6 +3,11 @@
 using MomentOpt
 using Test
 using DataFrames
+using Distributed
+using Random
+using GLM
+using DataStructures
+using Statistics
 
 # If we want the test to pass, we need this
 # see https://github.com/JuliaPlots/Plots.jl/issues/1076
@@ -22,6 +27,8 @@ include(joinpath(dir,"include","test-include.jl"))
 
     include(joinpath(dir,"test_MProb.jl"))
     include(joinpath(dir,"test_Eval.jl"))
-    include(joinpath(dir,"test_slices.jl"))
+    # include(joinpath(dir,"test_slices.jl"))
+    # include(joinpath(dir,"test_AlgoAbstract.jl"))
+    include(joinpath(dir,"test_AlgoBGP.jl"))
 
 end

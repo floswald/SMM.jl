@@ -46,7 +46,7 @@ MCMC Chain storage for BGP algorithm.
 * `maxdist`: what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
 
 """
-type BGPChain <: AbstractChain
+mutable struct BGPChain <: AbstractChain
     evals     :: Array{Eval}
     best_id   :: Vector{Int}   # index of best eval.value so far
     best_val  :: Vector{Float64}   # best eval.value so far
@@ -68,7 +68,7 @@ type BGPChain <: AbstractChain
     function BGPChain(id::Int=1,n::Int=10,m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0)
         @assert length(sig) == length(m.params_to_sample)
         this           = new()
-        this.evals     = Array{Eval}(n)
+        this.evals     = Array{Eval}(undef, n)
         this.best_val  = ones(n) * Inf
         this.best_id   = -ones(Int,n)
         this.curr_val  = ones(n) * Inf
@@ -166,7 +166,7 @@ function lastAccepted(c::BGPChain)
     if c.iter==1
         return 1
     else
-        return find(c.accepted[1:(c.iter)])[end]
+        return findall(c.accepted[1:(c.iter)])[end]
     end
 end
 getIterEval(c::BGPChain,i::Int) = c.evals[i]
@@ -216,7 +216,7 @@ function next_eval(c::BGPChain)
 
     # increment interation
     c.iter += 1
-    @debug(logger,"iteration = $(c.iter)")
+    @debug "iteration = $(c.iter)"
 
     # returns an OrderedDict
     pp = proposal(c)
@@ -237,8 +237,8 @@ end
 
 
 function doAcceptReject!(c::BGPChain,eval_new::Eval)
-            @debug(logger,"")
-            @debug(logger,"doAcceptReject!")
+            @debug ""
+            @debug "doAcceptReject!"
     if c.iter == 1
         # accept everything.
         eval_new.prob =1.0
@@ -257,10 +257,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
             # this forumulation: old - new
             # because we are MINIMIZING the value of the objective function
             eval_new.prob = minimum([1.0,exp( c.acc_tuner * ( eval_old.value - eval_new.value) )]) #* (eval_new.value < )
-            @debug(logger,"eval_new.value = $(eval_new.value)")
-            @debug(logger,"eval_old.value = $(eval_old.value)")
-            @debug(logger,"eval_new.prob = $(round(eval_new.prob,2))")
-            @debug(logger,"c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))")
+            @debug "eval_new.value = $(eval_new.value)"
+            @debug "eval_old.value = $(eval_old.value)"
+            @debug "eval_new.prob = $(round(eval_new.prob,2))"
+            @debug "c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))"
 
             if !isfinite(eval_new.prob)
                 eval_new.prob = 0.0
@@ -269,7 +269,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
 
             elseif !isfinite(eval_old.value)
                 # should never have gotten accepted
-                @debug(logger,"eval_old is not finite")
+                @debug "eval_old is not finite"
                 eval_new.prob = 1.0
                 eval_new.accepted = true
             else
@@ -281,9 +281,9 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
                     eval_new.accepted = false
                 end
             end
-            @debug(logger,"eval_new.accepted = $(eval_new.accepted)")
-            @debug(logger,"")
-            @debug(logger,"")
+            @debug "eval_new.accepted = $(eval_new.accepted)"
+            @debug ""
+            @debug ""
 
         end
 
@@ -301,10 +301,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         # if mod(c.iter,c.sigma_update_steps) == 0
         #     too_high = c.accept_rate > 0.234
         #     if too_high
-        #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
+        #         @debug "acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
         #         set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
         #     else
-        #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
+        #         @debug "acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
         #         set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
         #     end
         # end
@@ -341,9 +341,9 @@ function proposal(c::BGPChain)
 
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
         newp = OrderedDict(zip(collect(keys(mu)),mysample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
-        # @debug(logger,"iteration $(c.iter)")
-        # @debug(logger,"old param: $(ev_old.params)")
-        # @debug(logger,"new param: $newp")
+        # @debug "iteration $(c.iter)")
+        # @debug "old param: $(ev_old.params)")
+        # @debug "new param: $newp")
 
         # flat kernel: random choice in each dimension.
         # newp = Dict(zip(collect(keys(mu)),rand(length(lb)) .* (ub .- lb)))
@@ -372,7 +372,7 @@ mutable struct MAlgoBGP <: MAlgo
 
         init_sd = OrderedDict{Symbol,Float64}()
         if opts["N"] > 1
-    		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
+    		temps     = range(1.0,opts["maxtemp"],opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
             # println("opts=$opts")
             # println("pars = $( m.params_to_sample)")
@@ -469,9 +469,9 @@ function computeNextIteration!( algo::MAlgoBGP )
         cs = pmap( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
     else
         # for i in algo.chains
-        #     @debug(logger," ")
-        #     @debug(logger," ")
-        #     @debug(logger,"debugging chain id $(i.id)")
+        #     @debug " ")
+        #     @debug " ")
+        #     @debug "debugging chain id $(i.id)")
         #     next_eval!(i)
         # end
         cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
@@ -511,9 +511,9 @@ function exchangeMoves!(algo::MAlgoBGP)
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
     pairs = sample(props,samples,replace=false)
 
-    @debug(logger,"")
-    @debug(logger,"exchangeMoves: proposing pairs")
-    @debug(logger,"$pairs")
+    @debug ""
+    @debug "exchangeMoves: proposing pairs"
+    @debug "$pairs"
 
     for p in pairs
         i,j = p
@@ -522,20 +522,20 @@ function exchangeMoves!(algo::MAlgoBGP)
         # my version
         # if rand() < algo["mixprob"]
             # if (evj.value < evi.value)  # if j's value is better than i's
-            #     @debug(logger,"$j better than $i")
-            #     # @debug(logger,"$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
+            #     @debug "$j better than $i")
+            #     # @debug "$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
             #     # swap_ev!(algo,p)
             #     set_ev_i2j!(algo,i,j)
             # else
-            #     @debug(logger,"$i better than $j")
+            #     @debug "$i better than $j")
             #     set_ev_i2j!(algo,j,i)
             # end
         # end
 
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
-        @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
-        @debug(logger,"Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
+        @debug "Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))"
+        @debug "Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])"
         if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i]
             swap_ev_ij!(algo,i,j)
         end
@@ -551,7 +551,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# 			tmp = abs(e2.value - e1.value) / abs(e1.value)
 	# 			# tmp = abs(evals(algo.chains[ch2],algo.chains[ch2].i)[1] - oldval) / abs(oldval)	# percent deviation
 	# 			if tmp < dtol
- #                    @debug(logger,"perc dist $ch and $ch2 is $tmp. will label that `close`.")
+ #                    @debug "perc dist $ch and $ch2 is $tmp. will label that `close`.")
 	# 				push!(close,ch2)
 	# 			end
 	# 		end
@@ -559,7 +559,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# 	# 2) with y% probability exchange with a randomly chosen BGPChain from close
 	# 	if length(close) > 0
 	# 		ex_with = rand(close)
-	# 		@debug(logger,"making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
+	# 		@debug "making an exchange move for BGPChain $ch with BGPChain $ex_with set: $close")
 	# 		swap_ev!(algo,Pair(ch,ex_with))
 	# 	end
 	# end
@@ -567,7 +567,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 end
 
 function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
-    @debug(logger,"setting ev of $i to ev of $j")
+    @debug "setting ev of $i to ev of $j"
     ci = algo.chains[i]
     cj = algo.chains[j]
 
@@ -581,7 +581,7 @@ function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
     set_exchanged!(ci,j)
 end
 function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
-    @debug(logger,"swapping ev of $i with ev of $j")
+    @debug "swapping ev of $i with ev of $j"
     ci = algo.chains[i]
     cj = algo.chains[j]
 
@@ -619,7 +619,7 @@ function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
   #---------------------------------------
   # 1. Change the size:
   #--------------------
-  chain.evals    = Array{Eval}(finalIter)
+  chain.evals    = Array{Eval}(undef,finalIter)
   chain.best_val  = ones(finalIter) * Inf
   chain.best_id   = -ones(Int, finalIter)
   chain.curr_val  = ones(finalIter) * Inf
@@ -652,8 +652,8 @@ stopeed. Add extraIter additional steps to the optimization process.
 """
 function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
-  @info(logger,"Restarting estimation loop with $(extraIter) iterations.")
-  @info(logger,"Current best value on chain 1 before restarting $(MomentOpt.summary(algo)[:best_val][1])")
+  @info "Restarting estimation loop with $(extraIter) iterations."
+  @info "Current best value on chain 1 before restarting $(MomentOpt.summary(algo)[:best_val][1])"
   t0 = time()
 
   # Minus 1, to follow the MomentOpt convention
@@ -675,13 +675,13 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
   #change maxiter in the dictionary storing options
   #------------------------------------------------
-  @debug(logger, "Setting algo.opts[\"maxiter\"] = $(finalIter)")
+  @debug "Setting algo.opts[\"maxiter\"] = $(finalIter)"
   algo.opts["maxiter"] = finalIter
 
   # do iterations, starting at initialIter
   # and not at i=1, as in runMOpt!
   for i in initialIter:finalIter
-    @debug(logger,"iteration $(i)")
+    @debug "iteration $(i)"
 
     algo.i = i
 
@@ -711,7 +711,7 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 				if haskey(algo.opts,"filename") == true
   				if mod(i,algo.opts["save_frequency"]) == 0
   					save(algo,algo.opts["filename"])
-  					@info(logger,"saved data at iteration $i")
+  					@info "saved data at iteration $i"
   				end
         end
 			end
@@ -725,14 +725,14 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 		save(algo,algo.opts["filename"])
 	else
     # if no filename is provided, generated a random number
-    filename = string(rand(1:Int(1e8)))
-		@warn(logger,"could not find 'filename' in algo.opts")
-    @warn(logger,"generated a random name instead: $(filename)")
-    save(algo,filename)
+        filename = string(rand(1:Int(1e8)))
+		@warn "could not find 'filename' in algo.opts"
+        @warn "generated a random name instead: $(filename)"
+        save(algo,filename)
 	end
 
-	@info(logger,"Done with estimation after $t1 minutes")
-  @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
+	@info "Done with estimation after $t1 minutes"
+    @info "New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])"
 
 	if get(algo.opts,"animate",false)
 		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)

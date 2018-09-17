@@ -158,7 +158,7 @@ function fitMirror!(x::DataFrame,b::Dict)
 end
 
 
-function findInterval{T<:Number}(x::T,vec::Array{T})
+function findInterval(x::T, vec::Array{T}) where T <: Number
 
     out = zeros(Int,length(x))
     sort!(vec)
