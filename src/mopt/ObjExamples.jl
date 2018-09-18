@@ -61,14 +61,15 @@ function objfunc_norm(ev::Eval)
 	# extract parameters    
     # mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
 	mu  = collect(values(ev.params))
+	nm = length(ev.dataMomentd)
 	# use paramd(ev) to get as a dict.
 
 	# compute simulated moments
 	ns = 10000
-	sigma           = [1.0;1.0]
+	sigma           = ones(nm)
 	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
-	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
+	# simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
 
 	# get data mometns
@@ -76,7 +77,10 @@ function objfunc_norm(ev::Eval)
 	# second argument can be optional
 	# get objective value: (data[i] - model[i]) / weight[i]
 	v = Dict{Symbol,Float64}()
+	i = 0
 	for (k,mom) in dataMomentd(ev)
+		i += 1
+		simMoments[k] = simM[i]
 		if haskey(dataMomentWd(ev),k)
 			v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
 		else
