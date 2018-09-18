@@ -368,7 +368,7 @@ mutable struct MAlgoBGP <: MAlgo
     anim           :: Plots.Animation
     dist_fun   :: Function
 
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"acc_tuner"=>2.0))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
         init_sd = OrderedDict{Symbol,Float64}()
         if opts["N"] > 1
@@ -387,7 +387,7 @@ mutable struct MAlgoBGP <: MAlgo
                 # @assert init_sd[k] == b / quantile(Normal(),0.975)
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],get(opts,"acc_tuner",2.0)) for i in 1:opts["N"]]
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.0 for j in 1:opts["N"]])[i],get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i]) for i in 1:opts["N"]]
           else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
@@ -395,9 +395,9 @@ mutable struct MAlgoBGP <: MAlgo
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
             # println(init_sd)
-            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[1],get(opts,"acc_tuner",2.0)) ]
+            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.0 for j in 1:opts["N"]])[1],get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[1]) ]
         end
-	    return new(m,opts,0,BGPChains, Animation(),abs)
+	    return new(m,opts,0,BGPChains, Animation(),-)
     end
 end
 
@@ -535,8 +535,8 @@ function exchangeMoves!(algo::MAlgoBGP)
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
         @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
-        @debug(logger,"Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
-        if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i]
+        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo["maxdists"][i])")
+        if algo.dist_fun(evj.value, evi.value)  < algo["maxdists"][i]
             swap_ev_ij!(algo,i,j)
         end
     end
