@@ -58,7 +58,7 @@ function parallelNormal(niter=200)
 	return MA
 end
 
-function serialNormal(niter=200)
+function serialNormal(niter=200;npar=2,savefig=false)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 
@@ -68,8 +68,24 @@ function serialNormal(niter=200)
 	# 3) S([a,b]) returns a summary of features of the data: 2 means
 
 	# initial value
-	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
+
+	mapRange(a1,a2,b1,b2,s) = b1 + (s-a1)*(b2-b1)/(a2-a1)
+
+	pb = OrderedDict()
+	pb["p1"] = [0.2,-3,3]
+	pb["p2"] = [-0.2,-2,2]
 	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
+	xj = linspace(0.01,0.5,npar).^(-4)
+	wj = 1 ./ xj
+	if npar > 2
+		for j in 3:npar
+			ii = j-2
+			# xj = rand()^(-4)
+			pb["p$j"] = [mapRange(0,1,-xj[ii],xj[ii],rand()), -xj[ii],xj[ii]]
+			push!(moms, [Symbol("mu$j"); mapRange(0,1,-xj[ii],xj[ii],rand()); wj[ii]])
+		end
+	end
+
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	MomentOpt.addMoment!(mprob,moms) 
@@ -109,11 +125,15 @@ function serialNormal(niter=200)
 	runMOpt!(MA)
 	@show summary(MA)
 
-	histogram(MA.chains[1],nbins=19);
-	savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
-	plot(MA.chains[1]);
-	savefig(joinpath(dirname(@__FILE__),"../../lines.png")	)
-	return MA
+	ph = histogram(MA.chains[1],nbins=19);
+	if savefig
+		savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
+	end
+	pp = plot(MA.chains[1]);
+	if savefig
+		savefig(joinpath(dirname(@__FILE__),"../../lines.png")	)
+	end
+	return (MA,ph,pp)
 end
 
 

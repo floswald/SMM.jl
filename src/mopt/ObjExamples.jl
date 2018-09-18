@@ -61,7 +61,7 @@ function objfunc_norm(ev::Eval)
 	# extract parameters    
     # mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
 	mu  = collect(values(ev.params))
-	nm = length(ev.dataMomentd)
+	nm = length(ev.dataMoments)
 	# use paramd(ev) to get as a dict.
 
 	# compute simulated moments
@@ -77,6 +77,7 @@ function objfunc_norm(ev::Eval)
 	# second argument can be optional
 	# get objective value: (data[i] - model[i]) / weight[i]
 	v = Dict{Symbol,Float64}()
+	simMoments = Dict{Symbol,Float64}()
 	i = 0
 	for (k,mom) in dataMomentd(ev)
 		i += 1
