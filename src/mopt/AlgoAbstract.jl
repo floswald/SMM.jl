@@ -77,8 +77,7 @@ Save MAlgo to disk using JLD2
 function save(algo::MAlgo, filename::AbstractString)
 
    # saving the entire MAlgoBGP object:
-   tempfilename = filename * ".jld2"
-   JLD2.@save tempfilename algo
+   JLD2.@save filename algo
 
 end
 
@@ -90,8 +89,7 @@ Load MAlgo from disk
 function readMalgo(filename::AbstractString)
 
     # load the entire MAlgoBGP object:
-    tempfilename =  filename * ".jld2"
-    JLD2.@load tempfilename algo
+    JLD2.@load filename algo
 
     return algo
 

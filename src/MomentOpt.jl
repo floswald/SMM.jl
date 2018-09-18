@@ -1,3 +1,5 @@
+__precompile__(false)
+
 
 module MomentOpt
 
@@ -50,7 +52,8 @@ export addParam!,
        save,
        readMalgo,
        restartMOpt!,
-       extendBGPChain!
+       extendBGPChain!,
+       runMOpt!
 
 
 

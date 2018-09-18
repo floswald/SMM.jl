@@ -30,7 +30,7 @@
             "acc_tuner"=>12.0,
             "animate"=>false,
             "save_frequency"=>5,
-            "filename"=>"MyMAProblem")
+            "filename"=>"MyMAProblem.jld2")
 
 
     # set-up BGP algorithm:
