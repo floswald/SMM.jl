@@ -58,10 +58,7 @@ function runMOpt!( algo::MAlgo )
 		save(algo,algo.opts["filename"])
 	else
     # if no filename is provided, generated a random number
-    filename = string(rand(1:Int(1e8)))
 		@warn(logger,"could not find 'filename' in algo.opts")
-    @warn(logger,"generated a random name instead: $(filename)")
-    save(algo,filename)
 	end
 
 	@info(logger,"Done with estimation after $t1 minutes")

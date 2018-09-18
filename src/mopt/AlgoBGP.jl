@@ -724,15 +724,11 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 	if haskey(algo.opts,"filename")
 		save(algo,algo.opts["filename"])
 	else
-    # if no filename is provided, generated a random number
-    filename = string(rand(1:Int(1e8)))
-		@warn(logger,"could not find 'filename' in algo.opts")
-    @warn(logger,"generated a random name instead: $(filename)")
-    save(algo,filename)
+		@warn(logger,"could not find `filename` in algo.opts - not saving")
 	end
 
 	@info(logger,"Done with estimation after $t1 minutes")
-  @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
+    @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
 
 	if get(algo.opts,"animate",false)
 		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)

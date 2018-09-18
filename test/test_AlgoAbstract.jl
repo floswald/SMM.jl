@@ -50,16 +50,16 @@
     # Compare chains
     for chainNumber = 1:MA.opts["N"]
         for fieldName in fieldnames(MA.chains[chainNumber])
-          println(fieldName)
           # for fields m and sigma, the test returns false, eventhough they have
           # the same values
-          if fieldName!= :m && fieldName != :sigma
-            @test getfield(MA.chains[chainNumber], fieldName) == getfield(MA2.chains[chainNumber], fieldName)
-          end
-      end
+            if fieldName!= :m && fieldName != :sigma
+                @test getfield(MA.chains[chainNumber], fieldName) == getfield(MA2.chains[chainNumber], fieldName)
+            end
+        end
     end
 
     @test MA.dist_fun == MA2.dist_fun
+    rm(opts["filename"])
 
   end
 
