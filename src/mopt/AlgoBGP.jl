@@ -36,7 +36,7 @@ MCMC Chain storage for BGP algorithm.
 * `iter`: current iteration
 * `accepted`: `Array{Bool}` of `length(evals)`
 * `accept_rate`: current acceptance rate
-* `acc_tuner`: Acceptance tuner
+* `acc_tuner`: Acceptance tuner. `acc_tuner > 1` means to be more restrictive: params that yield a *worse* function value are *less likely* to get accepted, the higher `acc_tuner` is.
 * `exchanged`: `Array{Int}` of `length(evals)` with index of chain that was exchanged with
 * `m`: `MProb`
 * `sigma`: `PDiagMat{Float64}` matrix of variances for shock
@@ -341,9 +341,12 @@ function proposal(c::BGPChain)
 
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
         newp = OrderedDict(zip(collect(keys(mu)),mysample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
-        # @debug(logger,"iteration $(c.iter)")
-        # @debug(logger,"old param: $(ev_old.params)")
-        # @debug(logger,"new param: $newp")
+        @debug(logger,"iteration $(c.iter)")
+        @debug(logger,"old param: $(ev_old.params)")
+        @debug(logger,"new param: $newp")
+        for (k,v) in newp
+            @debug(logger,"step for $k = $(v-ev_old.params[k])")
+        end
 
         # flat kernel: random choice in each dimension.
         # newp = Dict(zip(collect(keys(mu)),rand(length(lb)) .* (ub .- lb)))

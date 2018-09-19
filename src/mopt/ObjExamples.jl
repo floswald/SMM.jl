@@ -83,9 +83,11 @@ function objfunc_norm(ev::Eval)
 		i += 1
 		simMoments[k] = simM[i]
 		if haskey(dataMomentWd(ev),k)
-			v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
+			# v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
+			v[k] = (simMoments[k] ./ mom .- 1.0) .^2    # true scale of all moments is 1.0
 		else
-			v[k] = ((simMoments[k] .- mom) ) .^2
+			# v[k] = ((simMoments[k] .- mom) ) .^2
+			v[k] = (simMoments[k] ./ mom .- 1.0) .^2
 		end
 	end
 	setValue(ev, mean(collect(values(v))))

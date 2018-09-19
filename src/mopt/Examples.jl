@@ -73,16 +73,20 @@ function serialNormal(niter=200;npar=2,savefig=false)
 
 	pb = OrderedDict()
 	pb["p1"] = [0.2,-3,3]
-	pb["p2"] = [-0.2,-2,2]
-	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
+	pb["p2"] = [-0.2,-20,20]
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
 	xj = linspace(0.01,0.5,npar).^(-4)
-	wj = 1 ./ xj
+	wj = xj   # weights: not used anymore
+	srand(12345)
+
 	if npar > 2
 		for j in 3:npar
 			ii = j-2
 			# xj = rand()^(-4)
 			pb["p$j"] = [mapRange(0,1,-xj[ii],xj[ii],rand()), -xj[ii],xj[ii]]
-			push!(moms, [Symbol("mu$j"); mapRange(0,1,-xj[ii],xj[ii],rand()); wj[ii]])
+			# push!(moms, [Symbol("mu$j"); pb["p$j"][1]; pb["p$j"][1]])   # if moments are equal starting value - easy.
+			push!(moms, [Symbol("mu$j"); pb["p$j"][1] * 1.1; pb["p$j"][1]])   # if moments are 110% of starting value - easy.
+			# push!(moms, [Symbol("mu$j"); mapRange(0,1,-xj[ii],xj[ii],rand()); wj[ii]])
 		end
 	end
 
@@ -106,7 +110,7 @@ function serialNormal(niter=200;npar=2,savefig=false)
 		"parallel"=>false,
 		"maxdists"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
-		"acc_tuner"=>12.0,
+		"acc_tuner"=>5.0,
 		"animate"=>false)
 
 	# plot slices of objective function
