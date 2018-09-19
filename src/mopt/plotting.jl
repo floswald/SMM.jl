@@ -168,7 +168,7 @@ end
             xguide := "iteration"
             dat[:curr_val]
         end
-        data = params(c)
+        data = params(c,accepted_only=false)
         for (k,v) in data
             @series begin
                 subplot  := indices[k] + 1

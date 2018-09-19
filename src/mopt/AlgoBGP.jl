@@ -93,8 +93,12 @@ end
 allAccepted(c::BGPChain) = c.evals[c.accepted]
 
 # return a dict of param values as arrays
-function params(c::BGPChain)
-    e = allAccepted(c)
+function params(c::BGPChain;accepted_only=true)
+    if accepted_only
+        e = allAccepted(c)
+    else
+        e = c.evals
+    end
     d = Dict{Symbol,Vector{Float64}}()
     for k in keys(e[1].params)
         d[k] = Float64[e[i].params[k] for i in 1:length(e)]
@@ -141,9 +145,16 @@ best(c::BGPChain) = findmin([c.evals[i].value for i in 1:length(c.evals)])
 """
     mean(c::BGPChain)
 
-Returns the mean of all values stored on the chain.
+Returns the mean of all parameter values stored on the chain.
 """
 mean(c::BGPChain) = Dict(k => mean(v) for (k,v) in params(c))
+
+"""
+    median(c::BGPChain)
+
+Returns the median of all parameter values stored on the chain.
+"""
+median(c::BGPChain) = Dict(k => median(v) for (k,v) in params(c))
 
 """
     summary(c::BGPChain)
@@ -224,6 +235,8 @@ function next_eval(c::BGPChain)
     # evaluate objective
     ev = evaluateObjective(c.m,pp)
 
+    ev.value >= 0 || error("AlgoBGP assumes that your objective function returns a non-negative number.")
+
     # accept reject
     doAcceptReject!(c,ev)
 
@@ -298,7 +311,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
 
         # if (c.id>1) && (mod(c.iter,c.sigma_update_steps) == 0)
 
-        # if mod(c.iter,c.sigma_update_steps) == 0
+        # # if mod(c.iter,c.sigma_update_steps) == 0
         #     too_high = c.accept_rate > 0.234
         #     if too_high
         #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
@@ -371,7 +384,7 @@ mutable struct MAlgoBGP <: MAlgo
     anim           :: Plots.Animation
     dist_fun   :: Function
 
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.5 for i in 1:3],"acc_tuner"=>2.0))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
         init_sd = OrderedDict{Symbol,Float64}()
         if opts["N"] > 1
@@ -390,17 +403,17 @@ mutable struct MAlgoBGP <: MAlgo
                 # @assert init_sd[k] == b / quantile(Normal(),0.975)
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],get(opts,"acc_tuner",2.0)) for i in 1:opts["N"]]
-          else
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i]) for i in 1:opts["N"]]
+        else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
                 b = (v[:ub]-v[:lb])*opts["coverage"]
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
             # println(init_sd)
-            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[1],get(opts,"acc_tuner",2.0)) ]
+            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[1],get(opts,"acc_tuners",[2.0])[1]) ]
         end
-	    return new(m,opts,0,BGPChains, Animation(),abs)
+	    return new(m,opts,0,BGPChains, Animation(),get(opts,"dist_fun",-))
     end
 end
 
@@ -508,6 +521,9 @@ end
 
 function exchangeMoves!(algo::MAlgoBGP)
 
+    # i is new index
+    # j is old index
+
     # algo["N"] exchange moves are proposed
     props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (i<j)]
     # N pairs of chains are chosen uniformly in all possibel pairs with replacement
@@ -520,8 +536,8 @@ function exchangeMoves!(algo::MAlgoBGP)
 
     for p in pairs
         i,j = p
-        evi = getLastAccepted(algo.chains[p[1]])
-        evj = getLastAccepted(algo.chains[p[2]])
+        evi = getLastAccepted(algo.chains[i])
+        evj = getLastAccepted(algo.chains[j])
         # my version
         # if rand() < algo["mixprob"]
             # if (evj.value < evi.value)  # if j's value is better than i's
@@ -537,9 +553,14 @@ function exchangeMoves!(algo::MAlgoBGP)
 
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
-        @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value - evi.value))")
-        @debug(logger,"Exchange: $(algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i])")
-        if algo.dist_fun(evj.value - evi.value)  < algo["maxdists"][i]
+        @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
+        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo["maxdists"][i])")
+        # println("Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
+        # println("Exchange: $(algo.dist_fun(evj.value, evi.value)  > algo["maxdists"][i])")
+        # this formulation assumes that evi.value > 0 always, for all i.
+        # swap for sure if there is an improvement, i.e. algo.dist_fun(evj.value, evi.value) > 0
+        # swap even if there is a deterioration, but only up to threshold maxdists[i]
+        if algo.dist_fun(evi.value, evj.value)  > algo["maxdists"][i]
             swap_ev_ij!(algo,i,j)
         end
     end
@@ -583,6 +604,8 @@ function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
     # make a note
     set_exchanged!(ci,j)
 end
+
+"replace the current `Eval` of chain ``i`` with the one of chain ``j``"
 function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
     @debug(logger,"swapping ev of $i with ev of $j")
     ci = algo.chains[i]

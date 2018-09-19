@@ -27,7 +27,7 @@ logger = get_logger()
     basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
 # end
 
-import Base.get, Base.mean, Base.write, Base.start, Base.==
+import Base.get, Base.mean, Base.write, Base.start, Base.==, Base.median
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 

@@ -1,5 +1,8 @@
 
 
+# All objective functions need to return a value in R_+ i.e. a scalar y >= 0.
+# larger function values indicate greater error between simulated and true moments.
+
 export Testobj2,Testobj3,objfunc_norm
 
 # dummy objective function
