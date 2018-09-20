@@ -1,5 +1,8 @@
 
 
+# All objective functions need to return a value in R_+ i.e. a scalar y >= 0.
+# larger function values indicate greater error between simulated and true moments.
+
 export Testobj2,Testobj3,objfunc_norm
 
 # dummy objective function
@@ -61,14 +64,15 @@ function objfunc_norm(ev::Eval)
 	# extract parameters    
     # mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
 	mu  = collect(values(ev.params))
+	nm = length(ev.dataMoments)
 	# use paramd(ev) to get as a dict.
 
 	# compute simulated moments
 	ns = 10000
-	sigma           = [1.0;1.0]
+	sigma           = ones(nm)
 	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
-	simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
+	# simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
 
 	# get data mometns
@@ -76,11 +80,17 @@ function objfunc_norm(ev::Eval)
 	# second argument can be optional
 	# get objective value: (data[i] - model[i]) / weight[i]
 	v = Dict{Symbol,Float64}()
+	simMoments = Dict{Symbol,Float64}()
+	i = 0
 	for (k,mom) in dataMomentd(ev)
+		i += 1
+		simMoments[k] = simM[i]
 		if haskey(dataMomentWd(ev),k)
-			v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
+			# v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
+			v[k] = (simMoments[k] ./ mom .- 1.0) .^2    # true scale of all moments is 1.0
 		else
-			v[k] = ((simMoments[k] .- mom) ) .^2
+			# v[k] = ((simMoments[k] .- mom) ) .^2
+			v[k] = (simMoments[k] ./ mom .- 1.0) .^2
 		end
 	end
 	setValue(ev, mean(collect(values(v))))

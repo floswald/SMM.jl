@@ -250,7 +250,7 @@ end
 """
 	check_moments(ev::Eval)
 
-returns all data and simluated moments as a dataframe.
+returns all data and simluated moments of a single `Eval` as a dataframe.
 
 """
 function check_moments(ev::Eval)
