@@ -44,6 +44,7 @@ MCMC Chain storage for BGP algorithm.
 * `sigma_adjust_by`: adjust sampling vars by `sigma_adjust_by` percent up or down
 * `smpl_iters`: max number of trials to get a new parameter from MvNormal that lies within support
 * `maxdist`: what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
+* `upd_bundle`: in the proposal function update the parameter vector by `upd_bundle` params at a time. [default: update entire param vector]
 
 """
 type BGPChain <: AbstractChain
@@ -59,14 +60,16 @@ type BGPChain <: AbstractChain
     acc_tuner :: Float64
     exchanged :: Array{Int}
     m         :: MProb
-    sigma     :: PDiagMat{Float64}
+    sigma     :: Dict{Int,PDiagMat{Float64}}
     sigma_update_steps :: Int64   # update sampling vars every sigma_update_steps iterations
     sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
     smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
     maxdist  :: Float64  # what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
+    upd_indices  :: Vector{UnitRange{Int}}  # vector of indices to update together. how many params at a time to update in proposal()? 1: one at a time, 2: two at a time, ... npars: all params together
 
-    function BGPChain(id::Int=1,n::Int=10,m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0)
-        @assert length(sig) == length(m.params_to_sample)
+    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,upd_bundle=1)
+        np = length(m.params_to_sample)
+        @assert length(sig) == np
         this           = new()
         this.evals     = Array{Eval}(n)
         this.best_val  = ones(n) * Inf
@@ -81,7 +84,17 @@ type BGPChain <: AbstractChain
         this.id        = id
         this.iter      = 0
         this.m         = m
-        this.sigma     = PDiagMat(sig)
+        # how many bundles + rest
+        nb, rest = divrem(np,upd_bundle)
+        this.sigma = Dict{Int,PDiagMat{Float64}}()
+        this.upd_indices = UnitRange{Int}[]
+        i = 1
+        for ib in 1:nb
+            j = (ib==nb && rest > 0) ? length(sig) :  i + upd_bundle - 1
+            push!(this.upd_indices,i:j)
+            this.sigma[ib] = PDiagMat(sig[i:j])
+            i = j + 1
+        end
         this.sigma_update_steps = upd
         this.sigma_adjust_by = upd_by
         this.smpl_iters = smpl_iters
@@ -353,7 +366,22 @@ function proposal(c::BGPChain)
         ub = [v[:ub] for (k,v) in c.m.params_to_sample]
 
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
-        newp = OrderedDict(zip(collect(keys(mu)),mysample(MvNormal(collect(values(mu)),c.sigma),lb,ub,c.smpl_iters)))
+
+        # if there is only one batch of params
+        if length(c.upd_indices) == 1
+            pp = mysample(MvNormal(collect(values(mu)),c.sigma[1]),lb,ub,c.smpl_iters)
+        else
+            # do it in batches of params
+            pp = zeros(mu)
+            sig_ix = 0
+            for i in c.upd_indices
+                sig_ix += 1
+                pp[i] = mysample(MvNormal(collect(values(mu[i])),c.sigma[sig_ix]),lb[i],ub[i],c.smpl_iters)
+
+            end
+            newp = OrderedDict(zip(collect(keys(mu)),pp))
+        end
+        newp = OrderedDict(zip(collect(keys(mu)),pp))
         @debug(logger,"iteration $(c.iter)")
         @debug(logger,"old param: $(ev_old.params)")
         @debug(logger,"new param: $newp")
@@ -403,7 +431,15 @@ mutable struct MAlgoBGP <: MAlgo
                 # @assert init_sd[k] == b / quantile(Normal(),0.975)
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
-            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],m,collect(values(init_sd)) .* temps[i],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i]) for i in 1:opts["N"]]
+            BGPChains = BGPChain[BGPChain(i,opts["maxiter"],
+                m = m,
+                sig = collect(values(init_sd)) .* temps[i],
+                upd = get(opts,"sigma_update_steps",10),
+                upd_by = get(opts,"sigma_adjust_by",0.01),
+                smpl_iters = get(opts,"smpl_iters",1000),
+                maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
+                acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
+                upd_bundle = get(opts,"upd_bundle",length(m.params_to_sample))) for i in 1:opts["N"]]
         else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
@@ -411,7 +447,15 @@ mutable struct MAlgoBGP <: MAlgo
                 init_sd[k] = b / quantile(Normal(),0.975)
             end
             # println(init_sd)
-            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],m,collect(values(init_sd)) .* temps[1],get(opts,"sigma_update_steps",10),get(opts,"sigma_adjust_by",0.01),get(opts,"smpl_iters",1000),get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[1],get(opts,"acc_tuners",[2.0])[1]) ]
+            BGPChains = BGPChain[BGPChain(1,opts["maxiter"],
+                m = m,
+                sig = collect(values(init_sd)) .* temps[i],
+                upd = get(opts,"sigma_update_steps",10),
+                upd_by = get(opts,"sigma_adjust_by",0.01),
+                smpl_iters = get(opts,"smpl_iters",1000),
+                maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
+                acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
+                upd_bundle = get(opts,"upd_bundle",length(m.params_to_sample))) for i in 1:opts["N"]]
         end
 	    return new(m,opts,0,BGPChains, Animation(),get(opts,"dist_fun",-))
     end
