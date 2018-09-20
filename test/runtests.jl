@@ -4,6 +4,7 @@ using MomentOpt
 using Base.Test
 using TestSetExtensions
 using DataFrames
+using DataStructures
 
 # If we want the test to pass, we need this
 # see https://github.com/JuliaPlots/Plots.jl/issues/1076

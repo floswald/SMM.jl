@@ -28,7 +28,7 @@
 	end
 
 	@testset "serialNormal() runs" begin
-	    o = MomentOpt.serialNormal(20);
+	    o = MomentOpt.serialNormal(2,20)[1];
 	    h = MomentOpt.history(o.chains[1])
 	    @test isa(o,MAlgoBGP)
 	    @test isa(h,DataFrame)
@@ -50,6 +50,8 @@
 	    @test nrow(h) == 20
 	    @test ncol(h) == 9
 	    @test o.i == 20
+
+	    rmprocs(workers())
 	end
 
 	@testset "Can we recover the mean of a Normal?" begin
@@ -62,10 +64,6 @@
 		addprocs(2)
 
 		@everywhere using MomentOpt
-		using GLM
-		using DataStructures
-		using DataFrames
-		using Plots
 
 		srand(1234)
 
@@ -86,72 +84,72 @@
 		# GMM objective function to be minized.
 		# It returns a weigthed distance between empirical and simulated moments
 		#
-		@everywhere function objfunc_normal(ev::Eval; verbose = false)
+		# @everywhere function objfunc_normal(ev::Eval; verbose = false)
 
-		    start(ev)
+		#     start(ev)
 
 
-		    # when running in parallel, display worker's id:
-		    #-----------------------------------------------
-		    if verbose == true
-		        if nprocs() > 1
-		          println(myid())
-		        end
-		    end
+		#     # when running in parallel, display worker's id:
+		#     #-----------------------------------------------
+		#     if verbose == true
+		#         if nprocs() > 1
+		#           println(myid())
+		#         end
+		#     end
 
-		    # extract parameters from ev:
-		    #----------------------------
-		    mu  = collect(values(ev.params))
+		#     # extract parameters from ev:
+		#     #----------------------------
+		#     mu  = collect(values(ev.params))
 
-		    # compute simulated moments
-		    #--------------------------
-		    # Monte-Carlo:
-		    #-------------
-		    ns = 10000 #number of i.i.d draws from N([mu], sigma)
-		    #initialize a multivariate normal N([mu], sigma)
-		    #mu is a four dimensional object
-		    #sigma is set to be the identity matrix
-		    sigma = [1.0 ;1.0]
-		    # draw ns observations from N([mu], sigma):
-		    randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
-		    # calculate the mean of the simulated data
-		    simM            = mean(rand(randMultiNormal,ns),2)
-		    # store simulated moments in a dictionary
-		    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
+		#     # compute simulated moments
+		#     #--------------------------
+		#     # Monte-Carlo:
+		#     #-------------
+		#     ns = 10000 #number of i.i.d draws from N([mu], sigma)
+		#     #initialize a multivariate normal N([mu], sigma)
+		#     #mu is a four dimensional object
+		#     #sigma is set to be the identity matrix
+		#     sigma = [1.0 ;1.0]
+		#     # draw ns observations from N([mu], sigma):
+		#     randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
+		#     # calculate the mean of the simulated data
+		#     simM            = mean(rand(randMultiNormal,ns),2)
+		#     # store simulated moments in a dictionary
+		#     simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
-		    # Calculate the weighted distance between empirical moments
-		    # and simulated ones:
-		    #-----------------------------------------------------------
-		    v = Dict{Symbol,Float64}()
-		    for (k, mom) in dataMomentd(ev)
-		        # If weight for moment k exists:
-		        #-------------------------------
-		        if haskey(MomentOpt.dataMomentWd(ev), k)
-		            # divide by weight associated to moment k:
-		            #----------------------------------------
-		            v[k] = ((simMoments[k] .- mom) ./ MomentOpt.dataMomentW(ev,k)) .^2
-		        else
-		            v[k] = ((simMoments[k] .- mom) ) .^2
-		        end
-		    end
+		#     # Calculate the weighted distance between empirical moments
+		#     # and simulated ones:
+		#     #-----------------------------------------------------------
+		#     v = Dict{Symbol,Float64}()
+		#     for (k, mom) in dataMomentd(ev)
+		#         # If weight for moment k exists:
+		#         #-------------------------------
+		#         if haskey(MomentOpt.dataMomentWd(ev), k)
+		#             # divide by weight associated to moment k:
+		#             #----------------------------------------
+		#             v[k] = ((simMoments[k] .- mom) ./ MomentOpt.dataMomentW(ev,k)) .^2
+		#         else
+		#             v[k] = ((simMoments[k] .- mom) ) .^2
+		#         end
+		#     end
 
-		    # Set value of the objective function:
-		    #------------------------------------
-		    setValue(ev, mean(collect(values(v))))
+		#     # Set value of the objective function:
+		#     #------------------------------------
+		#     setValue(ev, mean(collect(values(v))))
 
-		    # also return the moments
-		    #-----------------------
-		    setMoment(ev, simMoments)
+		#     # also return the moments
+		#     #-----------------------
+		#     setMoment(ev, simMoments)
 
-		    # flag for success:
-		    #-------------------
-		    ev.status = 1
+		#     # flag for success:
+		#     #-------------------
+		#     ev.status = 1
 
-		    # finish and return
-		    finish(ev)
+		#     # finish and return
+		#     finish(ev)
 
-		    return ev
-		end
+		#     return ev
+		# end
 
 
 
@@ -170,7 +168,7 @@
 
 		# Attach an objective function to MProb():
 		#----------------------------------------
-		addEvalFunc!(mprob, objfunc_normal)
+		addEvalFunc!(mprob, MomentOpt.objfunc_norm)
 
 
 		# estimation options:
@@ -240,6 +238,7 @@
 		end
 
 
+	    rmprocs(workers())
 
 	end
 
@@ -247,12 +246,6 @@
 	# should give the same results as running the estimation for 20 iterations
 	# in the first place (keeping random shocks constant)
 	@testset "Testing stopping and restarting" begin
-
-		using MomentOpt
-		using GLM
-		using DataStructures
-		using DataFrames
-		using Plots
 
 		#------------------------
 		# initialize the problem:
@@ -265,73 +258,73 @@
 		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
 		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
 
-		function objfunc_normal(ev::Eval; verbose = false)
+		# function objfunc_normal(ev::Eval; verbose = false)
 
-		    start(ev)
+		#     start(ev)
 
 
-		    # when running in parallel, display worker's id:
-		    #-----------------------------------------------
-		    if verbose == true
-		        if nprocs() > 1
-		          println(myid())
-		        end
-		    end
+		#     # when running in parallel, display worker's id:
+		#     #-----------------------------------------------
+		#     if verbose == true
+		#         if nprocs() > 1
+		#           println(myid())
+		#         end
+		#     end
 
-		    # extract parameters from ev:
-		    #----------------------------
-		    mu  = collect(values(ev.params))
+		#     # extract parameters from ev:
+		#     #----------------------------
+		#     mu  = collect(values(ev.params))
 
-		    # compute simulated moments
-		    #--------------------------
-		    # Monte-Carlo:
-		    #-------------
-		    ns = 10000 #number of i.i.d draws from N([mu], sigma)
-		    #initialize a multivariate normal N([mu], sigma)
-		    #mu is a four dimensional object
-		    #sigma is set to be the identity matrix
-		    sigma = [1.0 ;1.0]
-		    # draw ns observations from N([mu], sigma):
-				srand(1234)
-		    randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
-		    # calculate the mean of the simulated data
-		    simM            = mean(rand(randMultiNormal,ns),2)
-		    # store simulated moments in a dictionary
-		    simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
+		#     # compute simulated moments
+		#     #--------------------------
+		#     # Monte-Carlo:
+		#     #-------------
+		#     ns = 10000 #number of i.i.d draws from N([mu], sigma)
+		#     #initialize a multivariate normal N([mu], sigma)
+		#     #mu is a four dimensional object
+		#     #sigma is set to be the identity matrix
+		#     sigma = [1.0 ;1.0]
+		#     # draw ns observations from N([mu], sigma):
+		# 		srand(1234)
+		#     randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma))
+		#     # calculate the mean of the simulated data
+		#     simM            = mean(rand(randMultiNormal,ns),2)
+		#     # store simulated moments in a dictionary
+		#     simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
-		    # Calculate the weighted distance between empirical moments
-		    # and simulated ones:
-		    #-----------------------------------------------------------
-		    v = Dict{Symbol,Float64}()
-		    for (k, mom) in dataMomentd(ev)
-		        # If weight for moment k exists:
-		        #-------------------------------
-		        if haskey(MomentOpt.dataMomentWd(ev), k)
-		            # divide by weight associated to moment k:
-		            #----------------------------------------
-		            v[k] = ((simMoments[k] .- mom) ./ MomentOpt.dataMomentW(ev,k)) .^2
-		        else
-		            v[k] = ((simMoments[k] .- mom) ) .^2
-		        end
-		    end
+		#     # Calculate the weighted distance between empirical moments
+		#     # and simulated ones:
+		#     #-----------------------------------------------------------
+		#     v = Dict{Symbol,Float64}()
+		#     for (k, mom) in dataMomentd(ev)
+		#         # If weight for moment k exists:
+		#         #-------------------------------
+		#         if haskey(MomentOpt.dataMomentWd(ev), k)
+		#             # divide by weight associated to moment k:
+		#             #----------------------------------------
+		#             v[k] = ((simMoments[k] .- mom) ./ MomentOpt.dataMomentW(ev,k)) .^2
+		#         else
+		#             v[k] = ((simMoments[k] .- mom) ) .^2
+		#         end
+		#     end
 
-		    # Set value of the objective function:
-		    #------------------------------------
-		    setValue(ev, mean(collect(values(v))))
+		#     # Set value of the objective function:
+		#     #------------------------------------
+		#     setValue(ev, mean(collect(values(v))))
 
-		    # also return the moments
-		    #-----------------------
-		    setMoment(ev, simMoments)
+		#     # also return the moments
+		#     #-----------------------
+		#     setMoment(ev, simMoments)
 
-		    # flag for success:
-		    #-------------------
-		    ev.status = 1
+		#     # flag for success:
+		#     #-------------------
+		#     ev.status = 1
 
-		    # finish and return
-		    finish(ev)
+		#     # finish and return
+		#     finish(ev)
 
-		    return ev
-		end
+		#     return ev
+		# end
 
 
 
@@ -350,7 +343,7 @@
 
 		# Attach an objective function to MProb():
 		#----------------------------------------
-		addEvalFunc!(mprob, objfunc_normal)
+		addEvalFunc!(mprob, objfunc_norm)
 
 
 		#--------------------------------
@@ -406,7 +399,7 @@
 
 		# Attach an objective function to MProb():
 		#----------------------------------------
-		addEvalFunc!(mprob2, objfunc_normal)
+		addEvalFunc!(mprob2, objfunc_norm)
 
 		# estimation options:
 		#--------------------

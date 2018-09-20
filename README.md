@@ -19,117 +19,186 @@ Pkg.clone("https://github.com/floswald/MomentOpt.jl")
 
 ## Documentation
 
-Still work in progress, although most of the docstrings have been written - so checkout `?MOpt.BGPChain` for example in the REPL. I recommend to look at `src/mopt/Examples.jl` and the notebook `src/mopt/example.ipynb`:
+Still work in progress, although most of the docstrings have been written - so checkout `?MomentOpt.BGPChain` for example in the REPL. I recommend to look at `src/mopt/Examples.jl` and the notebook `src/mopt/example.ipynb`:
 
-### Example Usage of the BGP Algorithm
+## Example Usage of the BGP Algorithm
 
 Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](http://arxiv.org/abs/1108.3423) propose an approximate Bayesian Computation (ABC) algorithm that incorporates the parallel tempering idea of Geyer (1991). We provide the BGP algorithm as a template called `MAlgoBGP`. Here we use it to run a simple toy example where we want to estimate the means of a bivariate normal distribution by using MCMC. We use 3 parallel chains, each with different temperature. The chains can exchange locations along the process if this is suitable.
 
 
-**Track BGP proposals by iteration**  
+## Examples 
 
-We can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1.
 
-![Poposals](https://rawgithub.com/floswald/MOpt.jl/master/proposals.gif)
+### Objective Function
 
-### Example function call
+The objective function used here for moment `k` is
+
+<center>
+    `( (simMoments[k] / dataMoment[k]) - 1.0 )^2` 
+</center>
+
+This was chosen so as to be able to accomodate moments at different scales. 
+
+#### Chain Setup
+
+All examples use three chains. They all vary the temperature of the hottest chain as well as the scale of moments to estimate. We will consider data with identical scale and data with widely disparate scales.
+
+### Example with 2 Parameters on identical scale
+
+Let's start slowly. Here we want to estimate the mean parameters of a bivariate normal distribution. The data are generated from mean vector `[-1,1]`, hence, the algorithm should find values `[-1,1]`.
+
 
 ```julia
-function parallelNormal(niter=200)
-    # data are generated from a bivariate normal
-    # with mu = [a,b] = [0,0]
-    # aim:
-    # 1) sample [a',b'] from a space [-3,3] x [-2,2] and
-    # 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
-    #    and accepting/rejecting [a',b'] according to BGP
-    # 3) S([a,b]) returns a summary of features of the data: 2 means
 
-    # initial value
-    pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )
-    moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))
-    mprob = MProb()
-    addSampledParam!(mprob,pb)
-    addMoment!(mprob,moms)
-    addEvalFunc!(mprob,objfunc_norm)
+julia> MomentOpt.snorm_standard()
+INFO: These moments are our targets
+INFO: Parameter p_i corresponds to moment m_i
+2×3 DataFrames.DataFrame
+│ Row │ name │ value │ weight │
+├─────┼──────┼───────┼────────┤
+│ 1   │ mu1  │ -1.0  │ -1.0   │
+│ 2   │ mu2  │ 1.0   │ 1.0    │
 
-    nchains = 3
 
-    opts =Dict("N"=>nchains,
-        "maxiter"=>niter,
-        "maxtemp"=> 5,
-            # choose inital sd for each parameter p
-            # such that Pr( x \in [init-b,init+b]) = 0.975
-            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
-        "coverage"=>0.025,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
-        "sigma_update_steps"=>10,
-        "sigma_adjust_by"=>0.01,
-        "smpl_iters"=>1000,
-        "parallel"=>true,
-        "maxdists"=>[0.05 for i in 1:nchains],
-        "mixprob"=>0.3,
-        "acc_tuner"=>12.0,
-        "animate"=>false)
-
-    # plot slices of objective function
-    s = doSlices(mprob,30)
-    plot(s,:value)  # plot objective function over param values
-    savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
-    plot(s,:mu1)  # plot value of moment :mu1 over param values
-    savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
-    plot(s,:mu2)  # plot value of moment :mu2 over param values
-    savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
-
-    # setup the BGP algorithm
-    MA = MAlgoBGP(mprob,opts)
-
-    # run the estimation
-    runMOpt!(MA)
-    @show summary(MA)
-
-    histogram(MA.chains[1]);
-    savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
-    plot(MA.chains[1]);
-    savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
-    return MA
-end
+summary(MA) = 3×5 DataFrames.DataFrame
+│ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val   │
+├─────┼────┼──────────┼────────────────┼─────────────────────┼────────────┤
+│ 1   │ 1  │ 0.52907  │ 14.5           │ 2                   │ 7.99621e-5 │
+│ 2   │ 2  │ 0.721805 │ 34.0           │ 3                   │ 0.00429487 │
+│ 3   │ 3  │ 0.712418 │ 23.5           │ 2                   │ 0.0212968  │
 ```
 
-results in
+#### Objective Function and Param History
+
+![](lines0.png)
+
+#### Param Histogram
+
+![](histogram0.png)
+
+- [x] Works.
+
+### Example with 2 Parameters on different scales
+
+Now the two moments are an order of magnitude apart. 
+
 
 ```julia
-julia> MomentOpt.parallelNormal(1000)
-11:42:40:INFO:Main:slicing along p1
-11:42:45:INFO:Main:slicing along p2
-11:42:49:INFO:Main:done after 0.0 minutes
-11:43:05:INFO:Main:Starting estimation loop.
-11:50:36:WARN:Main:could not find 'filename' and did not save
-11:50:36:INFO:Main:Done with estimation after 7.5 minutes
+julia> MomentOpt.serialNormal(2,400,save=true)
+2×3 DataFrames.DataFrame
+│ Row │ name │ value │ weight │
+├─────┼──────┼───────┼────────┤
+│ 1   │ mu1  │ -1.0  │ 1.0    │
+│ 2   │ mu2  │ 10.0  │ 1.0    │
+
 summary(MA) = 3×5 DataFrames.DataFrame
 │ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val    │
 ├─────┼────┼──────────┼────────────────┼─────────────────────┼─────────────┤
-│ 1   │ 1  │ 0.617318 │ 64.2           │ 3                   │ 0.000166615 │
-│ 2   │ 2  │ 0.447514 │ 63.9           │ 3                   │ 2.9476e-5   │
-│ 3   │ 3  │ 0.340116 │ 65.7           │ 2                   │ 0.000144826 │
+│ 1   │ 1  │ 0.644258 │ 10.75          │ 2                   │ 0.000112698 │
+│ 2   │ 2  │ 0.75     │ 29.0           │ 3                   │ 0.00648252  │
+│ 3   │ 3  │ 0.832808 │ 20.75          │ 2                   │ 0.0240667   │
 
-BGP Algorithm with 3 BGPChains
-============================
-
-Algorithm
----------
-Current iteration: 1000
-Number of params to estimate: 2
-Number of moments to match: 2
 ```
 
+#### Objective Function and Param History
 
-**histogram**  
+![](lines0d.png)
 
-![Histogram](histogram.png)  
+#### Param Histogram
+
+![](histogram0d.png)
+
+- [x] Still Works.
+- [x] 2 moments one order of magnitude apart.
 
 
-**history**  
+## Example with 6 parameters on identical scales
 
-![Lines](lines.png)  
+
+```julia
+julia> MomentOpt.snorm_standard6()
+INFO: These moments are our targets
+INFO: Parameter p_i corresponds to moment m_i
+6×3 DataFrames.DataFrame
+│ Row │ name │ value │ weight │
+├─────┼──────┼───────┼────────┤
+│ 1   │ mu1  │ -1.0  │ -1.0   │
+│ 2   │ mu2  │ 1.0   │ 1.0    │
+│ 3   │ mu3  │ 0.5   │ 0.5    │
+│ 4   │ mu4  │ -0.5  │ -0.5   │
+│ 5   │ mu5  │ 0.7   │ 0.7    │
+│ 6   │ mu6  │ -0.7  │ -0.7   │
+
+summary(MA) = 3×5 DataFrames.DataFrame
+│ Row │ id │ acc_rate │ perc_exchanged │ exchanged_most_with │ best_val  │
+├─────┼────┼──────────┼────────────────┼─────────────────────┼───────────┤
+│ 1   │ 1  │ 0.326531 │ 2.0            │ 2                   │ 0.0268808 │
+│ 2   │ 2  │ 0.642857 │ 9.0            │ 3                   │ 0.157052  │
+│ 3   │ 3  │ 0.702703 │ 7.5            │ 2                   │ 0.834925  │
+(
+
+
+```
+
+#### Objective Function and Param History
+
+![](lines6.png)
+
+#### Param Histogram
+
+![](histogram6.png)
+
+- [x] Works with more than 2 moments!
+
+## Example with 6 parameters on different scales
+
+This example is to illustrate that the tuning parameters `acc_tuner`, `maxtemp` and `coverage` are all important. There is no one set of those that will yield a successful estimation: all depends on the location of the moments, the corresponding starting value of each parameter guess and the total number of moments. In those examples, these are randomly generated and often lie very far apart, which creates a particularly challenging setting for a SMM objective function. 
+
+
+```julia
+julia> MomentOpt.serialNormal(6,1000,save=true)
+INFO: These moments are our targets
+INFO: Parameter p_i corresponds to moment m_i
+6×3 DataFrames.DataFrame
+│ Row │ name │ value        │ weight       │
+├─────┼──────┼──────────────┼──────────────┤
+│ 1   │ mu1  │ -1.0         │ 1.0          │
+│ 2   │ mu2  │ 10.0         │ 1.0          │
+│ 3   │ mu3  │ -0.000511669 │ -0.000511669 │
+│ 4   │ mu4  │ 16.8189      │ 16.8189      │
+│ 5   │ mu5  │ 2.91133      │ 2.91133      │
+│ 6   │ mu6  │ -43.02       │ -43.02       │
+
+
+summary(MA) = 3×5 DataFrames.DataFrame
+│ Row │ id │ acc_rate  │ perc_exchanged │ exchanged_most_with │ best_val  │
+├─────┼────┼───────────┼────────────────┼─────────────────────┼───────────┤
+│ 1   │ 1  │ 0.0151976 │ 1.3            │ 2                   │ 0.0363635 │
+│ 2   │ 2  │ 0.0243902 │ 1.6            │ 1                   │ 0.0982443 │
+│ 3   │ 3  │ 0.0242424 │ 1.0            │ 2                   │ 0.237178  │
+
+
+
+```
+
+#### Objective Function and Param History
+
+![](lines1000.png)
+
+You can see that it takes a while for the algorithm to find the right area. 
+
+- [x] Still works.
+- [x] need to run long enough
+- [ ] heuristic to choose tuning parameters? NA.
+
+
+### More Examples
+
+are in `src/Examples.jl`
+
+## Other Features
+
+One produce slices of ones objective function:
 
 **Slices of objective function wrt parameters**  
 
@@ -139,6 +208,12 @@ Number of moments to match: 2
 
 ![Slices1](slices-m.png)  
 ![Slices2](slices-m2.png)  
+
+**Track BGP proposals by iteration**  
+
+One can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1, here with fixed variance.
+
+![Poposals](proposals.gif)
 
 ### Example Notebook
 

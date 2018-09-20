@@ -36,13 +36,13 @@ function parallelNormal(niter=200)
 		"animate"=>false)
 
 	# plot slices of objective function
-	s = doSlices(mprob,30)
-	plot(s,:value)  # plot objective function over param values
-	savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
-	plot(s,:mu1)  # plot value of moment :mu1 over param values
-	savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
-	plot(s,:mu2)  # plot value of moment :mu2 over param values
-	savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
+	# s = doSlices(mprob,30)
+	# plot(s,:value)  # plot objective function over param values
+	# savefig(joinpath(dirname(@__FILE__),"../../slices-v.png"))
+	# plot(s,:mu1)  # plot value of moment :mu1 over param values
+	# savefig(joinpath(dirname(@__FILE__),"../../slices-m.png"))
+	# plot(s,:mu2)  # plot value of moment :mu2 over param values
+	# savefig(joinpath(dirname(@__FILE__),"../../slices-m2.png"))
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
@@ -51,14 +51,161 @@ function parallelNormal(niter=200)
 	runMOpt!(MA)
 	@show summary(MA)
 
-	histogram(MA.chains[1]);
-	savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
-	plot(MA.chains[1]);
-	savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
+	# histogram(MA.chains[1]);
+	# savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
+	# plot(MA.chains[1]);
+	# savefig(joinpath(dirname(@__FILE__),"../../lines.png"))
 	return MA
 end
 
-function serialNormal(niter=200;npar=2,savefig=false)
+function serialNormal(npars,niter;save=false)
+
+	nchains = 3
+
+	if npars == 2
+		opts =Dict("N"=>nchains,
+			"maxiter"=>niter,
+			"maxtemp"=> 5,
+	            # choose inital sd for each parameter p
+	            # such that Pr( x \in [init-b,init+b]) = 0.975
+	            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+			"coverage"=>0.02,   # how big should the step size of new params be?
+			"smpl_iters"=>1000,
+			"parallel"=>false,
+			"maxdists"=>[0.0 for i in 1:nchains],
+			"acc_tuners"=>[20;2;1.0],
+			"animate"=>false)
+	else
+		opts =Dict("N"=>nchains,
+		"maxiter"=>niter,
+		"maxtemp"=> 15,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.05,   # how big should the step size of new params be?
+		"smpl_iters"=>1000,
+		"parallel"=>false,
+		"maxdists"=>[0.0 for i in 1:nchains],
+		"acc_tuners"=>[50.0;10;5],
+		"animate"=>false)
+
+	end
+	o = snorm_impl(opts,niter,npar=npars,save=save)
+	return o
+
+end
+
+function snorm_standard()
+	# data are generated from a bivariate normal
+	# with mu = [a,b] = [0,0]
+	# aim: 
+	# 1) sample [a',b'] from a space [-3,3] x [-2,2] and
+	# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
+	#    and accepting/rejecting [a',b'] according to BGP
+	# 3) S([a,b]) returns a summary of features of the data: 2 means
+
+	# initial value
+
+	pb = OrderedDict()
+	pb["p1"] = [0.2,-3,3]
+	pb["p2"] = [-0.2,-2,2]
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=[-1.0,1.0])
+
+	nchains = 3
+
+	opts =Dict("N"=>nchains,
+		"maxiter"=>200,
+		"maxtemp"=> 5,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.02,   # how big should the step size of new params be?
+		"smpl_iters"=>1000,
+		"parallel"=>false,
+		"maxdists"=>[0.0 for i in 1:nchains],
+		"acc_tuners"=>[20;2;1.0],
+		"animate"=>false)
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
+
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+
+	# setup the BGP algorithm
+	MA = MAlgoBGP(mprob,opts)
+
+	# run the estimation
+	runMOpt!(MA)
+	@show summary(MA)
+
+	ph = histogram(MA.chains[1],nbins=19);
+	savefig(joinpath(dirname(@__FILE__),"../../histogram0.png"))
+	pp = plot(MA.chains[1]);
+	savefig(joinpath(dirname(@__FILE__),"../../lines0.png")	)
+	return (MA,ph,pp)
+end
+
+function snorm_standard6()
+	# data are generated from a bivariate normal
+	# with mu = [a,b] = [0,0]
+	# aim: 
+	# 1) sample [a',b'] from a space [-3,3] x [-2,2] and
+	# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
+	#    and accepting/rejecting [a',b'] according to BGP
+	# 3) S([a,b]) returns a summary of features of the data: 2 means
+
+	# initial value
+
+	pb = OrderedDict()
+	pb["p1"] = [0.2,-3,3]
+	pb["p2"] = [-0.2,-2,2]
+	pb["p3"] = [-0.3,-2,2]
+	pb["p4"] = [-0.4,-2,2]
+	pb["p5"] = [0.3,-2,2]
+	pb["p6"] = [0.4,-2,2]
+	moms = DataFrame(name=["mu1","mu2","mu3","mu4","mu5","mu6"],
+		value=[-1.0,1.0,0.5,-0.5,0.7,-0.7],weight=[-1.0,1.0,0.5,-0.5,0.7,-0.7])
+
+	nchains = 3
+
+	opts =Dict("N"=>nchains,
+		"maxiter"=>200,
+		"maxtemp"=> 5,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.02,   # how big should the step size of new params be?
+		"smpl_iters"=>1000,
+		"parallel"=>false,
+		"maxdists"=>[0.0 for i in 1:nchains],
+		"acc_tuners"=>[20;2;1.0],
+		"animate"=>false)
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
+
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+
+	# setup the BGP algorithm
+	MA = MAlgoBGP(mprob,opts)
+
+	# run the estimation
+	runMOpt!(MA)
+	@show summary(MA)
+
+	ph = histogram(MA.chains[1],nbins=19);
+	savefig(joinpath(dirname(@__FILE__),"../../histogram6.png"))
+	pp = plot(MA.chains[1]);
+	savefig(joinpath(dirname(@__FILE__),"../../lines6.png")	)
+	return (MA,ph,pp)
+end
+function snorm_impl(opts,niter=200;npar=2,save=false)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 
@@ -75,10 +222,10 @@ function serialNormal(niter=200;npar=2,savefig=false)
 	pb["p1"] = [0.2,-3,3]
 	pb["p2"] = [-0.2,-20,20]
 	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
-	spaces = reverse(linspace(0.25,0.45,npar).^(-4))
 	srand(12)
 
 	if npar > 2
+		spaces = vcat(rand(2),4.0^(-4),reverse(linspace(0.25,0.45,npar-1).^(-4)))
 		for j in 3:npar
 			ii = j
 			# spaces = rand()^(-4)
@@ -90,6 +237,8 @@ function serialNormal(niter=200;npar=2,savefig=false)
 		end
 	end
 
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
 	println(moms)
 
 	mprob = MProb() 
@@ -97,22 +246,7 @@ function serialNormal(niter=200;npar=2,savefig=false)
 	MomentOpt.addMoment!(mprob,moms) 
 	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
-	nchains = 3
 
-	opts =Dict("N"=>nchains,
-		"maxiter"=>niter,
-		"maxtemp"=> 10,
-            # choose inital sd for each parameter p
-            # such that Pr( x \in [init-b,init+b]) = 0.975
-            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
-		"coverage"=>0.025,   # how big should the step size of new params be?
-		"sigma_update_steps"=>10,
-		"sigma_adjust_by"=>0.01,  # 1%
-		"smpl_iters"=>1000,
-		"parallel"=>false,
-		"maxdists"=>[0.0 for i in 1:nchains],
-		"acc_tuners"=>[50.0;10;5],
-		"animate"=>false)
 
 	# plot slices of objective function
 	# s = doSlices(mprob,30)
@@ -131,11 +265,11 @@ function serialNormal(niter=200;npar=2,savefig=false)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
-	if savefig
+	if save
 		savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
 	end
 	pp = plot(MA.chains[1]);
-	if savefig
+	if save
 		savefig(joinpath(dirname(@__FILE__),"../../lines.png")	)
 	end
 	return (MA,ph,pp)
