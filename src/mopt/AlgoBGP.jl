@@ -44,7 +44,7 @@ MCMC Chain storage for BGP algorithm.
 * `sigma_adjust_by`: adjust sampling vars by `sigma_adjust_by` percent up or down
 * `smpl_iters`: max number of trials to get a new parameter from MvNormal that lies within support
 * `maxdist`: what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
-* `upd_bundle`: in the proposal function update the parameter vector by `upd_bundle` params at a time. [default: update entire param vector]
+* `batches`: in the proposal function update the parameter vector in batches. [default: update entire param vector]
 
 """
 type BGPChain <: AbstractChain
@@ -65,9 +65,9 @@ type BGPChain <: AbstractChain
     sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
     smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
     maxdist  :: Float64  # what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
-    upd_indices  :: Vector{UnitRange{Int}}  # vector of indices to update together. how many params at a time to update in proposal()? 1: one at a time, 2: two at a time, ... npars: all params together
+    batches  :: Vector{UnitRange{Int}}  # vector of indices to update together.
 
-    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,upd_bundle=1)
+    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,nbatches=1)
         np = length(m.params_to_sample)
         @assert length(sig) == np
         this           = new()
@@ -85,13 +85,13 @@ type BGPChain <: AbstractChain
         this.iter      = 0
         this.m         = m
         # how many bundles + rest
-        nb, rest = divrem(np,upd_bundle)
+        nb, rest = divrem(np,nbatches)
         this.sigma = Dict{Int,PDiagMat{Float64}}()
-        this.upd_indices = UnitRange{Int}[]
+        this.batches = UnitRange{Int}[]
         i = 1
         for ib in 1:nb
-            j = (ib==nb && rest > 0) ? length(sig) :  i + upd_bundle - 1
-            push!(this.upd_indices,i:j)
+            j = (ib==nb && rest > 0) ? length(sig) :  i + nbatches - 1
+            push!(this.batches,i:j)
             this.sigma[ib] = PDiagMat(sig[i:j])
             i = j + 1
         end
@@ -372,14 +372,14 @@ function proposal(c::BGPChain)
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
 
         # if there is only one batch of params
-        if length(c.upd_indices) == 1
+        if length(c.batches) == 1
             pp = mysample(MvNormal(collect(values(mu)),c.sigma[1]),lb,ub,c.smpl_iters)
             newp = OrderedDict(zip(collect(keys(mu)),pp))
         else
             # do it in batches of params
             mus = collect(values(mu))
             pp = zeros(mus)
-            for (sig_ix,i) in enumerate(c.upd_indices)
+            for (sig_ix,i) in enumerate(c.batches)
                 pp[i] = mysample(MvNormal(mus[i],c.sigma[sig_ix]),lb[i],ub[i],c.smpl_iters)
             end
             newp = OrderedDict(zip(collect(keys(mu)),pp))
@@ -441,7 +441,7 @@ mutable struct MAlgoBGP <: MAlgo
                 smpl_iters = get(opts,"smpl_iters",1000),
                 maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
-                upd_bundle = get(opts,"upd_bundle",length(m.params_to_sample))) for i in 1:opts["N"]]
+                nbatches = get(opts,"nbatches",length(m.params_to_sample))) for i in 1:opts["N"]]
         else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
@@ -457,7 +457,7 @@ mutable struct MAlgoBGP <: MAlgo
                 smpl_iters = get(opts,"smpl_iters",1000),
                 maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
-                upd_bundle = get(opts,"upd_bundle",length(m.params_to_sample))) for i in 1:opts["N"]]
+                nbatches = get(opts,"nbatches",length(m.params_to_sample))) for i in 1:opts["N"]]
         end
 	    return new(m,opts,0,BGPChains, Animation(),get(opts,"dist_fun",-))
     end

@@ -14,7 +14,7 @@ function test_chain()
     upd_by = rand()
     ite = 1000
     bundle = 2
-    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,upd_bundle=bundle)
+    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,nbatches=bundle)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,bundle)
 end
 
@@ -33,7 +33,7 @@ function test_chain2()
     upd_by = rand()
     ite = 1000
     bundle = 2
-    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,upd_bundle=bundle)
+    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,nbatches=bundle)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,bundle)
 end
 
@@ -88,7 +88,7 @@ function test_chain3()
     upd_by = rand()
     ite = 1000
     bundle = 1
-    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,upd_bundle=bundle)
+    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,nbatches=bundle)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,bundle)
 end
 

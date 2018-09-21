@@ -14,7 +14,7 @@
 		@test chain.smpl_iters == ite
 		@test chain.accepted == falses(n)
 		@test chain.exchanged == zeros(Int,n)
-		for (six,ix) in enumerate(chain.upd_indices)
+		for (six,ix) in enumerate(chain.batches)
 			@test diag(chain.sigma[six]) == sig[ix]
 		end
 		@test chain.sigma_update_steps == upd
