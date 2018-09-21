@@ -195,7 +195,8 @@ function lastAccepted(c::BGPChain)
 end
 getIterEval(c::BGPChain,i::Int) = c.evals[i]
 getLastAccepted(c::BGPChain) = c.evals[lastAccepted(c)]
-set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(c.m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
+# set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(c.m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
+set_sigma!(c::BGPChain,s::Vector{Float64}) = warn("set_sigma! not implemented")
 function set_eval!(c::BGPChain,ev::Eval)
     c.evals[c.iter] = deepcopy(ev)
     c.accepted[c.iter] =  ev.accepted
@@ -355,6 +356,9 @@ function mysample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},
     error("no draw in support after $iters trials. increase either opts[smpl_iters] or opts[bound_prob].")
 end
 
+
+
+"Gaussian Transition Kernel centered on current parameter value"
 function proposal(c::BGPChain)
 
     if c.iter==1
@@ -370,18 +374,16 @@ function proposal(c::BGPChain)
         # if there is only one batch of params
         if length(c.upd_indices) == 1
             pp = mysample(MvNormal(collect(values(mu)),c.sigma[1]),lb,ub,c.smpl_iters)
+            newp = OrderedDict(zip(collect(keys(mu)),pp))
         else
             # do it in batches of params
-            pp = zeros(mu)
-            sig_ix = 0
-            for i in c.upd_indices
-                sig_ix += 1
-                pp[i] = mysample(MvNormal(collect(values(mu[i])),c.sigma[sig_ix]),lb[i],ub[i],c.smpl_iters)
-
+            mus = collect(values(mu))
+            pp = zeros(mus)
+            for (sig_ix,i) in enumerate(c.upd_indices)
+                pp[i] = mysample(MvNormal(mus[i],c.sigma[sig_ix]),lb[i],ub[i],c.smpl_iters)
             end
             newp = OrderedDict(zip(collect(keys(mu)),pp))
         end
-        newp = OrderedDict(zip(collect(keys(mu)),pp))
         @debug(logger,"iteration $(c.iter)")
         @debug(logger,"old param: $(ev_old.params)")
         @debug(logger,"new param: $newp")

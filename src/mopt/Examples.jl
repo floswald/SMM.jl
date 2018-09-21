@@ -148,7 +148,7 @@ function snorm_standard()
 	return (MA,ph,pp)
 end
 
-function snorm_18()
+function snorm_18(niter)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 
@@ -201,7 +201,7 @@ function snorm_18()
 	nchains = 3
 
 	opts =Dict("N"=>nchains,
-		"maxiter"=>200,
+		"maxiter"=>niter,
 		"maxtemp"=> 5,
             # choose inital sd for each parameter p
             # such that Pr( x \in [init-b,init+b]) = 0.975
