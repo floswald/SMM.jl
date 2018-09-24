@@ -67,7 +67,7 @@ type BGPChain <: AbstractChain
     maxdist  :: Float64  # what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
     batches  :: Vector{UnitRange{Int}}  # vector of indices to update together.
 
-    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,nbatches=1)
+    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
         np = length(m.params_to_sample)
         @assert length(sig) == np
         this           = new()
@@ -85,12 +85,12 @@ type BGPChain <: AbstractChain
         this.iter      = 0
         this.m         = m
         # how many bundles + rest
-        nb, rest = divrem(np,nbatches)
+        nb, rest = divrem(np,batch_size)
         this.sigma = Dict{Int,PDiagMat{Float64}}()
         this.batches = UnitRange{Int}[]
         i = 1
         for ib in 1:nb
-            j = (ib==nb && rest > 0) ? length(sig) :  i + nbatches - 1
+            j = (ib==nb && rest > 0) ? length(sig) :  i + batch_size - 1
             push!(this.batches,i:j)
             this.sigma[ib] = PDiagMat(sig[i:j])
             i = j + 1
@@ -249,7 +249,6 @@ function next_eval(c::BGPChain)
     # evaluate objective
     ev = evaluateObjective(c.m,pp)
 
-    ev.value >= 0 || error("AlgoBGP assumes that your objective function returns a non-negative number.")
 
     # accept reject
     doAcceptReject!(c,ev)
@@ -281,6 +280,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
             eval_new.accepted = false
         else
 
+            eval_new.value >= 0 || error("AlgoBGP assumes that your objective function returns a non-negative number.")
             # this forumulation: old - new
             # because we are MINIMIZING the value of the objective function
             eval_new.prob = minimum([1.0,exp( c.acc_tuner * ( eval_old.value - eval_new.value) )]) #* (eval_new.value < )
@@ -441,7 +441,7 @@ mutable struct MAlgoBGP <: MAlgo
                 smpl_iters = get(opts,"smpl_iters",1000),
                 maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
-                nbatches = get(opts,"nbatches",length(m.params_to_sample))) for i in 1:opts["N"]]
+                batch_size = get(opts,"batch_size",length(m.params_to_sample))) for i in 1:opts["N"]]
         else
             temps     = [1.0]
             for (k,v) in m.params_to_sample
@@ -457,7 +457,7 @@ mutable struct MAlgoBGP <: MAlgo
                 smpl_iters = get(opts,"smpl_iters",1000),
                 maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
-                nbatches = get(opts,"nbatches",length(m.params_to_sample))) for i in 1:opts["N"]]
+                batch_size = get(opts,"batch_size",length(m.params_to_sample))) for i in 1:opts["N"]]
         end
 	    return new(m,opts,0,BGPChains, Animation(),get(opts,"dist_fun",-))
     end
