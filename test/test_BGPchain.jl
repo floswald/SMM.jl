@@ -121,8 +121,8 @@
 			ev_good = Eval()
 			ev_bad  = Eval()
 
-			ev_good.value = ev_0.value - 10.0
-			ev_bad.value  = ev_0.value + 10.0
+			ev_good.value = 1.0
+			ev_bad.value  = 2.0
 			ev_good.status = 1
 			ev_bad.status  = 1
 
