@@ -211,7 +211,8 @@ function snorm_18(niter)
 		"parallel"=>false,
 		"maxdists"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
-		"animate"=>false)
+		"animate"=>false,
+		"batch_size" => 1)
 	info("These moments are our targets")
 	info("Parameter p_i corresponds to moment m_i")
 	println(moms)

@@ -348,7 +348,7 @@ function mysample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},
 
     # draw until all points are in support
     for i in 1:iters
-        x = rand(d)
+        x = rand(RAND,d)
         if all(x.>=lb) && all(x.<=ub)
             return x
         end

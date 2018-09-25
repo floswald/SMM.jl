@@ -134,6 +134,10 @@
 				@test c.accepted[c.iter]
 			end
 
+			# force accept 
+			ev_bad.accepted = true
+			MomentOpt.set_eval!(c,ev_bad)
+
 			MomentOpt.doAcceptReject!(c,ev_good)
 			@test ev_good.prob == 1.0
 			@test ev_good.accepted
