@@ -7,14 +7,16 @@
 
 	@testset "constructor" begin
 
-	    (chain, id, n, mprob, sig,sig2,  upd, upd_by, ite) = test_chain()
+	    (chain, id, n, mprob, sig,sig2,  upd, upd_by, ite, bundle) = test_chain()
 		@test chain.id == id
 		@test chain.accept_rate == 0.0
 		@test chain.iter == 0
 		@test chain.smpl_iters == ite
 		@test chain.accepted == falses(n)
 		@test chain.exchanged == zeros(Int,n)
-		@test diag(chain.sigma) == sig
+		for (six,ix) in enumerate(chain.batches)
+			@test diag(chain.sigma[six]) == sig[ix]
+		end
 		@test chain.sigma_update_steps == upd
 		@test chain.sigma_adjust_by == upd_by
 
@@ -35,30 +37,11 @@
 		MomentOpt.set_acceptRate!(chain)
 		@test chain.accept_rate == 1.0
 
-		MomentOpt.set_sigma!(chain,sig2)
-		@test diag(chain.sigma) == sig2
+		# MomentOpt.set_sigma!(chain,sig2)
+		# @test diag(chain.sigma) == sig2
 
 		MomentOpt.getLastAccepted(chain) == ev
 	end
-
-	# @testset "sample similar variances" begin
-	# 	n = 10
-	# 	sig = rand(n)
-	# 	d = MomentOpt.MvNormal(zeros(10),MomentOpt.PDiagMat(sig))
-	# 	lb = [-0.5 for i in 1:n]
-	# 	ub = [ 0.5 for i in 1:n]
-	# 	x = MomentOpt.mysample(d,lb,ub,1000)
-	# 	@test length(x)==n
- # 	end
-	# @testset "sample non-similar variances" begin
-	# 	n = 10
-	# 	sig = collect(linspace(1.0,10.0,n))
-	# 	d = MomentOpt.MvNormal(zeros(10),MomentOpt.PDiagMat(sig))
-	# 	lb = -2 * sig
-	# 	ub =  2 * sig
-	# 	x = MomentOpt.mysample(d,lb,ub,1000)
-	# 	@test length(x)==n
- # 	end
 
 	@testset "proposal" begin
 	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
@@ -77,6 +60,32 @@
 		chain.iter += 1
 		pp = MomentOpt.proposal(chain)
 		@test pp != mprob.initial_value
+
+	end
+
+	# https://github.com/floswald/MomentOpt.jl/issues/31
+	@testset "high dimensional proposal" begin
+	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain3()
+		@test chain.iter == 0
+		chain.iter = 1
+		pp = MomentOpt.proposal(chain)
+		@test pp == mprob.initial_value
+
+		#  set a value:
+		ev = Eval(mprob)
+		v = rand()
+		ev.value = v
+		ev.accepted = true
+		# test whether we can get proposals out of this hidim MVNormal
+		for i in 1:n-1
+			ev.value = rand()
+			ev.accepted = true
+			MomentOpt.set_eval!(chain,ev)
+			chain.iter += 1
+			p = MomentOpt.proposal(chain)
+			@test p != pp
+			pp = deepcopy(p)
+		end
 
 	end
 
@@ -112,8 +121,8 @@
 			ev_good = Eval()
 			ev_bad  = Eval()
 
-			ev_good.value = ev_0.value - 10.0
-			ev_bad.value  = ev_0.value + 10.0
+			ev_good.value = 1.0
+			ev_bad.value  = 2.0
 			ev_good.status = 1
 			ev_bad.status  = 1
 
@@ -124,6 +133,10 @@
 				@test ev_bad.accepted
 				@test c.accepted[c.iter]
 			end
+
+			# force accept 
+			ev_bad.accepted = true
+			MomentOpt.set_eval!(c,ev_bad)
 
 			MomentOpt.doAcceptReject!(c,ev_good)
 			@test ev_good.prob == 1.0

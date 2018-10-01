@@ -57,7 +57,6 @@ function runMOpt!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo.opts["filename"])
 	else
-    # if no filename is provided, generated a random number
 		@warn(logger,"could not find 'filename' in algo.opts")
 	end
 

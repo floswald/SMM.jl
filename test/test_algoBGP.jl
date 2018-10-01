@@ -78,6 +78,69 @@
 
 		# estimation options:
 		#--------------------
+		niter = 200
+		nchains = 2
+
+		opts = Dict("N"=>nchains,
+		        "maxiter"=>niter,
+		        "maxtemp"=> 5,
+		        "coverage"=>0.025,
+		        "sigma_update_steps"=>10,
+		        "sigma_adjust_by"=>0.01,
+		        "smpl_iters"=>1000,
+		        "parallel"=>true,
+		        "maxdists"=>[0.0 for i in 1:nchains],
+		        "acc_tuners"=>[5;1.0],
+		        "animate"=>false)
+		MA = MAlgoBGP(mprob,opts)
+		MomentOpt.runMOpt!(MA)
+
+		dat_chain1 = MomentOpt.history(MA.chains[1])
+		dat_chain1[round(Int, niter/10):niter, :]
+		dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
+
+		parameters = [Symbol(String("mu$(i)")) for i=1:2]
+		estimatedParameters = [Symbol(String("p$(i)")) for i=1:2]
+
+		for (estimatedParameter, param) in zip(estimatedParameters, parameters)
+
+		  println("Quasi posterior mean for $(String(estimatedParameter)) = $(mean(dat_chain1[estimatedParameter]))")
+		  println("Quasi posterior median for $(String(estimatedParameter)) = $(median(dat_chain1[estimatedParameter]))")
+		  println("True value = $(trueValues[String(param)][])")
+
+			# (the problem is simple here)
+			#---------------------------------------------------------
+			@test trueValues[String(param)][] ≈ median(dat_chain1[estimatedParameter]) atol = tolTestNormal
+
+		end
+
+	    rmprocs(workers())
+	end
+
+	@testset "with batches?" begin
+
+		# set tolerance level
+		# to achieve a smaller tolerance level, increase niter below
+		# but takes more time
+		tolTestNormal = 0.7
+
+		addprocs(2)
+
+		@everywhere using MomentOpt
+
+		srand(1234)
+		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
+		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
+		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
+
+		mprob = MProb()
+		addSampledParam!(mprob,pb)
+		addMoment!(mprob,moms)
+		addEvalFunc!(mprob, MomentOpt.objfunc_norm)
+
+
+		# estimation options:
+		#--------------------
 		niter = 50
 		nchains = 2
 
@@ -92,7 +155,8 @@
 		        "maxdists"=>[0.05 for i in 1:nchains],
 		        "mixprob"=>0.3,
 		        "acc_tuner"=>12.0,
-		        "animate"=>false)
+		        "animate"=>false,
+		        "batch_size"=> 1)
 		MA = MAlgoBGP(mprob,opts)
 		MomentOpt.runMOpt!(MA)
 

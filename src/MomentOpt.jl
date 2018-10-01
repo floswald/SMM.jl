@@ -25,6 +25,7 @@ logger = get_logger()
 #     basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
 # else
     basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
+    # basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
 # end
 
 import Base.get, Base.mean, Base.write, Base.start, Base.==, Base.median
@@ -55,6 +56,8 @@ export addParam!,
        extendBGPChain!,
        runMOpt!
 
+# create a random device that is immune to seeds
+const RAND = RandomDevice()
 
 
 # load files

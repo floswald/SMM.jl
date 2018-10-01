@@ -148,6 +148,94 @@ function snorm_standard()
 	return (MA,ph,pp)
 end
 
+function snorm_18(niter)
+	# data are generated from a bivariate normal
+	# with mu = [a,b] = [0,0]
+	# aim: 
+	# 1) sample [a',b'] from a space [-3,3] x [-2,2] and
+	# 2) find true [a,b] by computing distance(S([a',b']), S([a,b]))
+	#    and accepting/rejecting [a',b'] according to BGP
+	# 3) S([a,b]) returns a summary of features of the data: 2 means
+
+	# initial value
+
+	pb = OrderedDict()
+	pb["p1"] = [0.2,0,1]
+	pb["p2"] = [0.002,0,0.02]
+	pb["p3"] = [-0.3,-2,2]
+	pb["p4"] = [-0.4,-2,2]
+	pb["p5"] = [0.008,0,0.02]
+	pb["p6"] = [0.4,-2,2]
+	pb["p7"] = [0.2,0,1]
+	pb["p8"] = [0.002,0,0.02]
+	pb["p9"] = [-0.3,-2,2]
+	pb["p10"] = [-0.4,-2,2]
+	pb["p11"] = [0.008,0,0.02]
+	pb["p12"] = [0.4,-2,2]
+	pb["p13"] = [0.2,0,1]
+	pb["p14"] = [0.002,0,0.02]
+	pb["p15"] = [-0.3,-2,2]
+	pb["p16"] = [-0.4,-2,2]
+	pb["p17"] = [0.008,0,0.02]
+	pb["p18"] = [0.4,-2,2]
+	moms = DataFrame(name=["mu1",
+						   "mu2",
+						   "mu3",
+						   "mu4",
+						   "mu5",
+						   "mu6",
+						   "mu7",
+						   "mu8",
+						   "mu9",
+						   "mu10",
+						   "mu11",
+						   "mu12",
+						   "mu13",
+						   "mu14",
+						   "mu15",
+						   "mu16",
+						   "mu17",
+						   "mu18"],
+		value=[-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7],weight=[-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7])
+
+	nchains = 3
+
+	opts =Dict("N"=>nchains,
+		"maxiter"=>niter,
+		"maxtemp"=> 5,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.02,   # how big should the step size of new params be?
+		"smpl_iters"=>1000,
+		"parallel"=>false,
+		"maxdists"=>[0.0 for i in 1:nchains],
+		"acc_tuners"=>[20;2;1.0],
+		"animate"=>false,
+		"batch_size" => 1)
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
+
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+
+	# setup the BGP algorithm
+	MA = MAlgoBGP(mprob,opts)
+
+	# run the estimation
+	runMOpt!(MA)
+	@show summary(MA)
+
+	# ph = histogram(MA.chains[1],nbins=19);
+	# savefig(joinpath(dirname(@__FILE__),"../../histogram6.png"))
+	# pp = plot(MA.chains[1]);
+	# savefig(joinpath(dirname(@__FILE__),"../../lines6.png")	)
+	return MA
+end
+
 function snorm_standard6()
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
