@@ -6,8 +6,6 @@ Linux/MacOS: [![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.svg?br
 
 Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt.jl/branch/master)
 
-[![codecov](https://codecov.io/gh/floswald/MomentOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/floswald/MomentOpt.jl)
-
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
 
@@ -33,9 +31,11 @@ Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](h
 
 The objective function used here for moment `k` is
 
-<center>
-    `( (simMoments[k] / dataMoment[k]) - 1.0 )^2` 
-</center>
+
+ ```
+ ( (simMoments[k] / dataMoment[k]) - 1.0 )^2
+ ```
+
 
 This was chosen so as to be able to accomodate moments at different scales. 
 
