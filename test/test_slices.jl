@@ -52,6 +52,11 @@ end
 	end
 end
 
+@testset "naive coordinate descent works" begin
+    m,s = MomentOpt.snorm_6_taxi(0.1)
+    @test norm(m[:value] .- collect(values(s))) < 0.05
+end
+
 
 
 

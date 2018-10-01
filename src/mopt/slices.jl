@@ -103,12 +103,98 @@ end
 #     return [ :x => convert(Array{Float64,1},x) , :y => convert(Array{Float64,1},y) ]
 # end
 
+
+
+
 """
-    doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
+    optSlices(m::MProb,npoints::Int,parallel=false)
+
+Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
+"""
+function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4)
+
+    t0 = time()
+    # res = Slice(m.initial_value, m.moments)
+    # we want to iterate over each parameters, 
+    # and compute a linerange
+
+    ranges = m.params_to_sample
+    cur_param = m.initial_value
+    bestp = deepcopy(m.initial_value)
+    dvec = deepcopy(cur_param)
+    for (k,v) in dvec
+        v = Inf
+    end
+
+    delta = Inf
+    iter = 0
+    while delta > tol
+        iter += 1
+        @info(logger,"iteration $iter")
+
+        for (pp,bb) in ranges
+        
+            # initialize eval
+            cur_param = deepcopy(bestp)
+            ev = Eval(m,cur_param)
+
+            if parallel
+                vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                    ev2 = deepcopy(ev)
+                    ev2.params[pp] = pval
+                    ev2 = evaluateObjective(m,ev2)
+                    return(ev2)
+                end
+            else
+                vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                    ev2 = deepcopy(ev)
+                    ev2.params[pp] = pval
+                    ev2 = evaluateObjective(m,ev2)
+                    return(ev2)
+                end
+            end
+
+            # find best parameter value
+            minv = Inf
+            bestp = deepcopy(ev.params)
+            for v in vv 
+                if (typeof(v) <: Exception)
+                    # warn("exception received. value not stored.")
+                else
+                    if isfinite(v.value) && v.value < minv
+                        minv = v.value
+                        bestp = deepcopy(v.params)
+                        # println("best value for $pp is $minv")
+                    end
+                end
+            end
+            dvec[pp] = cur_param[pp] - bestp[pp]
+        end  
+        # update search ranges
+        for (k,v) in bestp
+            r = (ranges[k][:ub] - ranges[k][:lb])/2
+            ranges[k][:lb] = v - update * r
+            ranges[k][:ub] = v + update * r
+        end
+        @debug(logger,"search ranges updated to $ranges")
+
+        # println(cur_param)
+        # println(bestp)
+        delta = norm(collect(values(dvec)))
+        @info(logger,"norm p - p' = $delta")
+    end
+    t1 = round((time()-t0)/60)
+    # @info(logger,"done after $t1 minutes")
+    return cur_param
+end
+
+
+"""
+    doSlices(m::MProb,npoints::Int,parallel=false)
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref)
 """
-function doSlices(m::MProb,npoints::Int,parallel=false,pad=0.1)
+function doSlices(m::MProb,npoints::Int,parallel=false)
 
     t0 = time()
     res = Slice(m.initial_value, m.moments)
