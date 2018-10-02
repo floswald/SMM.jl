@@ -111,7 +111,7 @@ end
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
-function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4)
+function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,filename="trace.jld2")
 
     t0 = time()
     # res = Slice(m.initial_value, m.moments)
@@ -126,11 +126,16 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4)
         v = Inf
     end
 
+    # output
+    dout = Dict()
+
     delta = Inf
     iter = 0
     while delta > tol
         iter += 1
         @info(logger,"iteration $iter")
+
+        dout[iter] = Dict()
 
         for (pp,bb) in ranges
         
@@ -139,14 +144,14 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4)
             ev = Eval(m,cur_param)
 
             if parallel
-                vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                     ev2 = deepcopy(ev)
                     ev2.params[pp] = pval
                     ev2 = evaluateObjective(m,ev2)
                     return(ev2)
                 end
             else
-                vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                takes = @elapsed vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                     ev2 = deepcopy(ev)
                     ev2.params[pp] = pval
                     ev2 = evaluateObjective(m,ev2)
@@ -154,20 +159,30 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4)
                 end
             end
 
+            dout[iter][:history] = Dict()
+
             # find best parameter value
             minv = Inf
             bestp = deepcopy(ev.params)
-            for v in vv 
-                if (typeof(v) <: Exception)
-                    # warn("exception received. value not stored.")
+            for iv in 1:length(vv)
+                if (typeof(v[iv]) <: Exception)
+                        # warn("exception received. value not stored.")
+                    dout[iter][:history][iv] = Dict(:p => "Exception", :value => NaN)
                 else
-                    if isfinite(v.value) && v.value < minv
-                        minv = v.value
-                        bestp = deepcopy(v.params)
+                    val = v[iv]
+                    dout[iter][:history][iv] = Dict(:p => val.params, :value => val.value)
+                    if isfinite(val.value) && val.value < minv
+                        minv = val.value
+                        bestp = deepcopy(val.params)
+                        dout[iter][:best] = Dict(:p => val.params, :value => val.value)
                         # println("best value for $pp is $minv")
                     end
                 end
             end
+            if takes > 60
+                JLD2.@save filename dout
+            end
+
             dvec[pp] = cur_param[pp] - bestp[pp]
         end  
         # update search ranges
@@ -185,7 +200,8 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4)
     end
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")
-    return cur_param
+    JLD2.@save filename dout
+    return (cur_param,dout)
 end
 
 
