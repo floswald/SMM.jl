@@ -38,13 +38,12 @@ function runMOpt!( algo::MAlgo )
 
 			# save at certain frequency
 			if haskey(algo.opts,"save_frequency") == true
-        # if the user provided a filename in the options dictionary
 				if haskey(algo.opts,"filename") == true
-  				if mod(i,algo.opts["save_frequency"]) == 0
-  					save(algo,algo.opts["filename"])
-  					@info(logger,"saved data at iteration $i")
-  				end
-        end
+	  				if mod(i,algo.opts["save_frequency"]) == 0
+	  					save(algo,algo.opts["filename"])
+	  					@info(logger,"saved data at iteration $i")
+	  				end
+        		end
 			end
 
 		# catch e

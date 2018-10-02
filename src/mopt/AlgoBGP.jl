@@ -383,7 +383,7 @@ function proposal(c::BGPChain)
                 try
                     pp[i] = mysample(MvNormal(mus[i],c.sigma[sig_ix]),lb[i],ub[i],c.smpl_iters)
                 catch err
-                    println("caught exception $y. this is param index $sig_ix, mean = $(mus[i]), sigma $(c.sigma[sig_ix]), lb,ub = $((lb[i],ub[i]))")
+                    println("caught exception $err. this is param index $sig_ix, mean = $(mus[i]), sigma $(c.sigma[sig_ix]), lb,ub = $((lb[i],ub[i]))")
                 end
             end
             newp = OrderedDict(zip(collect(keys(mu)),pp))

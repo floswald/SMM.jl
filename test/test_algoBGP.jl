@@ -59,7 +59,7 @@
 		# set tolerance level
 		# to achieve a smaller tolerance level, increase niter below
 		# but takes more time
-		tolTestNormal = 0.7
+		tolTestNormal = 1.0
 
 		addprocs(2)
 

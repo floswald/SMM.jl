@@ -1,5 +1,17 @@
 	
 
+function sliceOpt(tol)
+	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,20] )
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	addMoment!(mprob,moms) 
+	addEvalFunc!(mprob,objfunc_norm)
+
+	s = optSlices(mprob,30,tol=tol)
+	return s
+end
+
 function parallelNormal(niter=200)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
@@ -146,6 +158,30 @@ function snorm_standard()
 	pp = plot(MA.chains[1]);
 	savefig(joinpath(dirname(@__FILE__),"../../lines0.png")	)
 	return (MA,ph,pp)
+end
+
+
+
+function snorm_6_taxi(tol;par=false)
+
+	pb = OrderedDict()
+	pb["p1"] = [0.2,-3,3]
+	pb["p2"] = [-0.2,-2,2]
+	pb["p3"] = [-0.3,-2,2]
+	pb["p4"] = [-0.4,-2,2]
+	pb["p5"] = [0.3,-2,2]
+	pb["p6"] = [0.4,-2,2]
+	moms = DataFrame(name=["mu1","mu2","mu3","mu4","mu5","mu6"],
+		value=[-1.0,1.0,0.5,-0.5,0.7,-0.7],weight=[-1.0,1.0,0.5,-0.5,0.7,-0.7])
+	
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+
+	s = optSlices(mprob,30,tol=tol,parallel=par)
+	return (moms,s)
+	
 end
 
 function snorm_18(niter)
