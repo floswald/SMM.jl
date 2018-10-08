@@ -165,17 +165,19 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
             minv = Inf
             bestp = deepcopy(ev.params)
             for iv in 1:length(vv)
-                if (typeof(v[iv]) <: Exception)
+                if (typeof(vv[iv]) <: Exception)
                         # warn("exception received. value not stored.")
                     dout[iter][:history][iv] = Dict(:p => "Exception", :value => NaN)
                 else
-                    val = v[iv]
+                    val = vv[iv]
                     dout[iter][:history][iv] = Dict(:p => val.params, :value => val.value)
                     if isfinite(val.value) && val.value < minv
                         minv = val.value
                         bestp = deepcopy(val.params)
                         dout[iter][:best] = Dict(:p => val.params, :value => val.value)
                         # println("best value for $pp is $minv")
+                    else
+                        dout[iter][:best] = iter > 2 ? dout[iter-1][:best] : Dict(:p => "Exception", :value => NaN)
                     end
                 end
             end
