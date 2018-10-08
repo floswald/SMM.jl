@@ -179,7 +179,7 @@ function snorm_6_taxi(tol;par=false)
 	MomentOpt.addMoment!(mprob,moms) 
 	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
-	s = optSlices(mprob,30,tol=tol,parallel=par)
+	s = optSlices(mprob,3,tol=tol,parallel=par)
 	return (moms,s)
 	
 end

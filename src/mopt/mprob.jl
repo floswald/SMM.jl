@@ -158,7 +158,7 @@ function evaluateObjective(m::MProb,ev)
        # ev = eval(Expr(:call,m.objfunc,ev))
        ev = m.objfunc(ev)
     catch ex
-      warn("caught exception $ex at param $p")
+      warn("caught exception $ex at param $(ev.params)")
       ev.status = -2
     end
     gc()
