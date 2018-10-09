@@ -259,10 +259,10 @@ function check_moments(ev::Eval)
 	dsim = DataFrame(moment = collect(keys(ev.simMoments)),simulation= collect(values(ev.simMoments)))
 	r = join(d,dsim, on=:moment)
 	r[:distance] =  r[:simulation] .- r[:data]
-    r[:abs_percent_dev] = abs(100 * r[:distance] ./ r[:data])
+    r[:abs_percent_dev] = abs.(100 * r[:distance] ./ r[:data])
     if length(ev.dataMomentsW) > 0
        r[:weighted_dist2] = ((r[:simulation] .- r[:data]) ./ r[:data_sd] ).^2 
-	   r[:weighted_precent] = abs((r[:abs_percent_dev] .- r[:data]) ./ r[:data_sd] )
+	   r[:weighted_precent] = abs.((r[:abs_percent_dev] .- r[:data]) ./ r[:data_sd] )
     end
 	return r
 end
