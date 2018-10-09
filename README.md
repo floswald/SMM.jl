@@ -70,11 +70,11 @@ summary(MA) = 3×5 DataFrames.DataFrame
 
 #### Objective Function and Param History
 
-![](lines0.png)
+![](images/lines0.png)
 
 #### Param Histogram
 
-![](histogram0.png)
+![](images/histogram0.png)
 
 - [x] Works.
 
@@ -102,11 +102,11 @@ summary(MA) = 3×5 DataFrames.DataFrame
 
 #### Objective Function and Param History
 
-![](lines0d.png)
+![](images/lines0d.png)
 
 #### Param Histogram
 
-![](histogram0d.png)
+![](images/histogram0d.png)
 
 - [x] Still Works.
 - [x] 2 moments one order of magnitude apart.
@@ -142,11 +142,11 @@ summary(MA) = 3×5 DataFrames.DataFrame
 
 #### Objective Function and Param History
 
-![](lines6.png)
+![](images/lines6.png)
 
 #### Param Histogram
 
-![](histogram6.png)
+![](images/histogram6.png)
 
 - [x] Works with more than 2 moments!
 
@@ -183,7 +183,7 @@ summary(MA) = 3×5 DataFrames.DataFrame
 
 #### Objective Function and Param History
 
-![](lines1000.png)
+![](images/lines1000.png)
 
 You can see that it takes a while for the algorithm to find the right area. 
 
@@ -202,18 +202,18 @@ One produce slices of ones objective function:
 
 **Slices of objective function wrt parameters**  
 
-![Slices](slices-v.png)  
+![Slices](images/slices-v.png)  
 
 **Slices of moments wrt parameters**  
 
-![Slices1](slices-m.png)  
-![Slices2](slices-m2.png)  
+![Slices1](images/slices-m.png)  
+![Slices2](images/slices-m2.png)  
 
 **Track BGP proposals by iteration**  
 
 One can allow for the variance of the shock to be changed adaptively. Here this is fixed to obtain a certain acceptance probability. Showing chain number 1, here with fixed variance.
 
-![Poposals](proposals.gif)
+![Poposals](images/proposals.gif)
 
 ### Example Notebook
 

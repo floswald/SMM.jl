@@ -14,7 +14,7 @@ end
 
 
 
-export Slice,slices,add!,get
+export Slice,slices,add!,get,optSlices
 
 
 """
