@@ -129,13 +129,14 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
     # output
     dout = Dict()
 
+    # history data.frame
+    df0 = DataFrame()
+
     delta = Inf
     iter = 0
     while delta > tol
         iter += 1
         @info(logger,"iteration $iter")
-
-        dout[iter] = Dict()
 
         for (pp,bb) in ranges
         
@@ -159,7 +160,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
                 end
             end
 
-            dout[iter][:history] = Dict()
+            allvals = Dict()
 
             # find best parameter value
             minv = Inf
@@ -167,31 +168,56 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
             for iv in 1:length(vv)
                 if (typeof(vv[iv]) <: Exception)
                         # warn("exception received. value not stored.")
-                    dout[iter][:history][iv] = Dict(:p => "Exception", :value => NaN)
+                    allvals[iv] = Dict(:p => "Exception", :value => NaN)
                 else
                     val = vv[iv]
-                    dout[iter][:history][iv] = Dict(:p => val.params, :value => val.value)
+                    allvals[iv] = Dict(:p => val.params, :value => val.value)
+                    # println("good value? $(isfinite(val.value) && val.value < minv)")
                     if isfinite(val.value) && val.value < minv
                         minv = val.value
                         bestp = deepcopy(val.params)
-                        dout[iter][:best] = Dict(:p => val.params, :value => val.value)
+                        dout[:best] = Dict(:p => val.params, :value => val.value)
                         # println("best value for $pp is $minv")
                     else
-                        dout[iter][:best] = iter > 2 ? dout[iter-1][:best] : Dict(:p => "Exception", :value => NaN)
+                        dout[:best] = iter > 2 ? dout[:best] : Dict(:p => "Exception", :value => NaN)
                     end
                 end
+                # println("best value so far $(dout[:best])")
             end
+            for (k,v) in allvals
+                if (nrow(df0)) > 0
+                    x = DataFrame(iter=iter,param=pp,val_idx=k)
+                    for (ki,vi) in v[:p]
+                        x[ki] = vi
+                    end
+                    x[:value] = v[:value]
+                    append!(df0,x)
+                else
+                    df0[:iter] = iter
+                    df0[:param] = pp
+                    df0[:val_idx] = k
+                    for (ki,vi) in v[:p]
+                        df0[ki] = vi
+                    end
+                    df0[:value] = v[:value]
+                end
+            end
+            sort!(df0,(:iter,:param,:val_idx))
+            dout[:history] = df0
+
             if takes > 60
                 JLD2.@save filename dout
             end
 
             dvec[pp] = cur_param[pp] - bestp[pp]
-        end  
+        end  # end all values in ranges
+
         # update search ranges
+        # maintain range boundaries
         for (k,v) in bestp
             r = (ranges[k][:ub] - ranges[k][:lb])/2
-            ranges[k][:lb] = v - update * r
-            ranges[k][:ub] = v + update * r
+            ranges[k][:lb] = max(v - update * r,ranges[k][:lb])
+            ranges[k][:ub] = min(v + update * r,ranges[k][:ub])
         end
         @debug(logger,"search ranges updated to $ranges")
 
@@ -203,7 +229,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")
     JLD2.@save filename dout
-    return (cur_param,dout)
+    return dout
 end
 
 
