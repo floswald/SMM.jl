@@ -188,6 +188,21 @@ function ms_names(mprob::MProb)
   return(keys(mprob.moments))
 end
 
+"""
+    map param to [0,1]
+"""
+function mapto_01(p::OrderedDict,lb::Vector{Float64},ub::Vector{Float64})
+    mu = collect(values(p))
+    return (mu .- lb) ./ (ub .- lb)
+end
+
+"""
+    map param from [0,1] to [a,b]
+"""
+function mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
+    p .* (ub .- lb) .+ lb
+end
+
 function show(io::IO,m::MProb)
 
   print(io,"MProb Object:\n")

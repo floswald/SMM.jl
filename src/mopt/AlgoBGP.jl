@@ -39,7 +39,7 @@ MCMC Chain storage for BGP algorithm.
 * `acc_tuner`: Acceptance tuner. `acc_tuner > 1` means to be more restrictive: params that yield a *worse* function value are *less likely* to get accepted, the higher `acc_tuner` is.
 * `exchanged`: `Array{Int}` of `length(evals)` with index of chain that was exchanged with
 * `m`: `MProb`
-* `sigma`: `PDiagMat{Float64}` matrix of variances for shock
+* `sigma`: `Float64` shock variance
 * `sigma_update_steps`:  update sampling vars every `sigma_update_steps` iterations
 * `sigma_adjust_by`: adjust sampling vars by `sigma_adjust_by` percent up or down
 * `smpl_iters`: max number of trials to get a new parameter from MvNormal that lies within support
@@ -60,7 +60,7 @@ type BGPChain <: AbstractChain
     acc_tuner :: Float64
     exchanged :: Array{Int}
     m         :: MProb
-    sigma     :: Dict{Int,PDiagMat{Float64}}
+    sigma     :: Float64
     sigma_update_steps :: Int64   # update sampling vars every sigma_update_steps iterations
     sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
     smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
@@ -86,13 +86,12 @@ type BGPChain <: AbstractChain
         this.m         = m
         # how many bundles + rest
         nb, rest = divrem(np,batch_size)
-        this.sigma = Dict{Int,PDiagMat{Float64}}()
+        this.sigma = rand()
         this.batches = UnitRange{Int}[]
         i = 1
         for ib in 1:nb
             j = (ib==nb && rest > 0) ? length(sig) :  i + batch_size - 1
             push!(this.batches,i:j)
-            this.sigma[ib] = PDiagMat(sig[i:j])
             i = j + 1
         end
         this.sigma_update_steps = upd
@@ -369,25 +368,30 @@ function proposal(c::BGPChain)
         lb = [v[:lb] for (k,v) in c.m.params_to_sample]
         ub = [v[:ub] for (k,v) in c.m.params_to_sample]
 
+        # map into [0,1]
+        # (x-a)/(b-a) = z \in [0,1]
+        mu01 = mapto_01(mu,lb,ub) 
+        
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
 
         # if there is only one batch of params
         if length(c.batches) == 1
-            pp = mysample(MvNormal(collect(values(mu)),c.sigma[1]),lb,ub,c.smpl_iters)
-            newp = OrderedDict(zip(collect(keys(mu)),pp))
+            pp = mysample(MvNormal(mu01,c.sigma),0,1,c.smpl_iters)
         else
             # do it in batches of params
-            mus = collect(values(mu))
             pp = zeros(mus)
             for (sig_ix,i) in enumerate(c.batches)
                 try
-                    pp[i] = mysample(MvNormal(mus[i],c.sigma[sig_ix]),lb[i],ub[i],c.smpl_iters)
+                    pp[i] = mysample(MvNormal(mus[i],c.sigma),0,1,c.smpl_iters)
                 catch err
-                    println("caught exception $err. this is param index $sig_ix, mean = $(mus[i]), sigma $(c.sigma[sig_ix]), lb,ub = $((lb[i],ub[i]))")
+                    println("caught exception $err. this is param index $sig_ix, mean = $(mus[i]), sigma $(c.sigma), lb,ub = $((0,1))")
                 end
             end
-            newp = OrderedDict(zip(collect(keys(mu)),pp))
         end
+        # map [0,1] -> [a,b]
+        # z*(b-a) + a = x \in [a,b]
+        newp = OrderedDict(zip(collect(keys(mu)),mapto_ab(pp,lb,ub)))
+
         @debug(logger,"iteration $(c.iter)")
         @debug(logger,"old param: $(ev_old.params)")
         @debug(logger,"new param: $newp")
@@ -418,9 +422,10 @@ mutable struct MAlgoBGP <: MAlgo
     anim           :: Plots.Animation
     dist_fun   :: Function
 
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"coverage"=>0.125,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"sigma"=>0.05,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
-        init_sd = OrderedDict{Symbol,Float64}()
+        sig = opts["sigma"]
+
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
@@ -430,16 +435,9 @@ mutable struct MAlgoBGP <: MAlgo
             # choose inital sd for each parameter p
             # such that Pr( x \in [init-b,init+b]) = 0.975
             # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
-            for (k,v) in m.params_to_sample
-                # mu = (v[:lb]+v[:ub])/2
-                b = (v[:ub]-v[:lb])*opts["coverage"]
-                # init_sd[k] = MOpt.initsd(mu+b,mu)
-                # @assert init_sd[k] == b / quantile(Normal(),0.975)
-                init_sd[k] = b / quantile(Normal(),0.975)
-            end
             BGPChains = BGPChain[BGPChain(i,opts["maxiter"],
                 m = m,
-                sig = collect(values(init_sd)) .* temps[i],
+                sig = get(opts,"sigma_update_steps",0.05) .* temps[i],
                 upd = get(opts,"sigma_update_steps",10),
                 upd_by = get(opts,"sigma_adjust_by",0.01),
                 smpl_iters = get(opts,"smpl_iters",1000),
@@ -447,15 +445,10 @@ mutable struct MAlgoBGP <: MAlgo
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
                 batch_size = get(opts,"batch_size",length(m.params_to_sample))) for i in 1:opts["N"]]
         else
-            temps     = [1.0]
-            for (k,v) in m.params_to_sample
-                b = (v[:ub]-v[:lb])*opts["coverage"]
-                init_sd[k] = b / quantile(Normal(),0.975)
-            end
             # println(init_sd)
             BGPChains = BGPChain[BGPChain(1,opts["maxiter"],
                 m = m,
-                sig = collect(values(init_sd)) .* temps[i],
+                sig = get(opts,"sigma_update_steps",0.05) .* temps[i],
                 upd = get(opts,"sigma_update_steps",10),
                 upd_by = get(opts,"sigma_adjust_by",0.01),
                 smpl_iters = get(opts,"smpl_iters",1000),
