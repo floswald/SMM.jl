@@ -67,9 +67,8 @@ type BGPChain <: AbstractChain
     maxdist  :: Float64  # what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
     batches  :: Vector{UnitRange{Int}}  # vector of indices to update together.
 
-    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Vector{Float64}=Float64[],upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
+    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
         np = length(m.params_to_sample)
-        @assert length(sig) == np
         this           = new()
         this.evals     = Array{Eval}(n)
         this.best_val  = ones(n) * Inf
@@ -86,7 +85,7 @@ type BGPChain <: AbstractChain
         this.m         = m
         # how many bundles + rest
         nb, rest = divrem(np,batch_size)
-        this.sigma = rand()
+        this.sigma = sig 
         this.batches = UnitRange{Int}[]
         i = 1
         for ib in 1:nb
@@ -343,7 +342,7 @@ end
 
 mysample from distribution `d` until all poins are in support
 """
-function mysample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},ub::Vector{Float64},iters::Int)
+function mysample(d::Distributions.MultivariateDistribution,lb::Float64,ub::Float64,iters::Int)
 
     # draw until all points are in support
     for i in 1:iters
@@ -376,15 +375,15 @@ function proposal(c::BGPChain)
 
         # if there is only one batch of params
         if length(c.batches) == 1
-            pp = mysample(MvNormal(mu01,c.sigma),0,1,c.smpl_iters)
+            pp = mysample(MvNormal(mu01,c.sigma),0.0,1.0,c.smpl_iters)
         else
             # do it in batches of params
-            pp = zeros(mus)
+            pp = zeros(mu01)
             for (sig_ix,i) in enumerate(c.batches)
                 try
-                    pp[i] = mysample(MvNormal(mus[i],c.sigma),0,1,c.smpl_iters)
+                    pp[i] = mysample(MvNormal(mu01[i],c.sigma),0.0,1.0,c.smpl_iters)
                 catch err
-                    println("caught exception $err. this is param index $sig_ix, mean = $(mus[i]), sigma $(c.sigma), lb,ub = $((0,1))")
+                    println("caught exception $err. this is param index $sig_ix, mean = $(mu01[i]), sigma $(c.sigma), lb,ub = $((0,1))")
                 end
             end
         end
@@ -424,8 +423,6 @@ mutable struct MAlgoBGP <: MAlgo
 
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"sigma"=>0.05,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
-        sig = opts["sigma"]
-
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
@@ -437,7 +434,7 @@ mutable struct MAlgoBGP <: MAlgo
             # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
             BGPChains = BGPChain[BGPChain(i,opts["maxiter"],
                 m = m,
-                sig = get(opts,"sigma_update_steps",0.05) .* temps[i],
+                sig = get(opts,"sigma",0.05) .* temps[i],
                 upd = get(opts,"sigma_update_steps",10),
                 upd_by = get(opts,"sigma_adjust_by",0.01),
                 smpl_iters = get(opts,"smpl_iters",1000),
@@ -448,7 +445,7 @@ mutable struct MAlgoBGP <: MAlgo
             # println(init_sd)
             BGPChains = BGPChain[BGPChain(1,opts["maxiter"],
                 m = m,
-                sig = get(opts,"sigma_update_steps",0.05) .* temps[i],
+                sig = get(opts,"sigma",0.05) .* temps[i],
                 upd = get(opts,"sigma_update_steps",10),
                 upd_by = get(opts,"sigma_adjust_by",0.01),
                 smpl_iters = get(opts,"smpl_iters",1000),

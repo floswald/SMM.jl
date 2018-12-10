@@ -141,7 +141,7 @@
 
 		# estimation options:
 		#--------------------
-		niter = 50
+		niter = 200
 		nchains = 2
 
 		opts = Dict("N"=>nchains,
@@ -199,7 +199,7 @@
 
 		addEvalFunc!(mprob, objfunc_norm)
 
-		niter = 20
+		niter = 180
 		nchains = 2
 
 		opts = Dict("N"=>nchains,
@@ -300,6 +300,11 @@
 		@test Qmedian[1,1] .== Qmedian[1,2]
 		@test Qmedian[2,1] .== Qmedian[2,2]
 
+	end
+
+	@testset "high-dim test" begin
+	    
+	    m = MomentOpt.snorm_18(100)
 	end
 
 

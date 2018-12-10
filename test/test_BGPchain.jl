@@ -15,7 +15,7 @@
 		@test chain.accepted == falses(n)
 		@test chain.exchanged == zeros(Int,n)
 		for (six,ix) in enumerate(chain.batches)
-			@test diag(chain.sigma[six]) == sig[ix]
+			@test chain.sigma == sig
 		end
 		@test chain.sigma_update_steps == upd
 		@test chain.sigma_adjust_by == upd_by

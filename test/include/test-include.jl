@@ -8,8 +8,8 @@ function test_chain()
     addEvalFunc!(mprob,MomentOpt.objfunc_norm)
     id = 180
     n = 23
-    sig = rand(length(pb))
-    sig2 = rand(length(pb))
+    sig = rand()
+    sig2 = rand()
     upd = 5
     upd_by = rand()
     ite = 1000
@@ -27,8 +27,8 @@ function test_chain2()
     addEvalFunc!(mprob,MomentOpt.objfunc_norm)
     id = 180
     n = 23
-    sig = rand(length(pb))
-    sig2 = rand(length(pb))
+    sig = rand()
+    sig2 = rand()
     upd = 5
     upd_by = rand()
     ite = 1000
@@ -82,8 +82,8 @@ function test_chain3()
     addEvalFunc!(mprob,MomentOpt.objfunc_norm)
     id = 180
     n = 100
-    sig = rand(length(pb))
-    sig2 = rand(length(pb))
+    sig = rand()
+    sig2 = rand()
     upd = 5
     upd_by = rand()
     ite = 1000
