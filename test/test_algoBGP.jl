@@ -85,33 +85,36 @@
 		        "maxiter"=>niter,
 		        "maxtemp"=> 5,
 		        "coverage"=>0.025,
-		        "sigma_update_steps"=>10,
+		        "sigma_update_steps"=>niter+1,  # never adjust variances
 		        "sigma_adjust_by"=>0.01,
 		        "smpl_iters"=>1000,
 		        "parallel"=>true,
-		        "maxdists"=>[0.0 for i in 1:nchains],
+		        "min_improve"=>[0.0 for i in 1:nchains],
 		        "acc_tuners"=>[5;1.0],
 		        "animate"=>false)
 		MA = MAlgoBGP(mprob,opts)
 		MomentOpt.runMOpt!(MA)
 
-		dat_chain1 = MomentOpt.history(MA.chains[1])
-		dat_chain1[round(Int, niter/10):niter, :]
-		dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
+		me = mean(MA.chains[1])
+		med = median(MA.chains[1])
+		ci = CI(MA.chains[1])
+		
+		println("truth = ")
+		print(json(trueValues,4))
+		println()
+		println("means after $niter iterations = ")
+		print(json(me,4))
+		println()
+		println("medians after $niter iterations = ")
+		print(json(med,4))
+		println()
+		println("95% CI = ")
+		print(json(ci,4))
+		println()
 
-		parameters = [Symbol(String("mu$(i)")) for i=1:2]
-		estimatedParameters = [Symbol(String("p$(i)")) for i=1:2]
-
-		for (estimatedParameter, param) in zip(estimatedParameters, parameters)
-
-		  println("Quasi posterior mean for $(String(estimatedParameter)) = $(mean(dat_chain1[estimatedParameter]))")
-		  println("Quasi posterior median for $(String(estimatedParameter)) = $(median(dat_chain1[estimatedParameter]))")
-		  println("True value = $(trueValues[String(param)][])")
-
-			# (the problem is simple here)
-			#---------------------------------------------------------
-			@test trueValues[String(param)][] ≈ median(dat_chain1[estimatedParameter]) atol = tolTestNormal
-
+		for i in 1:2
+			ix = ("mu$i","p$i")
+			@test trueValues[ix[1]][1] ≈ med[Symbol(ix[2])] atol = tolTestNormal
 		end
 
 	    rmprocs(workers())
@@ -141,18 +144,18 @@
 
 		# estimation options:
 		#--------------------
-		niter = 50
+		niter = 200
 		nchains = 2
 
 		opts = Dict("N"=>nchains,
 		        "maxiter"=>niter,
 		        "maxtemp"=> 5,
 		        "coverage"=>0.025,
-		        "sigma_update_steps"=>10,
+		        "sigma_update_steps"=>10,  # adjust variances each 10 steps
 		        "sigma_adjust_by"=>0.01,
 		        "smpl_iters"=>1000,
 		        "parallel"=>true,
-		        "maxdists"=>[0.05 for i in 1:nchains],
+		        "min_improve"=>[0.05 for i in 1:nchains],
 		        "mixprob"=>0.3,
 		        "acc_tuner"=>12.0,
 		        "animate"=>false,
@@ -160,23 +163,30 @@
 		MA = MAlgoBGP(mprob,opts)
 		MomentOpt.runMOpt!(MA)
 
-		dat_chain1 = MomentOpt.history(MA.chains[1])
-		dat_chain1[round(Int, niter/10):niter, :]
-		dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
+		# dat_chain1 = MomentOpt.history(MA.chains[1])
+		# dat_chain1[round(Int, niter/10):niter, :]
+		# dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
 
-		parameters = [Symbol(String("mu$(i)")) for i=1:2]
-		estimatedParameters = [Symbol(String("p$(i)")) for i=1:2]
+		me = mean(MA.chains[1])
+		med = median(MA.chains[1])
+		ci = CI(MA.chains[1])
 
-		for (estimatedParameter, param) in zip(estimatedParameters, parameters)
+		println("truth = ")
+		print(json(trueValues,4))
+		println()
+		println("means after $niter iterations = ")
+		print(json(me,4))
+		println()
+		println("medians after $niter iterations = ")
+		print(json(med,4))
+		println()
+		println("95% CI = ")
+		print(json(ci,4))
+		println()
 
-		  println("Quasi posterior mean for $(String(estimatedParameter)) = $(mean(dat_chain1[estimatedParameter]))")
-		  println("Quasi posterior median for $(String(estimatedParameter)) = $(median(dat_chain1[estimatedParameter]))")
-		  println("True value = $(trueValues[String(param)][])")
-
-			# (the problem is simple here)
-			#---------------------------------------------------------
-			@test trueValues[String(param)][] ≈ median(dat_chain1[estimatedParameter]) atol = tolTestNormal
-
+		for i in 1:2
+			ix = ("mu$i","p$i")
+			@test trueValues[ix[1]][1] ≈ med[Symbol(ix[2])] atol = tolTestNormal
 		end
 
 	    rmprocs(workers())
@@ -199,7 +209,7 @@
 
 		addEvalFunc!(mprob, objfunc_norm)
 
-		niter = 20
+		niter = 180
 		nchains = 2
 
 		opts = Dict("N"=>nchains,
@@ -210,7 +220,7 @@
 		        "sigma_adjust_by"=>0.01,
 		        "smpl_iters"=>1000,
 		        "parallel"=>true,
-		        "maxdists"=>[0.05 for i in 1:nchains],
+		        "min_improve"=>[0.05 for i in 1:nchains],
 		        "mixprob"=>0.3,
 		        "acc_tuner"=>12.0,
 		        "animate"=>false)
@@ -243,7 +253,7 @@
 		        "sigma_adjust_by"=>0.01,
 		        "smpl_iters"=>1000,
 		        "parallel"=>true,
-		        "maxdists"=>[0.05 for i in 1:nchains],
+		        "min_improve"=>[0.05 for i in 1:nchains],
 		        "mixprob"=>0.3,
 		        "acc_tuner"=>12.0,
 		        "animate"=>false)
@@ -300,6 +310,11 @@
 		@test Qmedian[1,1] .== Qmedian[1,2]
 		@test Qmedian[2,1] .== Qmedian[2,2]
 
+	end
+
+	@testset "high-dim test" begin
+	    
+	    m = MomentOpt.snorm_18(100)
 	end
 
 

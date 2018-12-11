@@ -42,7 +42,7 @@ function parallelNormal(niter=200)
 		"sigma_adjust_by"=>0.01,
 		"smpl_iters"=>1000,
 		"parallel"=>true,
-		"maxdists"=>[0.05 for i in 1:nchains],
+		"min_improve"=>[0.05 for i in 1:nchains],
 		"mixprob"=>0.3,
 		"acc_tuners"=>[12.0 for i in 1:nchains],
 		"animate"=>false)
@@ -84,7 +84,7 @@ function serialNormal(npars,niter;save=false)
 			"coverage"=>0.02,   # how big should the step size of new params be?
 			"smpl_iters"=>1000,
 			"parallel"=>false,
-			"maxdists"=>[0.0 for i in 1:nchains],
+			"min_improve"=>[0.0 for i in 1:nchains],
 			"acc_tuners"=>[20;2;1.0],
 			"animate"=>false)
 	else
@@ -97,7 +97,7 @@ function serialNormal(npars,niter;save=false)
 		"coverage"=>0.05,   # how big should the step size of new params be?
 		"smpl_iters"=>1000,
 		"parallel"=>false,
-		"maxdists"=>[0.0 for i in 1:nchains],
+		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[50.0;10;5],
 		"animate"=>false)
 
@@ -121,7 +121,7 @@ function snorm_standard()
 	pb = OrderedDict()
 	pb["p1"] = [0.2,-3,3]
 	pb["p2"] = [-0.2,-2,2]
-	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=[-1.0,1.0])
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=[1.0,1.0])
 
 	nchains = 3
 
@@ -134,7 +134,7 @@ function snorm_standard()
 		"coverage"=>0.02,   # how big should the step size of new params be?
 		"smpl_iters"=>1000,
 		"parallel"=>false,
-		"maxdists"=>[0.0 for i in 1:nchains],
+		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false)
 	info("These moments are our targets")
@@ -172,7 +172,7 @@ function snorm_6_taxi(tol;par=false)
 	pb["p5"] = [0.3,-2,2]
 	pb["p6"] = [0.4,-2,2]
 	moms = DataFrame(name=["mu1","mu2","mu3","mu4","mu5","mu6"],
-		value=[-1.0,1.0,0.5,-0.5,0.7,-0.7],weight=[-1.0,1.0,0.5,-0.5,0.7,-0.7])
+		value=[-1.0,1.0,0.5,-0.5,0.7,-0.7],weight=ones(6))
 	
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
@@ -232,7 +232,7 @@ function snorm_18(niter)
 						   "mu16",
 						   "mu17",
 						   "mu18"],
-		value=[-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7],weight=[-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7])
+		value=[-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7,-1.0,0.0,0.5,-0.5,0.008,-0.7],weight=[1.0,0.1,0.5,0.5,0.008,0.7,1.0,0.1,0.5,0.5,0.008,0.7,1.0,0.1,0.5,0.5,0.008,0.7])
 
 	nchains = 3
 
@@ -244,8 +244,9 @@ function snorm_18(niter)
             # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
 		"coverage"=>0.02,   # how big should the step size of new params be?
 		"smpl_iters"=>1000,
+		"sigma"=>0.001,
 		"parallel"=>false,
-		"maxdists"=>[0.0 for i in 1:nchains],
+		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false,
 		"batch_size" => 1)
@@ -291,7 +292,7 @@ function snorm_standard6()
 	pb["p5"] = [0.3,-2,2]
 	pb["p6"] = [0.4,-2,2]
 	moms = DataFrame(name=["mu1","mu2","mu3","mu4","mu5","mu6"],
-		value=[-1.0,1.0,0.5,-0.5,0.7,-0.7],weight=[-1.0,1.0,0.5,-0.5,0.7,-0.7])
+		value=[-1.0,1.0,0.5,-0.5,0.7,-0.7],weight=[1.0,1.0,0.5,0.5,0.7,0.7])
 
 	nchains = 3
 
@@ -304,7 +305,7 @@ function snorm_standard6()
 		"coverage"=>0.02,   # how big should the step size of new params be?
 		"smpl_iters"=>1000,
 		"parallel"=>false,
-		"maxdists"=>[0.0 for i in 1:nchains],
+		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false)
 	info("These moments are our targets")
@@ -416,7 +417,7 @@ function BGP_example()
             # such that Pr( x \in [init-b,init+b]) = 0.975
             # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
 		"coverage"=>0.005,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
-		"maxdists"=>linspace(0.025, 2,nchains),
+		"min_improve"=>linspace(0.025, 2,nchains),
 		"mixprob"=>0.3,
 		"acc_tuners"=>[12.0 for i in 1:nchains],
 		"animate"=>false)
