@@ -45,6 +45,7 @@ export addParam!,
        dataMomentd,
        dataMomentW,
        summary,
+       params,
        param,
        paramd,
        doSlices,
@@ -54,7 +55,8 @@ export addParam!,
        readMalgo,
        restartMOpt!,
        extendBGPChain!,
-       runMOpt!
+       runMOpt!,
+       mean,median,CI
 
 # create a random device that is immune to seeds
 const RAND = RandomDevice()

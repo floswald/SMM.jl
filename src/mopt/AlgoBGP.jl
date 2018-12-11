@@ -1,15 +1,7 @@
 
 abstract type AbstractChain end
 
-# The BGP MCMC Algorithm: Likelihood-Free Parallel Tempering
-# ==========================================================
-#
-# http://link.springer.com/article/10.1007%2Fs11222-012-9328-6
-# http://fr.arxiv.org/abs/1108.3423
-#
-# Baragatti, Grimaud and Pommeret (BGP)
-#
-# Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov BGPChains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
+
 
 
 
@@ -40,10 +32,10 @@ MCMC Chain storage for BGP algorithm.
 * `exchanged`: `Array{Int}` of `length(evals)` with index of chain that was exchanged with
 * `m`: `MProb`
 * `sigma`: `Float64` shock variance
-* `sigma_update_steps`:  update sampling vars every `sigma_update_steps` iterations
+* `sigma_update_steps`:  update sampling vars every `sigma_update_steps` iterations. setting `sigma_update_steps > maxiter` means to never update the variances.
 * `sigma_adjust_by`: adjust sampling vars by `sigma_adjust_by` percent up or down
 * `smpl_iters`: max number of trials to get a new parameter from MvNormal that lies within support
-* `maxdist`: what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
+* `min_improve`: minimally required improvement in chain `j` over chain `i` for an exchange move `j->i` to talk place.
 * `batches`: in the proposal function update the parameter vector in batches. [default: update entire param vector]
 
 """
@@ -64,10 +56,26 @@ type BGPChain <: AbstractChain
     sigma_update_steps :: Int64   # update sampling vars every sigma_update_steps iterations
     sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
     smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
-    maxdist  :: Float64  # what's the maximal function value you will accept when proposed a swap. i.e. if ev.value > maxdist, you don't want to swap with ev.
+    min_improve  :: Float64  
     batches  :: Vector{UnitRange{Int}}  # vector of indices to update together.
 
-    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,maxdist::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
+    """
+        BGPChain(id::Int=1,n::Int=10;
+            m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,
+            min_improve::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
+
+    Constructor of a BGPChain. Keyword args:
+        * `acc_tuner`: Acceptance tuner. `acc_tuner > 1` means to be more restrictive: params that yield a *worse* function value are *less likely* to get accepted, the higher `acc_tuner` is.
+        * `exchanged`: `Array{Int}` of `length(evals)` with index of chain that was exchanged with
+        * `m`: `MProb`
+        * `sig`: `Float64` shock variance
+        * `upd`:  update sampling vars every `upd` iterations
+        * `upd_by`: adjust sampling vars by `upd_by` percent up or down
+        * `smpl_iters`: max number of trials to get a new parameter from MvNormal that lies within support
+        * `min_improve`: minimally required improvement in chain `j` over chain `i` for an exchange move `j->i` to talk place.
+        * `batch_size`: size of batches in which to update parameter vector.
+    """
+    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,min_improve::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
         np = length(m.params_to_sample)
         this           = new()
         this.evals     = Array{Eval}(n)
@@ -96,11 +104,16 @@ type BGPChain <: AbstractChain
         this.sigma_update_steps = upd
         this.sigma_adjust_by = upd_by
         this.smpl_iters = smpl_iters
-        this.maxdist = maxdist
+        this.min_improve = min_improve
         return this
     end
 end
 
+"""
+    allAccepted(c::BGPChain)
+
+Get all accepted `Eval`s from a chain
+"""
 allAccepted(c::BGPChain) = c.evals[c.accepted]
 
 # return a dict of param values as arrays
@@ -168,9 +181,18 @@ Returns the median of all parameter values stored on the chain.
 median(c::BGPChain) = Dict(k => median(v) for (k,v) in params(c))
 
 """
+    CI(c::BGPChain;level=0.95)
+
+Confidence interval on parameters
+"""
+CI(c::BGPChain;level=0.95) = Dict(k => quantile(v,[(1-level)/2, 1-(1-level)/2]) for (k,v) in params(c))
+
+
+
+"""
     summary(c::BGPChain)
 
-Returns a summary of the chain. Condensed [`history](@ref)
+Returns a summary of the chain. Condensed [`history`](@ref)
 """
 function summary(c::BGPChain)
     ex_with = c.exchanged[c.exchanged .!= 0]
@@ -194,7 +216,7 @@ end
 getIterEval(c::BGPChain,i::Int) = c.evals[i]
 getLastAccepted(c::BGPChain) = c.evals[lastAccepted(c)]
 # set_sigma!(c::BGPChain,s::Vector{Float64}) = length(s) == length(c.m.params_to_sample) ? c.sigma = PDiagMat(s) : ArgumentError("s has wrong length")
-set_sigma!(c::BGPChain,s::Vector{Float64}) = warn("set_sigma! not implemented")
+set_sigma!(c::BGPChain,s::Float64) = c.sigma = s
 function set_eval!(c::BGPChain,ev::Eval)
     c.evals[c.iter] = deepcopy(ev)
     c.accepted[c.iter] =  ev.accepted
@@ -234,6 +256,19 @@ function set_acceptRate!(c::BGPChain)
     c.accept_rate = mean(acc[noex])
 end
 
+
+"""
+    next_eval(c::BGPChain)
+
+Computes the next `Eval` for chain `c`:
+
+1. Get last accepted param 
+2. get a new param via [`proposal`](@ref)
+3. [`evaluateObjective`](@ref)
+4. Accept or Reject the new value via [`doAcceptReject!`](@ref)
+5. Store `Eval` on chain `c`.
+
+"""
 function next_eval(c::BGPChain)
     # generate new parameter vector from last accepted param
 
@@ -259,7 +294,11 @@ function next_eval(c::BGPChain)
 end
 
 
+"""
+    doAcceptReject!(c::BGPChain,eval_new::Eval)
 
+Perform a MH accept-reject operation on the latest `Eval` and update the sampling variance, if so desired (set via `sigma_update_steps`)
+"""
 function doAcceptReject!(c::BGPChain,eval_new::Eval)
             @debug(logger,"")
             @debug(logger,"doAcceptReject!")
@@ -319,20 +358,17 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         # -----------------------------------------
 
         # update shock variance. want to achieve a long run accpetance rate of 23.4% (See Casella and Berger)
-        # and only if you are not BGPChain number 1
 
-        # if (c.id>1) && (mod(c.iter,c.sigma_update_steps) == 0)
-
-        # # if mod(c.iter,c.sigma_update_steps) == 0
-        #     too_high = c.accept_rate > 0.234
-        #     if too_high
-        #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
-        #         set_sigma!(c,diag(c.sigma) .* (1.0+c.sigma_adjust_by) )
-        #     else
-        #         @debug(logger,"acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
-        #         set_sigma!(c,diag(c.sigma) .* (1.0-c.sigma_adjust_by) )
-        #     end
-        # end
+        if mod(c.iter,c.sigma_update_steps) == 0
+            too_high = c.accept_rate > 0.234
+            if too_high
+                @debug(logger,"acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
+                set_sigma!(c,c.sigma .* (1.0+c.sigma_adjust_by) )
+            else
+                @debug(logger,"acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
+                set_sigma!(c,c.sigma .* (1.0-c.sigma_adjust_by) )
+            end
+        end
     end
 end
 
@@ -356,7 +392,16 @@ end
 
 
 
-"Gaussian Transition Kernel centered on current parameter value"
+"""
+    proposal(c::BGPChain)
+
+Gaussian Transition Kernel centered on current parameter value. 
+
+1. Map all ``k`` parameters into ``\mu \in [0,1]^k``.
+2. update all parameters by sampling from `MvNormal`, ``N(\mu,\sigma)``, where ``sigma`` is `c.sigma` until all params are in ``[0,1]^k``
+3. Map ``[0,1]^k`` back to original parameter spaces.
+
+"""
 function proposal(c::BGPChain)
 
     if c.iter==1
@@ -412,7 +457,24 @@ end
 ###################################
 
 
+"""
+# MAlgoBGP: BGP MCMC Algorithm
 
+This implements the [BGP MCMC Algorithm *Likelihood-Free Parallel Tempering](*http://fr.arxiv.org/abs/1108.3423) by Baragatti, Grimaud and Pommeret (BGP):
+
+> Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov BGPChains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
+
+
+## Fields
+
+* `m`: [`MProb`](@ref)
+* `opts`: a `Dict` of options
+* `i`: current iteration
+* `chains`: An array of [`BGPChain`](@ref)
+* `anim`: `Plots.Animation`
+* `dist_fun`: function to measure distance between one evaluation and the next.
+
+"""
 mutable struct MAlgoBGP <: MAlgo
     m               :: MProb # an MProb
     opts            :: Dict	# list of options
@@ -421,7 +483,7 @@ mutable struct MAlgoBGP <: MAlgo
     anim           :: Plots.Animation
     dist_fun   :: Function
 
-    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"sigma"=>0.05,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"maxdists"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
+    function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"sigma"=>0.05,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"min_improve"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
         if opts["N"] > 1
     		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
@@ -438,7 +500,7 @@ mutable struct MAlgoBGP <: MAlgo
                 upd = get(opts,"sigma_update_steps",10),
                 upd_by = get(opts,"sigma_adjust_by",0.01),
                 smpl_iters = get(opts,"smpl_iters",1000),
-                maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
+                min_improve = get(opts,"min_improve",[0.5 for j in 1:opts["N"]])[i],
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
                 batch_size = get(opts,"batch_size",length(m.params_to_sample))) for i in 1:opts["N"]]
         else
@@ -449,7 +511,7 @@ mutable struct MAlgoBGP <: MAlgo
                 upd = get(opts,"sigma_update_steps",10),
                 upd_by = get(opts,"sigma_adjust_by",0.01),
                 smpl_iters = get(opts,"smpl_iters",1000),
-                maxdist = get(opts,"maxdists",[0.5 for j in 1:opts["N"]])[i],
+                min_improve = get(opts,"min_improve",[0.5 for j in 1:opts["N"]])[i],
                 acc_tuner = get(opts,"acc_tuners",[2.0 for j in 1:opts["N"]])[i],
                 batch_size = get(opts,"batch_size",length(m.params_to_sample))) for i in 1:opts["N"]]
         end
@@ -475,17 +537,6 @@ end
 # return current param spaces on algo
 cur_param(m::MAlgoBGP) = iter_param(m,m.i)
 
-#     r = Dict()
-#     for ic in 1:length(m.chains)
-#         if m.i == 0
-#             r[ic] = Dict(:mu => m.m.initial_value,:sigma => m.chains[ic].sigma)
-#         else
-#             ev_old = getLastAccepted(m.chains[ic])
-#             r[ic] = Dict(:mu => paramd(ev_old),:sigma => m.chains[ic].sigma)
-#         end
-#     end
-#     r
-# end
 
 # return param spaces on algo at iter
 function iter_param(m::MAlgoBGP,iter::Int)
@@ -504,12 +555,19 @@ end
 
 
 
+"""
+    computeNextIteration!( algo::MAlgoBGP )
 
-# computes new candidate vectors for each BGPChain
-# accepts/rejects that vector on each BGPChain, according to some rule
-# *) computes N new parameter vectors
-# *) applies a criterion to accept/reject any new params
-# *) stores the result in BGPChains
+computes new candidate vectors for each BGPChain
+accepts/rejects that vector on each BGPChain, according to some rule
+
+1. On each chain `c`:
+    * computes new parameter vectors
+    * applies a criterion to accept/reject any new params
+    * stores the result in BGPChains
+
+2. Calls [`exchangeMoves!`](@ref) to swap chains
+"""
 function computeNextIteration!( algo::MAlgoBGP )
     # here is the meat of your algorithm:
     # how to go from p(t) to p(t+1) ?
@@ -558,7 +616,11 @@ function computeNextIteration!( algo::MAlgoBGP )
     end
 end
 
+"""
+    exchangeMoves!(algo::MAlgoBGP)
 
+Exchange chain `i` and `j` with if `dist_fun(evi.value,evj.value)` is greate than a threshold value `algo["min_improve"]`. Commonly, this means that we only exchange if `j` is better by *at least* `algo["min_improve"]`.
+"""
 function exchangeMoves!(algo::MAlgoBGP)
 
     # i is new index
@@ -582,7 +644,7 @@ function exchangeMoves!(algo::MAlgoBGP)
         # if rand() < algo["mixprob"]
             # if (evj.value < evi.value)  # if j's value is better than i's
             #     @debug(logger,"$j better than $i")
-            #     # @debug(logger,"$(abs(j.value)) < $(algo.chains[p[1]].maxdist)")
+            #     # @debug(logger,"$(abs(j.value)) < $(algo.chains[p[1]].min_improve)")
             #     # swap_ev!(algo,p)
             #     set_ev_i2j!(algo,i,j)
             # else
@@ -594,13 +656,13 @@ function exchangeMoves!(algo::MAlgoBGP)
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
         @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
-        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo["maxdists"][i])")
+        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo["min_improve"][i])")
         # println("Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
-        # println("Exchange: $(algo.dist_fun(evj.value, evi.value)  > algo["maxdists"][i])")
+        # println("Exchange: $(algo.dist_fun(evj.value, evi.value)  > algo["min_improve"][i])")
         # this formulation assumes that evi.value > 0 always, for all i.
         # swap for sure if there is an improvement, i.e. algo.dist_fun(evj.value, evi.value) > 0
-        # swap even if there is a deterioration, but only up to threshold maxdists[i]
-        if algo.dist_fun(evi.value, evj.value)  > algo["maxdists"][i]
+        # swap even if there is a deterioration, but only up to threshold min_improve[i]
+        if algo.dist_fun(evi.value, evj.value) > algo["min_improve"][i]
             swap_ev_ij!(algo,i,j)
         end
     end
