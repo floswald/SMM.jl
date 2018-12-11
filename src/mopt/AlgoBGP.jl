@@ -619,7 +619,7 @@ end
 """
     exchangeMoves!(algo::MAlgoBGP)
 
-Exchange chain `i` and `j` with if `dist_fun(evi.value,evj.value)` is greate than a threshold value `algo["min_improve"]`. Commonly, this means that we only exchange if `j` is better by *at least* `algo["min_improve"]`.
+Exchange chain `i` and `j` with if `dist_fun(evi.value,evj.value)` is greate than a threshold value `c.min_improve`. Commonly, this means that we only exchange if `j` is better by *at least* `c.min_improve`.
 """
 function exchangeMoves!(algo::MAlgoBGP)
 
@@ -656,13 +656,13 @@ function exchangeMoves!(algo::MAlgoBGP)
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
         @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
-        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo["min_improve"][i])")
+        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo.chains[i].min_improve)")
         # println("Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
         # println("Exchange: $(algo.dist_fun(evj.value, evi.value)  > algo["min_improve"][i])")
         # this formulation assumes that evi.value > 0 always, for all i.
         # swap for sure if there is an improvement, i.e. algo.dist_fun(evj.value, evi.value) > 0
         # swap even if there is a deterioration, but only up to threshold min_improve[i]
-        if algo.dist_fun(evi.value, evj.value) > algo["min_improve"][i]
+        if algo.dist_fun(evi.value, evj.value) > algo.chains[i].min_improve
             swap_ev_ij!(algo,i,j)
         end
     end
