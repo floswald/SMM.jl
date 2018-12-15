@@ -74,6 +74,7 @@ include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
 include("mopt/Examples.jl")
 include("mopt/plotting.jl")
+include("mopt/deprecating.jl")
 
 
 end 	# module
