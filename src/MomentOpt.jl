@@ -16,6 +16,7 @@ using Documenter
 using Plots
 using FileIO
 using JLD2
+using StatPlots
 
 gr()
 
