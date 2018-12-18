@@ -22,7 +22,7 @@ of datamoments `moments`.
     m     = MProb() 
     addSampledParam!(m,pb) 
     addMoment!(m,moms) 
-    addEvalFunc!(m.MOpt.objfunc_norm)
+    MomentOpt.addEvalFunc!(m,MomentOpt.objfunc_norm)
     ```
     
 """

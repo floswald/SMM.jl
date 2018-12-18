@@ -129,55 +129,16 @@ end
             end
         end
     else
-        # do 
-        n = length(c.m.initial_value)
-        rows,cols = best_grid(n)
-        # build a grid
-        # layout := @layout [ one{0.3h}; grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)]
-        layout := @layout [ one{0.3h}; grid(rows,cols)]
-        dat = history(c)
-        ex = convert(Array{Float64},dat[:exchanged])
-        ex[ex.==0] = NaN
-        # values plot
-        # @series begin
-        #     subplot := 1    
-        #     seriestype:= :scatter
-        #     markersize --> 2
-        #     dat[:iter],ex
-        # end
-        indices,ly = param_grid(c.m.initial_value)
-        # y_e   = [extrema(dat[:curr_val])...]
-        y_e   = [minimum(dat[:curr_val]);quantile(dat[:curr_val],0.95)]
-        # yy = [quantile(dat[:curr_val],0.5) for i in 1:length(dat[:curr_val])]
-        y_lim = diff(y_e)*0.05
-        # @series begin
-        #     subplot := 1 
-        #     linetype := :line
-        #     linecolor := :red
-        #     linewidth --> 1.5
-        #     ylim := [y_e[1]-y_lim;y_e[2]+2*y_lim]
-        #     (collect(1:length(dat[:curr_val])),yy)
-        # end
-        @series begin
-            subplot := 1 
-            linetype := :line
-            linecolor := :black
-            linewidth --> 1
-            yguide := "Obj Value"
-            ylim := [y_e[1]-y_lim;y_e[2]+2*y_lim]
-            xguide := "iteration"
-            dat[:curr_val]
-        end
-        data = params(c,accepted_only=false)
-        for (k,v) in data
-            @series begin
-                subplot  := indices[k] + 1
-                linetype := :line
-                linecolor := :black
-                title := "$k"
-                v
-            end
-        end
+        dat = params(c,accepted_only=false)
+        np = length(dat)
+        data = DataFrame(dat)
+        ti = names(data)
+        data[:iter] = 1:nrow(data)
+        md = melt(data,:iter)
+        p = @df md plot(:iter,:value, group = :variable, layout = np,leg=false,xticks=false)
+        for i in 1:length(p.subplots)
+           p.subplots[i].attr[:title] = ti[i]
+       end
     end
 end
 
