@@ -96,7 +96,19 @@ function param_grid(p::Union{Dict,OrderedDict})
     return (indices,g)
 end
 
-
+function lines(c::BGPChain)
+    dat = params(c,accepted_only=false)
+    np = length(dat)
+    data = DataFrame(dat)
+    ti = names(data)
+    data[:iter] = 1:nrow(data)
+    md = melt(data,:iter)
+    p = @df md plot(:iter,:value, group = :variable, layout = np,leg=false,xticks=false)
+    for i in 1:length(p.subplots)
+       p.subplots[i].attr[:title] = ti[i]
+   end
+   return p
+end
 
 
 @recipe function f(c::BGPChain)
@@ -139,6 +151,7 @@ end
         for i in 1:length(p.subplots)
            p.subplots[i].attr[:title] = ti[i]
        end
+       return p
     end
 end
 

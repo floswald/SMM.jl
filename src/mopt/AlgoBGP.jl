@@ -485,8 +485,8 @@ mutable struct MAlgoBGP <: MAlgo
 
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"sigma"=>0.05,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"min_improve"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
+        temps     = linspace(1.0,opts["maxtemp"],opts["N"])
         if opts["N"] > 1
-    		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
             # println("opts=$opts")
             # println("pars = $( m.params_to_sample)")

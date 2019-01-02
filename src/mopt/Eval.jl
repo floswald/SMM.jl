@@ -211,7 +211,7 @@ function fill(p::Any,ev::Eval)
 	end
 end
 
-function setValue(ev::Eval,value::Float64)
+function setValue!(ev::Eval,value::Float64)
 	ev.value = value
 end
 
