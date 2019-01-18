@@ -183,7 +183,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
                     end
                 end
                 println("best value so far:")
-                print(json(dout[:best]),4)
+                print(json(dout[:best],4))
             end
             for (k,v) in allvals
                 if (nrow(df0)) > 0
