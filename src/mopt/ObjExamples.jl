@@ -14,12 +14,12 @@ function Testobj2(ev::Eval)
 
     val = 0.0
     for (k,v) in dataMomentd(ev)
-        setMoment(ev,k,v+2.2)
+        setMoments!(ev,k,v+2.2)
         val += (2.2)^2
     end
 
 	ev.status = 1
-    setValue(ev,val)
+    setValue!(ev,val)
     return ev
 end
 
@@ -44,7 +44,7 @@ function objfunc_BGP(ev::Eval)
     p = paramd(ev)  # param vector as dict
     y = BGP_approx_posterior(p[:theta])
     # no moments to set...
-    setValue(ev,-y)  # want to minimize
+    setValue!(ev,-y)  # want to minimize
     ev.status=1
     finish(ev)
     return(ev)
@@ -94,14 +94,14 @@ function objfunc_norm(ev::Eval)
 			# v[k] = (simMoments[k] ./ mom .- 1.0) .^2
 		end
 	end
-	setValue(ev, mean(collect(values(v))))
+	setValue!(ev, mean(collect(values(v))))
 	# value = data - model
-	# setValue(ev, mean((simMoments - trueMoments).^2) )
+	# setValue!(ev, mean((simMoments - trueMoments).^2) )
 
 	# also return the moments
-	setMoment(ev, simMoments)
+	setMoments!(ev, simMoments)
 	# mdf = DataFrame(name=["m1","m2"],value=simMoments[:])
-	# setMoment(ev, mdf)
+	# setMoments!(ev, mdf)
 
 	ev.status = 1
 
@@ -120,9 +120,9 @@ function banana(ev::Eval)
     model = 100 .* (p["b"] - p["a"].^2 ).^2 .+ (1.-p["a"])^2
     data  = 0.0
 
-    setValue(ev,model)
+    setValue!(ev,model)
     for (k,v) in dataMomentd(ev)
-        setMoment(ev,k,v+2.2)
+        setMoments!(ev,k,v+2.2)
     end
     finish(ev)
     return ev
