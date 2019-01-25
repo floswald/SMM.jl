@@ -176,6 +176,15 @@ end
 
 # -------------------- GETTERS --------------------
 
+
+function range_length(m::MProb)
+  d = similar(m.params_to_sample)
+  for (k,v) in m.params_to_sample
+    d[k] = v[:ub] - v[:lb]
+  end
+  return d
+end
+
 """
 Get all parameter names from the `MProb`
 """

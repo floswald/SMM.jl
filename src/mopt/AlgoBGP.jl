@@ -808,7 +808,7 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
   # do iterations, starting at initialIter
   # and not at i=1, as in runMOpt!
-  for i in initialIter:finalIter
+  @showprogress 1 "Running Estimation..." for i in initialIter:finalIter
     @debug(logger,"iteration $(i)")
 
     algo.i = i

@@ -134,11 +134,13 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
 
     delta = Inf
     iter = 0
+
+    prog = ProgressThresh(tol, "Minimizing:")
     while delta > tol
+        ProgressMeter.update!(prog, delta)
         println("current search range:")
         print(json(ranges,4))
         iter += 1
-        @info(logger,"iteration $iter")
 
         for (pp,bb) in ranges
         

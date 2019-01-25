@@ -28,7 +28,7 @@ function runMOpt!( algo::MAlgo )
 	t0 = time()
 
 	# do iteration
-	for i in 1:algo["maxiter"]
+    @showprogress 1 "Running Estimation..." for i in 1:algo["maxiter"]
 		@debug(logger,"iteration $i")
 
 		algo.i = i

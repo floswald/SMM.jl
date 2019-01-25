@@ -18,6 +18,7 @@ using FileIO
 using JLD2
 using StatPlots
 using JSON
+using ProgressMeter
 
 gr()
 
@@ -76,6 +77,7 @@ include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
 include("mopt/Examples.jl")
 include("mopt/plotting.jl")
+include("mopt/econometrics.jl")
 include("mopt/deprecating.jl")
 
 

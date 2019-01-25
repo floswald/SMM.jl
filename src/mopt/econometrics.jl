@@ -18,6 +18,32 @@ function get_simple_std(f::String)
 end
 
 
+function FD_gradient(m::MProb,p::Dict)
+
+	# get g(p)
+    ev = evaluateObjective(m,p)
+	gp = collect(values(ev.simMoments))
+	D = zeros(length(p),length(gp))
+
+	# optimal step size depends on range of param bounds
+	rs = range_length(m)
+
+	# compute each partial derivative
+	row = 0
+	@showprogress "Computing..." for (k,v) in p
+		row += 1
+		h = rs[k] * 0.01
+		pp = deepcopy(p)
+		pp[k] = v + h 
+		println("changing $k from $v to $(pp[k]) by step $h")
+		xx = evaluateObjective(m,pp)
+		D[row,:] = (collect(values(xx.simMoments)) .- gp) / h
+	end
+
+	return D
+
+end
+
 
 
 """
