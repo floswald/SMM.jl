@@ -138,8 +138,8 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
     prog = ProgressThresh(tol, "Minimizing:")
     while delta > tol
         ProgressMeter.update!(prog, delta)
-        println("current search range:")
-        print(json(ranges,4))
+        # println("current search range:")
+        # print(json(ranges,4))
         iter += 1
 
         for (pp,bb) in ranges
@@ -186,8 +186,8 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
                         dout[:best] = iter > 2 ? dout[:best] : Dict(:p => "Exception", :value => NaN)
                     end
                 end
-                println("best value so far:")
-                print(json(dout[:best],4))
+                # println("best value so far:")
+                # print(json(dout[:best],4))
             end
             for (k,v) in allvals
                 if (nrow(df0)) > 0
