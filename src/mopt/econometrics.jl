@@ -59,10 +59,12 @@ function get_stdErrors(m::MProb,p::Union{Dict,OrderedDict};reps=300)
 
 	# compute score of moment function
 	J = FD_gradient(m,p)
+	println("size of gradient J = $(size(J))")
 
 	# put all together to get standard errors
 	# first get weighting matrix 
 	W = Diagonal([v[:weight] for (k,v) in m.moments])
+	println("size of Weight W = $(size(W))")
 	SE = pinv(J *  W * J') * (J * W * Σ * W * J') * pinv(J * W * J') 
 	return Dict(zip(collect(keys(p)),diag(SE)))
 
