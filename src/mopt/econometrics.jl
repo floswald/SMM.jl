@@ -18,7 +18,15 @@ function get_simple_std(f::String)
 end
 
 
-function FD_gradient(m::MProb,p::Dict)
+"""
+	FD_gradient(m::MProb,p::Dict;step_perc=0.005)
+
+Get the gradient of the moment function wrt to some parameter vector via finite difference approximation. 
+The output is a (k,n) matrix, where ``k`` is the number of `m.params_to_sample` and where ``m`` is the number of moments.
+
+The default step size is 1% of the parameter range.
+"""
+function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 
 	# get g(p)
     ev = evaluateObjective(m,p)
@@ -32,7 +40,7 @@ function FD_gradient(m::MProb,p::Dict)
 	row = 0
 	@showprogress "Computing..." for (k,v) in p
 		row += 1
-		h = rs[k] * 0.01
+		h = rs[k] * step_perc
 		pp = deepcopy(p)
 		pp[k] = v + h 
 		println("changing $k from $v to $(pp[k]) by step $h")

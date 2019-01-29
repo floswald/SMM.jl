@@ -28,7 +28,10 @@ function runMOpt!( algo::MAlgo )
 	t0 = time()
 
 	# do iteration
-    @showprogress 1 "Running Estimation..." for i in 1:algo["maxiter"]
+	println("running estimation")
+    for i in 1:algo["maxiter"]
+    	print("*")
+    # @showprogress 1 "Running Estimation..." for i in 1:algo["maxiter"]
 		@debug(logger,"iteration $i")
 
 		algo.i = i
@@ -41,7 +44,7 @@ function runMOpt!( algo::MAlgo )
 				if haskey(algo.opts,"filename") == true
 	  				if mod(i,algo.opts["save_frequency"]) == 0
 	  					save(algo,algo.opts["filename"])
-	  					@info(logger,"saved data at iteration $i")
+	  					# @info(logger,"saved data at iteration $i")
 	  				end
         		end
 			end
@@ -59,7 +62,7 @@ function runMOpt!( algo::MAlgo )
 		@warn(logger,"could not find 'filename' in algo.opts")
 	end
 
-	@info(logger,"Done with estimation after $t1 minutes")
+	@info(logger,"\nDone with estimation after $t1 minutes")
 
 	if get(algo.opts,"animate",false)
 		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)

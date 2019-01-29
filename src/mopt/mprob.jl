@@ -143,8 +143,11 @@ end
 
 Evaluate the objective function of an [`MProb`](@ref) at a given parameter vector `p`.
 """
-function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict})
+function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false)
     ev = Eval(m,p)
+    if noseed
+      ev.options[:noseed] = true
+    end
     try
        # ev = eval(Expr(:call,m.objfunc,ev))
       ev = m.objfunc(ev)
@@ -172,6 +175,24 @@ function evaluateObjective(m::MProb,ev)
     end
     gc()
     return ev
+end
+
+# crucially here: turn off any random seeds in the objective function!
+function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
+  evs = [Eval(m,p) for i in 1:reps]
+  for e in evs
+    e.options[:noseed] = true
+    evaluateObjective(m,e)
+  end
+  N = length(evs)
+  d = DataFrame()
+
+  for (k,v) in evs[1].simMoments
+        d[k] = eltype(v)[evs[i].simMoments[k] for i in 1:reps]
+    end
+
+    Σ = cov(convert(Matrix,d))
+    return (Σ,names(d))
 end
 
 # -------------------- GETTERS --------------------

@@ -182,8 +182,8 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
                         bestp = deepcopy(val.params)
                         dout[:best] = Dict(:p => val.params, :value => val.value)
                         # println("best value for $pp is $minv")
-                    else
-                        dout[:best] = iter > 2 ? dout[:best] : Dict(:p => "Exception", :value => NaN)
+                    # else
+                    #     dout[:best] = iter > 2 ? dout[:best] : Dict(:p => "Exception", :value => NaN)
                     end
                 end
                 # println("best value so far:")
@@ -229,7 +229,6 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
         # println(cur_param)
         # println(bestp)
         delta = norm(collect(values(dvec)))
-        @info(logger,"norm p - p' = $delta")
     end
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")

@@ -12,6 +12,47 @@ function sliceOpt(tol)
 	return s
 end
 
+function mprob_ex()
+	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,20] )
+	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	addMoment!(mprob,moms) 
+	addEvalFunc!(mprob,objfunc_norm)
+	return mprob
+end
+
+
+function score_moments()
+
+	m = mprob_ex()
+	MomentOpt.FD_gradient(m,Dict(m.initial_value))
+
+end
+
+
+
+function std_errors()
+
+	# 0. given an mprob:
+	m = mprob_ex()
+
+	# 1. obtain a best parameter estimate p
+	s = optSlices(m,30,tol=1.0)
+	p = s[:best][:p]
+
+	# 2. compute "Data" var-cov matrix Σ by generating H samples of simulated data using p 
+	Σ,nd = getSigma(m,p,300)
+
+	# 3. compute score of moment function
+	J = FD_gradient(m,p)
+
+	# 4. put all together to get standard errors
+	SE = pinv(J'*pinv(Σ)*J)
+	return Dict(zip(nd,diag(SE)))
+
+end
+
 function parallelNormal(niter=200)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
