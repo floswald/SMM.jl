@@ -837,28 +837,29 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
       #----------------------------------------------------
       # save at certain frequency
     	if haskey(algo.opts,"save_frequency") == true
-    # if the user provided a filename in the options dictionary
+        # if the user provided a filename in the options dictionary
     		if haskey(algo.opts,"filename") == true
-    				if mod(i,algo.opts["save_frequency"]) == 0
-    					save(algo,algo.opts["filename"])
-    					@info(logger,"saved data at iteration $i")
-    				end
+				if mod(i,algo.opts["save_frequency"]) == 0
+					save(algo,algo.opts["filename"])
+					@info(logger,"saved data at iteration $i")
+				end
             end
     	end
-  t1 = round((time()-t0)/60,1)
-	algo.opts["time"] = t1
-	if haskey(algo.opts,"filename")
-		save(algo,algo.opts["filename"])
-	else
-		@warn(logger,"could not find `filename` in algo.opts - not saving")
-	end
+        t1 = round((time()-t0)/60,1)
+    	algo.opts["time"] = t1
+    	if haskey(algo.opts,"filename")
+    		save(algo,algo.opts["filename"])
+    	else
+    		@warn(logger,"could not find `filename` in algo.opts - not saving")
+    	end
 
-	@info(logger,"Done with estimation after $t1 minutes")
-    @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
+    	@info(logger,"Done with estimation after $t1 minutes")
+        @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
 
-	if get(algo.opts,"animate",false)
-		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)
-	end
+    	if get(algo.opts,"animate",false)
+    		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)
+    	end
+    end
 
 end
 
