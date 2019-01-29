@@ -192,7 +192,7 @@ function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
     end
 
     Σ = cov(convert(Matrix,d))
-    return (Σ,names(d))
+    return Σ
 end
 
 # -------------------- GETTERS --------------------

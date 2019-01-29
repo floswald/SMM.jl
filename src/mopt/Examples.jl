@@ -14,11 +14,11 @@ end
 
 function mprob_ex()
 	pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,20] )
-	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
+	moms = DataFrame(name=["mu1","mu2","var"],value=[-1.0,10.0,1.0],weight=rand(3))
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	addMoment!(mprob,moms) 
-	addEvalFunc!(mprob,objfunc_norm)
+	addEvalFunc!(mprob,objfunc_norm2)
 	return mprob
 end
 
@@ -29,6 +29,7 @@ function score_moments()
 	MomentOpt.FD_gradient(m,Dict(m.initial_value))
 
 end
+
 
 
 
@@ -48,8 +49,10 @@ function std_errors()
 	J = FD_gradient(m,p)
 
 	# 4. put all together to get standard errors
-	SE = pinv(J'*pinv(Σ)*J)
-	return Dict(zip(nd,diag(SE)))
+	# first get weighting matrix 
+	W = Diagonal([v[:weight] for (k,v) in m.moments])
+	SE = pinv(J *  W * J') * (J * W * Σ * W * J') * pinv(J * W * J') 
+	return Dict(zip(collect(keys(p)),diag(SE)))
 
 end
 
