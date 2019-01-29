@@ -30,23 +30,47 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 
 	# get g(p)
     ev = evaluateObjective(m,p)
-	gp = collect(values(ev.simMoments))
+    mnames = collect(keys(m.moments))
+    smm = filter((x,y)->in(x,mnames),ev.simMoments)
+	gp = collect(values(smm))
 	D = zeros(length(p),length(gp))
 
 	# optimal step size depends on range of param bounds
 	rs = range_length(m)
 
 	# compute each partial derivative
-	row = 0
-	@showprogress "Computing derivative..." for (k,v) in p
-		row += 1
+	rows = pmap( [(k,v) for (k,v) in p ] ) do ip 
+		k = ip[1]
+		v = ip[2]
 		h = rs[k] * step_perc
 		pp = deepcopy(p)
 		pp[k] = v + h 
 		# println("changing $k from $v to $(pp[k]) by step $h")
 		xx = evaluateObjective(m,pp)
-		D[row,:] = (collect(values(xx.simMoments)) .- gp) / h
+		smm = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
+		Dict(:p => k, :smm => smm)
 	end
+	d = Dict()
+	for e in rows
+       d[e[:p]] = e[:smm]
+    end
+	row = 0
+	for (k,v) in d
+		row += 1
+		D[row,:] = v
+	end
+
+	# row = 0
+	# @showprogress "Computing derivative..." for (k,v) in p
+	# 	row += 1
+	# 	h = rs[k] * step_perc
+	# 	pp = deepcopy(p)
+	# 	pp[k] = v + h 
+	# 	# println("changing $k from $v to $(pp[k]) by step $h")
+	# 	xx = evaluateObjective(m,pp)
+	# 	smm = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
+	# 	D[row,:] = (smm .- gp) / h
+	# end
 
 	return D
 

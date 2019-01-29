@@ -39,11 +39,12 @@ function std_errors()
 	m = mprob_ex()
 
 	# 1. obtain a best parameter estimate p
-	s = optSlices(m,30,tol=1.0)
-	p = s[:best][:p]
+	# s = optSlices(m,10,tol=5.0)
+	# p = s[:best][:p]
 
+	p = m.initial_value
 	# 2. compute "Data" var-cov matrix Σ by generating H samples of simulated data using p 
-	Σ,nd = getSigma(m,p,300)
+	Σ = getSigma(m,p,300)
 
 	# 3. compute score of moment function
 	J = FD_gradient(m,p)

@@ -180,6 +180,7 @@ end
 # crucially here: turn off any random seeds in the objective function!
 function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
   ev = [Eval(m,p) for i in 1:reps]
+  mnames = collect(keys(m.moments))
   for e in ev
     e.options[:noseed] = true
   end
@@ -191,7 +192,7 @@ function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
   N = length(evs)
   d = DataFrame()
 
-  for (k,v) in evs[1].simMoments
+  for (k,v) in filter((x,y)->in(x,mnames),evs[1].simMoments)
         d[k] = eltype(v)[evs[i].simMoments[k] for i in 1:reps]
     end
 
