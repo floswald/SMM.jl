@@ -179,10 +179,14 @@ end
 
 # crucially here: turn off any random seeds in the objective function!
 function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
-  evs = [Eval(m,p) for i in 1:reps]
-  for e in evs
+  ev = [Eval(m,p) for i in 1:reps]
+  for e in ev
     e.options[:noseed] = true
-    evaluateObjective(m,e)
+  end
+  if length(workers()) > 1
+    evs = pmap(x->evaluateObjective(m,x),ev)
+  else
+    evs = map(x->evaluateObjective(m,x),ev)
   end
   N = length(evs)
   d = DataFrame()

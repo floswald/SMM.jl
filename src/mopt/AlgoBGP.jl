@@ -836,19 +836,15 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
       # Save the process every $(save_frequency) iterations:
       #----------------------------------------------------
       # save at certain frequency
-			if haskey(algo.opts,"save_frequency") == true
-        # if the user provided a filename in the options dictionary
-				if haskey(algo.opts,"filename") == true
-  				if mod(i,algo.opts["save_frequency"]) == 0
-  					save(algo,algo.opts["filename"])
-  					@info(logger,"saved data at iteration $i")
-  				end
-        end
-			end
-
-  end
-
-
+    	if haskey(algo.opts,"save_frequency") == true
+    # if the user provided a filename in the options dictionary
+    		if haskey(algo.opts,"filename") == true
+    				if mod(i,algo.opts["save_frequency"]) == 0
+    					save(algo,algo.opts["filename"])
+    					@info(logger,"saved data at iteration $i")
+    				end
+            end
+    	end
   t1 = round((time()-t0)/60,1)
 	algo.opts["time"] = t1
 	if haskey(algo.opts,"filename")
