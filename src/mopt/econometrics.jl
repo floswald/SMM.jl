@@ -57,7 +57,7 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 	row = 0
 	for (k,v) in d
 		row += 1
-		D[row,:] = v
+		D[row,:] = (v .- gp) / h
 	end
 
 	# row = 0
