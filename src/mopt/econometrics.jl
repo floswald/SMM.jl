@@ -48,7 +48,7 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 		# println("changing $k from $v to $(pp[k]) by step $h")
 		xx = evaluateObjective(m,pp)
 		smm = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
-		Dict(:p => k, :smm => smm)
+		Dict(:p => k, :smm => (smm .- gp) / h)
 	end
 	d = Dict()
 	for e in rows
@@ -57,7 +57,7 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 	row = 0
 	for (k,v) in d
 		row += 1
-		D[row,:] = (v .- gp) / h
+		D[row,:] = v
 	end
 
 	# row = 0
