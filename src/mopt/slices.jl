@@ -141,8 +141,10 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
         # println("current search range:")
         # print(json(ranges,4))
         iter += 1
+        println("iteration $iter")
 
         for (pp,bb) in ranges
+            println("   working on $pp")
         
             # initialize eval
             cur_param = deepcopy(bestp)
