@@ -60,18 +60,6 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 		D[row,:] = v
 	end
 
-	# row = 0
-	# @showprogress "Computing derivative..." for (k,v) in p
-	# 	row += 1
-	# 	h = rs[k] * step_perc
-	# 	pp = deepcopy(p)
-	# 	pp[k] = v + h 
-	# 	# println("changing $k from $v to $(pp[k]) by step $h")
-	# 	xx = evaluateObjective(m,pp)
-	# 	smm = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
-	# 	D[row,:] = (smm .- gp) / h
-	# end
-
 	return D
 
 end

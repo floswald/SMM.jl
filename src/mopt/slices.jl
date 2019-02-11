@@ -111,7 +111,7 @@ end
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
-function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,filename="trace.jld2")
+function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
 
     t0 = time()
     # res = Slice(m.initial_value, m.moments)
@@ -221,12 +221,14 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=0.4,file
 
         # update search ranges
         # maintain range boundaries
-        for (k,v) in bestp
-            r = (ranges[k][:ub] - ranges[k][:lb])/2
-            ranges[k][:lb] = max(v - update * r,ranges[k][:lb])
-            ranges[k][:ub] = min(v + update * r,ranges[k][:ub])
+        if update!=nothing
+            for (k,v) in bestp
+                r = (ranges[k][:ub] - ranges[k][:lb])/2
+                ranges[k][:lb] = max(v - update * r,ranges[k][:lb])
+                ranges[k][:ub] = min(v + update * r,ranges[k][:ub])
+            end
+            @debug(logger,"search ranges updated to $ranges")
         end
-        @debug(logger,"search ranges updated to $ranges")
 
         # println(cur_param)
         # println(bestp)
