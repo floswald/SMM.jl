@@ -19,14 +19,14 @@ end
 
 
 """
-	FD_gradient(m::MProb,p::Dict;step_perc=0.005)
+	FD_gradient(m::MProb,p::Dict;step_perc=0.005,diff_method=:forward)
 
 Get the gradient of the moment function wrt to some parameter vector via finite difference approximation. 
 The output is a (k,n) matrix, where ``k`` is the number of `m.params_to_sample` and where ``m`` is the number of moments.
 
 The default step size is 1% of the parameter range.
 """
-function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
+function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01,diff_method=:forward,use_range=true)
 
 	# get g(p)
     ev = evaluateObjective(m,p)
@@ -42,13 +42,31 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01)
 	rows = pmap( [(k,v) for (k,v) in p ] ) do ip 
 		k = ip[1]
 		v = ip[2]
-		h = rs[k] * step_perc
+		h = 0.0
 		pp = deepcopy(p)
-		pp[k] = v + h 
-		# println("changing $k from $v to $(pp[k]) by step $h")
-		xx = evaluateObjective(m,pp)
-		smm = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
-		Dict(:p => k, :smm => (smm .- gp) / h)
+		if use_range
+			h = rs[k] * step_perc
+		else
+			h = v * step_perc
+		end
+		if diff_method == :forward
+			pp[k] = v + h
+			xx = evaluateObjective(m,pp)
+			smm = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
+			Dict(:p => k, :smm => (smm .- gp) / h)
+		elseif diff_method == :central
+			pp[k] = v + 0.5*h
+			xx = evaluateObjective(m,pp)
+			fw = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
+			println(fw)
+
+			pp[k] = v - 0.5*h
+			xx = evaluateObjective(m,pp)
+			bw = collect(values(filter((x,y)->in(x,mnames),xx.simMoments)))
+			println(bw)
+
+			Dict(:p => k, :smm => (fw .- bw) / h)
+		end
 	end
 	d = Dict()
 	for e in rows
