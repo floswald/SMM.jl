@@ -26,9 +26,9 @@ include(joinpath(dirname(@__FILE__),"include","test-include.jl"))
 include("test_MProb.jl")
 include("test_Eval.jl")
 include("test_slices.jl")
-include("test_BGPChain.jl")
+include("test_BGPchain.jl")
 include("test_AlgoAbstract.jl")
-include("test_AlgoBGP.jl")
+include("test_algoBGP.jl")
 include("test_objfunc.jl")
 
 
