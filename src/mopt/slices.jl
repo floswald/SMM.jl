@@ -1,26 +1,13 @@
 
-# TODO
-# add plot slices
-type MyT
-    data :: Dict
-end
-
-# @recipe function f{T<:Distribution}(::Type{T}, dist::T; func = pdf)
-#     xi -> func(dist, xi)
-# end
 
 
-
-
-
-
-export Slice,slices,add!,get,optSlices
+# export Slice,slices,add!,get,optSlices
 
 
 """
     Slice 
 
-A *slice* in dimension ``j`` of a function ``f \in \mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = linspace(lower[j],upper[j],npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
+A *slice* in dimension ``j`` of a function ``f \\in \\mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = range(lower[j], stop = upper[j], length = npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
 
 ## Fields
 
@@ -30,7 +17,7 @@ A *slice* in dimension ``j`` of a function ``f \in \mathbb{R}^N`` is defined as 
 
 # Examples
 
-```julia
+```julia-repl
 julia> using MOpt
 julia> m = MProb()
 julia> p = OrderedDict(:p1=>1.1,:p2=>pi)
@@ -40,7 +27,7 @@ julia> Slice(p,m)
 ```
 
 """
-type Slice
+mutable struct Slice
     res  :: Union{Dict,OrderedDict}    # result
     p0   :: Union{Dict,OrderedDict}    # initial param
     m0   :: Union{Dict,OrderedDict}    # data moments
@@ -109,7 +96,7 @@ end
 """
     optSlices(m::MProb,npoints::Int,parallel=false)
 
-Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
+Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of [cyclic coordinate descent](https://en.wikipedia.org/wiki/Coordinate_descent) in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction (and disregards any gradient information). The grid size shrinks, however, at a rate `update`.
 """
 function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
 
@@ -135,30 +122,29 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
     delta = Inf
     iter = 0
 
-    prog = ProgressThresh(tol, "Minimizing:")
+    prog = ProgressThresh(tol, "Minimizing norm:")
     while delta > tol
         ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
         iter += 1
-        println("iteration $iter")
 
         for (pp,bb) in ranges
-            println("   working on $pp")
+            # println("   working on $pp")
         
             # initialize eval
             cur_param = deepcopy(bestp)
             ev = Eval(m,cur_param)
 
             if parallel
-                takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                takes = @elapsed vv = pmap( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
                     ev2 = deepcopy(ev)
                     ev2.params[pp] = pval
                     ev2 = evaluateObjective(m,ev2)
                     return(ev2)
                 end
             else
-                takes = @elapsed vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                takes = @elapsed vv = map( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
                     ev2 = deepcopy(ev)
                     ev2.params[pp] = pval
                     ev2 = evaluateObjective(m,ev2)
@@ -227,13 +213,15 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                 ranges[k][:lb] = max(v - update * r,ranges[k][:lb])
                 ranges[k][:ub] = min(v + update * r,ranges[k][:ub])
             end
-            @debug(logger,"search ranges updated to $ranges")
+            @debug "search ranges updated to $ranges"
         end
 
         # println(cur_param)
         # println(bestp)
         delta = norm(collect(values(dvec)))
     end
+    println()
+    @info "converged after $iter iterations"
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")
     JLD2.@save filename dout
@@ -256,17 +244,17 @@ function doSlices(m::MProb,npoints::Int,parallel=false)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        @info(logger,"slicing along $pp")
+        @info "slicing along $pp"
 
         if parallel
-            vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+            vv = pmap( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
                 ev2 = deepcopy(ev)
                 ev2.params[pp] = pval
                 ev2 = evaluateObjective(m,ev2)
                 return(ev2)
             end
         else
-            vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+            vv = map( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
                 ev2 = deepcopy(ev)
                 ev2.params[pp] = pval
                 ev2 = evaluateObjective(m,ev2)
@@ -276,14 +264,14 @@ function doSlices(m::MProb,npoints::Int,parallel=false)
 
         for v in vv 
             if (typeof(v) <: Exception)
-                warn("exception received. value not stored.")
+                @warn "exception received. value not stored."
             else
                 add!( res, pp, v)
             end
         end
     end  
     t1 = round((time()-t0)/60)
-    @info(logger,"done after $t1 minutes")
+    @info "done after $t1 minutes"
 
     return res 
 end

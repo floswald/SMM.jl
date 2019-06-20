@@ -2,8 +2,11 @@
 
 
 
+"""
+# Moment Minisation Algorithm Type
 
-# A Moment Optimizing Algorithm is called MAlgo
+This abstract type nests all [`MProb`](@ref) algorithms, for example [`AlgoBGP`](@ref)
+"""
 abstract type MAlgo end
 
 import Base.getindex, Base.setindex!
@@ -17,6 +20,12 @@ function setindex!(algo::MAlgo, val,key)
   algo.opts[key] = val
 end
 
+
+"""
+	runMOpt!( algo::MAlgo )
+
+Function to start estimation of an [`MAlgo`]@(ref).
+"""
 function runMOpt!( algo::MAlgo )
 
 	# tasks
@@ -24,15 +33,13 @@ function runMOpt!( algo::MAlgo )
 	# load data from file if set in algo.opts
 	# setup cluster if required
 
-	@info(logger,"Starting estimation loop.")
+	@info "Starting estimation loop."
 	t0 = time()
 
 	# do iteration
-	println("running estimation")
-    for i in 1:algo["maxiter"]
-    	print("*")
+    @showprogress for i in 1:algo["maxiter"]
     # @showprogress 1 "Running Estimation..." for i in 1:algo["maxiter"]
-		@debug(logger,"iteration $i")
+		@debug "iteration $i"
 
 		algo.i = i
 
@@ -44,25 +51,25 @@ function runMOpt!( algo::MAlgo )
 				if haskey(algo.opts,"filename") == true
 	  				if mod(i,algo.opts["save_frequency"]) == 0
 	  					save(algo,algo.opts["filename"])
-	  					# @info(logger,"saved data at iteration $i")
+	  					# @info "saved data at iteration $i")
 	  				end
         		end
 			end
 
 		# catch e
-		# 	@warn(logger,"caught exception $e")
+		# 	@warn "caught exception $e")
 		# 	throw(e)
 		# end
 	end
-	t1 = round((time()-t0)/60,1)
+	t1 = round((time()-t0)/60,digits = 1)
 	algo.opts["time"] = t1
 	if haskey(algo.opts,"filename")
 		save(algo,algo.opts["filename"])
 	else
-		@warn(logger,"could not find 'filename' in algo.opts")
+		@warn "could not find 'filename' in algo.opts"
 	end
 
-	@info(logger,"\nDone with estimation after $t1 minutes")
+	@info "Done with estimation after $t1 minutes"
 
 	if get(algo.opts,"animate",false)
 		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)

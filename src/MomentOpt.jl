@@ -1,37 +1,33 @@
-__precompile__(false)
 
 
 module MomentOpt
+
+__precompile__(false)
 
 # Dependencies
 # ############
 
 using Distributions 
-using MiniLogging
 using DataFrames, DataFramesMeta
-import Base.show, Base.std
-using DataStructures
+using OrderedCollections
 using PDMats
 using Documenter
 using Plots
 using FileIO
 using JLD2
-using StatPlots
-using JSON
+using StatsPlots
+# using JSON
 using ProgressMeter
+using Random
+using Distributed
+using LinearAlgebra
+using Logging
+using Statistics
 
-gr()
 
-# setup MiniLogging
-logger = get_logger()
-# if isinteractive()
-#     basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
-# else
-    basic_config(MiniLogging.INFO; date_format="%H:%M:%S")
-    # basic_config(MiniLogging.DEBUG; date_format="%H:%M:%S")
-# end
 
-import Base.get, Base.mean, Base.write, Base.start, Base.==, Base.median
+import Base.get, Base.write, Base.==
+import Base.show, Statistics.mean, Statistics.median
 
 # exports: Types
 export MProb, Eval,MAlgo, MAlgoBGP 
@@ -77,8 +73,11 @@ include("mopt/AlgoBGP.jl")
 include("mopt/ObjExamples.jl")
 include("mopt/Examples.jl")
 include("mopt/plotting.jl")
-include("mopt/econometrics.jl")
-include("mopt/deprecating.jl")
+# include("mopt/econometrics.jl")
+# include("mopt/deprecating.jl")
+
+logger = ConsoleLogger()
+global_logger(logger)
 
 
 end 	# module
