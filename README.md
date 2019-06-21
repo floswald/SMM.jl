@@ -2,9 +2,10 @@
 
 # MomentOpt.jl: Moment Optimization Library for Julia
 
-Linux/MacOS: [![Build Status](https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master)](https://travis-ci.org/floswald/MomentOpt.jl)
+| **Documentation** | **Build Status**                                                                                |
+|:---------------------:|:------------------:|
+| [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] |
 
-Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true)](https://ci.appveyor.com/project/floswald/MomentOpt.jl/branch/master)
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
 
@@ -17,33 +18,13 @@ Pkg.clone("https://github.com/floswald/MomentOpt.jl")
 
 ## Documentation
 
-Still work in progress, although most of the docstrings have been written - so checkout `?MomentOpt.BGPChain` for example in the REPL. I recommend to look at `src/mopt/Examples.jl` and the notebook `src/mopt/example.ipynb`:
-
-## Example Usage of the BGP Algorithm
-
-Baragatti, Grimaud and Pommeret (BGP) in ["Likelihood-free parallel tempring"](http://arxiv.org/abs/1108.3423) propose an approximate Bayesian Computation (ABC) algorithm that incorporates the parallel tempering idea of Geyer (1991). We provide the BGP algorithm as a template called `MAlgoBGP`. Here we use it to run a simple toy example where we want to estimate the means of a bivariate normal distribution by using MCMC. We use 3 parallel chains, each with different temperature. The chains can exchange locations along the process if this is suitable.
+[![][docs-stable-img]][docs-stable-url]
 
 
-## Examples 
 
+## Old documentation
 
-### Objective Function
-
-The objective function used here for moment `k` is
-
-
- ```
- ( (simMoments[k] / dataMoment[k]) - 1.0 )^2
- ```
-
-
-This was chosen so as to be able to accomodate moments at different scales. 
-
-#### Chain Setup
-
-All examples use three chains. They all vary the temperature of the hottest chain as well as the scale of moments to estimate. We will consider data with identical scale and data with widely disparate scales.
-
-### Example with 2 Parameters on identical scale
+*this has yet to be integrated in to the proper documentation above.*
 
 Let's start slowly. Here we want to estimate the mean parameters of a bivariate normal distribution. The data are generated from mean vector `[-1,1]`, hence, the algorithm should find values `[-1,1]`.
 
@@ -231,3 +212,15 @@ New algorithms:
 
 * [Julien Pascal](https://github.com/JulienPascal)
 * [Edoardo Ciscato](https://github.com/edoardociscato)
+
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://floswald.github.io/MomentOpt/latest
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://floswald.github.io/MomentOpt/stable
+
+[travis-img]: https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master
+[travis-url]: https://travis-ci.org/floswald/MomentOpt.jl
+
+[appveyor-img]: https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true
+[appveyor-url]: https://ci.appveyor.com/project/floswald/MomentOpt.jl/branch/master

@@ -18,6 +18,5 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "github.com/floswald/MomentOpt.jl.git",
-    devbranch = "v0.7.2"
+    repo = "github.com/floswald/MomentOpt.jl.git"
 )
