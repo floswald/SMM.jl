@@ -65,7 +65,7 @@
 
 		@everywhere using MomentOpt
 
-		srand(1234)
+		Random.seed!(1234)
 		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
 		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
 		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
@@ -131,7 +131,7 @@
 
 		@everywhere using MomentOpt
 
-		srand(1234)
+		Random.seed!(1234)
 		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
 		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
 		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
@@ -227,7 +227,7 @@
 
 
 		# set-up BGP algorithm:
-		srand(1234)
+		Random.seed!(1234)
 		MA = MAlgoBGP(mprob,opts)
 
 		# run the estimation
@@ -241,7 +241,7 @@
 		addSampledParam!(mprob2,pb)
 		addMoment!(mprob2,moms)
 		addEvalFunc!(mprob2, objfunc_norm)
-		niter = niter + 	newiters
+		niter = niter + newiters
 		# number of chains
 		nchains = 2
 
@@ -260,7 +260,7 @@
 
 
 		# set-up BGP algorithm:
-		srand(1234)
+		Random.seed!(1234)
 		MA2 = MAlgoBGP(mprob2,opts2)
 
 		# run the estimation:
@@ -296,8 +296,8 @@
 			#-------------------------------------------------------------------
 			for (estimatedParameter, param) in zip(estimatedParameters, parameters)
 
-			  Qmean[indexAlgo,:] = mean(dat_chain1[estimatedParameter])
-			  Qmedian[indexAlgo,:] = median(dat_chain1[estimatedParameter])
+			  Qmean[indexAlgo,:] .= mean(dat_chain1[estimatedParameter])
+			  Qmedian[indexAlgo,:] .= median(dat_chain1[estimatedParameter])
 
 			end
 

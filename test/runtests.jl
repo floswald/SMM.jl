@@ -1,10 +1,13 @@
 
 
 using MomentOpt
-using Base.Test
-using TestSetExtensions
+using Test
 using DataFrames
-using DataStructures
+using OrderedCollections
+using Distributed
+using LinearAlgebra
+using Random
+using Plots: Animation
 using JSON
 
 # If we want the test to pass, we need this
@@ -20,8 +23,12 @@ ENV["GKSwstype"] = "100"
 
 include(joinpath(dirname(@__FILE__),"include","test-include.jl"))
 
-@testset ExtendedTestSet "Running MomentOpt tests" begin
+include("test_MProb.jl")
+include("test_Eval.jl")
+include("test_slices.jl")
+include("test_BGPchain.jl")
+include("test_AlgoAbstract.jl")
+include("test_algoBGP.jl")
+include("test_objfunc.jl")
 
-    @includetests ARGS
 
-end

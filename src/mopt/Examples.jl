@@ -9,7 +9,7 @@ function sliceOpt(tol)
 	addEvalFunc!(mprob,objfunc_norm)
 
 	s = optSlices(mprob,30,tol=tol)
-	return s
+	return Dict(:optimized => s, :targets => moms)
 end
 
 function mprob_ex()
@@ -182,9 +182,9 @@ function snorm_standard()
 		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false)
-	info("These moments are our targets")
-	info("Parameter p_i corresponds to moment m_i")
-	println(moms)
+	# @info "These moments are our targets"
+	# @info "Parameter p_i corresponds to moment m_i"
+	# println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
@@ -295,9 +295,9 @@ function snorm_18(niter)
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false,
 		"batch_size" => 1)
-	info("These moments are our targets")
-	info("Parameter p_i corresponds to moment m_i")
-	println(moms)
+	# @info "These moments are our targets"
+	# @info "Parameter p_i corresponds to moment m_i"
+	# println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
@@ -353,9 +353,8 @@ function snorm_standard6()
 		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false)
-	info("These moments are our targets")
-	info("Parameter p_i corresponds to moment m_i")
-	println(moms)
+	# @info "These moments are our targets"
+	# @info "Parameter p_i corresponds to moment m_i"
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
@@ -392,10 +391,10 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 	pb["p1"] = [0.2,-3,3]
 	pb["p2"] = [-0.2,-20,20]
 	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
-	srand(12)
+	Random.seed!(12)
 
 	if npar > 2
-		spaces = vcat(rand(2),4.0^(-4),reverse(linspace(0.25,0.45,npar-1).^(-4)))
+		spaces = vcat(rand(2),4.0^(-4),reverse(range(0.25,stop = 0.45,length = npar-1).^(-4)))
 		for j in 3:npar
 			ii = j
 			# spaces = rand()^(-4)
@@ -403,13 +402,13 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 			# push!(moms, [Symbol("mu$j"); pb["p$j"][1]; pb["p$j"][1]])   # if moments are equal starting value - easy.
 			# push!(moms, [Symbol("mu$j"); pb["p$j"][1] * 1.1; pb["p$j"][1]])   # if moments are 110% of starting value - easy.
 			y = mapRange(0,1,-spaces[ii],spaces[ii],rand())
-			push!(moms, [Symbol("mu$j"); y ; y])
+			push!(moms, ["mu$j"; y ; y])
 		end
 	end
 
-	info("These moments are our targets")
-	info("Parameter p_i corresponds to moment m_i")
-	println(moms)
+	# @info "These moments are our targets"
+	# @info "Parameter p_i corresponds to moment m_i"
+	# println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
@@ -462,7 +461,7 @@ function BGP_example()
             # such that Pr( x \in [init-b,init+b]) = 0.975
             # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
 		"coverage"=>0.005,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
-		"min_improve"=>linspace(0.025, 2,nchains),
+		"min_improve"=>range(0.025,stop =  2,length = nchains),
 		"mixprob"=>0.3,
 		"acc_tuners"=>[12.0 for i in 1:nchains],
 		"animate"=>false)

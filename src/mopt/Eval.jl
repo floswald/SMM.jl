@@ -17,7 +17,7 @@
 * `options`: Dict of options and other info
 
 """ 
-type Eval
+mutable struct Eval
 
 	value        :: Float64
 	time         :: Float64

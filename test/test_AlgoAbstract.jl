@@ -49,7 +49,7 @@
 
     # Compare chains
     for chainNumber = 1:MA.opts["N"]
-        for fieldName in fieldnames(MA.chains[chainNumber])
+        for fieldName in fieldnames(typeof(MA.chains[chainNumber]))
           # for fields m and sigma, the test returns false, eventhough they have
           # the same values
             if fieldName!= :m && fieldName != :sigma

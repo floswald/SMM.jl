@@ -123,7 +123,7 @@ end
     legend     := false
 
 
-    if get(d,:seriestype, :path) == :histogram
+    if get(plotattributes,:seriestype, :path) == :histogram
         # do hist for each parameter
         indices,ly = param_grid(c.m.initial_value)
         # data
@@ -149,7 +149,7 @@ end
         layout := @layout [ one{0.3h}; grid(rows,cols)]
         dat = history(c)
         ex = convert(Array{Float64},dat[:exchanged])
-        ex[ex.==0] = NaN
+        ex[ex.==0] .= NaN
         # values plot
         # @series begin
         #     subplot := 1    
@@ -176,7 +176,7 @@ end
             linecolor := :black
             linewidth --> 1
             yguide := "Obj Value"
-            ylim := [y_e[1]-y_lim;y_e[2]+2*y_lim]
+            ylim := [y_e[1] .- y_lim;y_e[2] .+ 2*y_lim]
             xguide := "iteration"
             dat[:curr_val]
         end
@@ -250,8 +250,8 @@ end
     legend    := false
     # foreground_color_border := nothing
     # titlefont --> font(11)
-    fillcolor --> Plots.fg_color(d)
-    linecolor --> Plots.fg_color(d)
+    fillcolor --> Plots.fg_color(plotattributes)
+    linecolor --> Plots.fg_color(plotattributes)
     grid      --> true
     link      --> :x
     xticks     := true
@@ -260,7 +260,7 @@ end
     # build series
     for (k,v) in s.res 
         da = get(s,k,w)
-        if haskey(d,:markersize)
+        if haskey(plotattributes,:markersize)
             @series begin
                 seriestype := :scatter
                 subplot    := indices[k]

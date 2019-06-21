@@ -92,7 +92,7 @@ function test_chain3()
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
 end
 
-type MyP
+mutable struct MyP
     a :: Float64 
     b :: Float64 
 

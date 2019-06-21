@@ -15,7 +15,7 @@ abstract type AbstractChain end
 """
 # `BGPChain`
 
-MCMC Chain storage for BGP algorithm.
+MCMC Chain storage for BGP algorithm. This is the main datatype for the implementation of Baragatti, Grimaud and Pommeret (BGP) in [*Likelihood-free parallel tempring*](http://arxiv.org/abs/1108.3423)
 
 ## Fields
 
@@ -39,7 +39,7 @@ MCMC Chain storage for BGP algorithm.
 * `batches`: in the proposal function update the parameter vector in batches. [default: update entire param vector]
 
 """
-type BGPChain <: AbstractChain
+mutable struct BGPChain <: AbstractChain
     evals     :: Array{Eval}
     best_id   :: Vector{Int}   # index of best eval.value so far
     best_val  :: Vector{Float64}   # best eval.value so far
@@ -78,7 +78,7 @@ type BGPChain <: AbstractChain
     function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,min_improve::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
         np = length(m.params_to_sample)
         this           = new()
-        this.evals     = Array{Eval}(n)
+        this.evals     = Array{Eval}(undef,n)
         this.best_val  = ones(n) * Inf
         this.best_id   = -ones(Int,n)
         this.curr_val  = ones(n) * Inf
@@ -210,7 +210,7 @@ function lastAccepted(c::BGPChain)
     if c.iter==1
         return 1
     else
-        return find(c.accepted[1:(c.iter)])[end]
+        return findlast(c.accepted[1:(c.iter)])
     end
 end
 getIterEval(c::BGPChain,i::Int) = c.evals[i]
@@ -274,7 +274,7 @@ function next_eval(c::BGPChain)
 
     # increment interation
     c.iter += 1
-    @debug(logger,"iteration = $(c.iter)")
+    @debug "iteration = $(c.iter)"
 
     # returns an OrderedDict
     pp = proposal(c)
@@ -297,11 +297,10 @@ end
 """
     doAcceptReject!(c::BGPChain,eval_new::Eval)
 
-Perform a MH accept-reject operation on the latest `Eval` and update the sampling variance, if so desired (set via `sigma_update_steps`)
+Perform a Metropolis-Hastings accept-reject operation on the latest `Eval` and update the sampling variance, if so desired (set via `sigma_update_steps` in [`BGPChain`](@ref) constructor.)
 """
 function doAcceptReject!(c::BGPChain,eval_new::Eval)
-            @debug(logger,"")
-            @debug(logger,"doAcceptReject!")
+            @debug "doAcceptReject!"
     if c.iter == 1
         # accept everything.
         eval_new.prob =1.0
@@ -321,10 +320,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
             # this forumulation: old - new
             # because we are MINIMIZING the value of the objective function
             eval_new.prob = minimum([1.0,exp( c.acc_tuner * ( eval_old.value - eval_new.value) )]) #* (eval_new.value < )
-            @debug(logger,"eval_new.value = $(eval_new.value)")
-            @debug(logger,"eval_old.value = $(eval_old.value)")
-            @debug(logger,"eval_new.prob = $(round(eval_new.prob,2))")
-            @debug(logger,"c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],2))")
+            @debug "eval_new.value = $(eval_new.value)"
+            @debug "eval_old.value = $(eval_old.value)"
+            @debug "eval_new.prob = $(round(eval_new.prob,digits = 2))"
+            @debug "c.probs_acc[c.iter] = $(round(c.probs_acc[c.iter],digits = 2))"
 
             if !isfinite(eval_new.prob)
                 eval_new.prob = 0.0
@@ -333,7 +332,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
 
             elseif !isfinite(eval_old.value)
                 # should never have gotten accepted
-                @debug(logger,"eval_old is not finite")
+                @debug "eval_old is not finite"
                 eval_new.prob = 1.0
                 eval_new.accepted = true
             else
@@ -345,9 +344,7 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
                     eval_new.accepted = false
                 end
             end
-            @debug(logger,"eval_new.accepted = $(eval_new.accepted)")
-            @debug(logger,"")
-            @debug(logger,"")
+            @debug "eval_new.accepted = $(eval_new.accepted)"
 
         end
 
@@ -362,10 +359,10 @@ function doAcceptReject!(c::BGPChain,eval_new::Eval)
         if mod(c.iter,c.sigma_update_steps) == 0
             too_high = c.accept_rate > 0.234
             if too_high
-                @debug(logger,"acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%.")
+                @debug "acceptance rate on BGPChain $(c.id) is too high at $(c.accept_rate). increasing variance of each param by $(100* c.sigma_adjust_by)%."
                 set_sigma!(c,c.sigma .* (1.0+c.sigma_adjust_by) )
             else
-                @debug(logger,"acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%.")
+                @debug "acceptance rate on BGPChain $(c.id) is too low at $(c.accept_rate). decreasing variance of each param by $(100* c.sigma_adjust_by)%."
                 set_sigma!(c,c.sigma .* (1.0-c.sigma_adjust_by) )
             end
         end
@@ -376,7 +373,7 @@ end
 """
     mysample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},ub::Vector{Float64},iters::Int)
 
-mysample from distribution `d` until all poins are in support
+mysample from distribution `d` until all poins are in support. This is a crude version of a truncated distribution: It just samples until all draws are within the admissible domain.
 """
 function mysample(d::Distributions.MultivariateDistribution,lb::Float64,ub::Float64,iters::Int)
 
@@ -397,8 +394,8 @@ end
 
 Gaussian Transition Kernel centered on current parameter value. 
 
-1. Map all ``k`` parameters into ``\mu \in [0,1]^k``.
-2. update all parameters by sampling from `MvNormal`, ``N(\mu,\sigma)``, where ``sigma`` is `c.sigma` until all params are in ``[0,1]^k``
+1. Map all ``k`` parameters into ``\\mu \\in [0,1]^k``.
+2. update all parameters by sampling from `MvNormal`, ``N(\\mu,\\sigma)``, where ``sigma`` is `c.sigma` until all params are in ``[0,1]^k``
 3. Map ``[0,1]^k`` back to original parameter spaces.
 
 """
@@ -423,7 +420,7 @@ function proposal(c::BGPChain)
             pp = mysample(MvNormal(mu01,c.sigma),0.0,1.0,c.smpl_iters)
         else
             # do it in batches of params
-            pp = zeros(mu01)
+            pp = zero(mu01)
             for (sig_ix,i) in enumerate(c.batches)
                 try
                     pp[i] = mysample(MvNormal(mu01[i],c.sigma),0.0,1.0,c.smpl_iters)
@@ -436,11 +433,11 @@ function proposal(c::BGPChain)
         # z*(b-a) + a = x \in [a,b]
         newp = OrderedDict(zip(collect(keys(mu)),mapto_ab(pp,lb,ub)))
 
-        @debug(logger,"iteration $(c.iter)")
-        @debug(logger,"old param: $(ev_old.params)")
-        @debug(logger,"new param: $newp")
+        @debug "iteration $(c.iter)"
+        @debug "old param: $(ev_old.params)"
+        @debug "new param: $newp"
         for (k,v) in newp
-            @debug(logger,"step for $k = $(v-ev_old.params[k])")
+            @debug "step for $k = $(v-ev_old.params[k])"
         end
 
         # flat kernel: random choice in each dimension.
@@ -486,7 +483,7 @@ mutable struct MAlgoBGP <: MAlgo
     function MAlgoBGP(m::MProb,opts=Dict("N"=>3,"maxiter"=>100,"maxtemp"=> 2,"sigma"=>0.05,"sigma_update_steps"=>10,"sigma_adjust_by"=>0.01,"smpl_iters"=>1000,"parallel"=>false,"min_improve"=>[0.0 for i in 1:3],"acc_tuners"=>[2.0 for i in 1:3]))
 
         if opts["N"] > 1
-    		temps     = linspace(1.0,opts["maxtemp"],opts["N"])
+    		temps     = range(1.0,stop=opts["maxtemp"],length=opts["N"])
             # initial std dev for each parameter to achieve at least bound_prob on the bounds
             # println("opts=$opts")
             # println("pars = $( m.params_to_sample)")
@@ -558,14 +555,13 @@ end
 """
     computeNextIteration!( algo::MAlgoBGP )
 
-computes new candidate vectors for each BGPChain
-accepts/rejects that vector on each BGPChain, according to some rule
+computes new candidate vectors for each [`BGPChain`](@ref)
+accepts/rejects that vector on each BGPChain, according to some rule. The evaluation objective functions is performed in parallel, is so desired.
 
 1. On each chain `c`:
     * computes new parameter vectors
     * applies a criterion to accept/reject any new params
     * stores the result in BGPChains
-
 2. Calls [`exchangeMoves!`](@ref) to swap chains
 """
 function computeNextIteration!( algo::MAlgoBGP )
@@ -632,9 +628,9 @@ function exchangeMoves!(algo::MAlgoBGP)
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
     pairs = sample(props,samples,replace=false)
 
-    @debug(logger,"")
-    @debug(logger,"exchangeMoves: proposing pairs")
-    @debug(logger,"$pairs")
+    # @debug(logger,"")
+    # @debug(logger,"exchangeMoves: proposing pairs")
+    # @debug(logger,"$pairs")
 
     for p in pairs
         i,j = p
@@ -655,8 +651,8 @@ function exchangeMoves!(algo::MAlgoBGP)
 
         # BGP version
         # exchange i with j if rho(S(z_j),S(data)) < epsilon_i
-        @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
-        @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo.chains[i].min_improve)")
+        # @debug(logger,"Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
+        # @debug(logger,"Exchange: $(algo.dist_fun(evj.value, evi.value)  < algo.chains[i].min_improve)")
         # println("Exchanging $i with $j? Distance is $(algo.dist_fun(evj.value, evi.value))")
         # println("Exchange: $(algo.dist_fun(evj.value, evi.value)  > algo["min_improve"][i])")
         # this formulation assumes that evi.value > 0 always, for all i.
@@ -693,7 +689,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 end
 
 function set_ev_i2j!(algo::MAlgoBGP,i::Int,j::Int)
-    @debug(logger,"setting ev of $i to ev of $j")
+    @debug "setting ev of $i to ev of $j"
     ci = algo.chains[i]
     cj = algo.chains[j]
 
@@ -709,7 +705,7 @@ end
 
 "replace the current `Eval` of chain ``i`` with the one of chain ``j``"
 function swap_ev_ij!(algo::MAlgoBGP,i::Int,j::Int)
-    @debug(logger,"swapping ev of $i with ev of $j")
+    @debug "swapping ev of $i with ev of $j"
     ci = algo.chains[i]
     cj = algo.chains[j]
 
@@ -730,8 +726,8 @@ end
 """
   extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 
-Starting from an existing AlgoBGP, allow for additional iterations
-by extending a specific chain
+Starting from an existing [`AlgoBGP`](@ref), allow for additional iterations
+by extending a specific chain. This function is used to restart a previous estimation run via [`restartMOpt!`](@ref)
 """
 function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 
@@ -747,7 +743,7 @@ function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
   #---------------------------------------
   # 1. Change the size:
   #--------------------
-  chain.evals    = Array{Eval}(finalIter)
+  chain.evals    = Array{Eval}(undef,finalIter)
   chain.best_val  = ones(finalIter) * Inf
   chain.best_id   = -ones(Int, finalIter)
   chain.curr_val  = ones(finalIter) * Inf
@@ -776,12 +772,12 @@ end
   restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
 Starting from an existing AlgoBGP, restart the optimization from where it
-stopeed. Add extraIter additional steps to the optimization process.
+stopped. Add `extraIter` additional steps to the optimization process.
 """
 function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
-  @info(logger,"Restarting estimation loop with $(extraIter) iterations.")
-  @info(logger,"Current best value on chain 1 before restarting $(MomentOpt.summary(algo)[:best_val][1])")
+  @info "Restarting estimation loop with $(extraIter) iterations."
+  @info "Current best value on chain 1 before restarting $(MomentOpt.summary(algo)[:best_val][1])"
   t0 = time()
 
   # Minus 1, to follow the MomentOpt convention
@@ -803,21 +799,19 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 
   #change maxiter in the dictionary storing options
   #------------------------------------------------
-  @debug(logger, "Setting algo.opts[\"maxiter\"] = $(finalIter)")
+  @debug "Setting algo.opts[\"maxiter\"] = $(finalIter)"
   algo.opts["maxiter"] = finalIter
 
   # do iterations, starting at initialIter
   # and not at i=1, as in runMOpt!
-    println("restarting estimation")
-    for i in initialIter:finalIter
-  # @showprogress 1 "Running Estimation..." 
-        print("*")
+    @info "restarting estimation"
+    @showprogress for i in initialIter:finalIter
 
     algo.i = i
 
 
     # try
-      MomentOpt.computeNextIteration!( algo )
+      computeNextIteration!( algo )
 
       # If the user stops the execution (control + C), save algo in a file
       # with a special name.
@@ -845,16 +839,15 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
 				end
             end
     	end
-        t1 = round((time()-t0)/60,1)
+        t1 = round((time()-t0)/60,digits = 1)
     	algo.opts["time"] = t1
     	if haskey(algo.opts,"filename")
     		save(algo,algo.opts["filename"])
     	else
-    		@warn(logger,"could not find `filename` in algo.opts - not saving")
+    		@warn "could not find `filename` in algo.opts - not saving"
     	end
 
-    	@info(logger,"Done with estimation after $t1 minutes")
-        @info(logger,"New best value on chain 1 = $(MomentOpt.summary(algo)[:best_val][1])")
+    	@info "Done with estimation after $t1 minutes"
 
     	if get(algo.opts,"animate",false)
     		gif(algo.anim,joinpath(dirname(@__FILE__),"../../proposals.gif"),fps=2)
