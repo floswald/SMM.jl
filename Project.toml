@@ -1,7 +1,7 @@
 name = "MomentOpt"
 uuid = "bc769cb7-f249-5bba-802a-79f18cb247ec"
 authors = ["Florian Oswald <florian.oswald@gmail.com>"]
-version = "0.1.0"
+version = "1.4.0"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
