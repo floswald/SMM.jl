@@ -217,7 +217,7 @@ New algorithms:
 [docs-dev-url]: https://floswald.github.io/MomentOpt.jl/latest
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://floswald.github.io/MomentOpt.jl/stable
+[docs-stable-url]: https://floswald.github.io/MomentOpt.jl/latest
 
 [travis-img]: https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master
 [travis-url]: https://travis-ci.org/floswald/MomentOpt.jl
