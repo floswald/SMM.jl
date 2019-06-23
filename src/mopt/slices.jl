@@ -16,7 +16,6 @@ A *slice* in dimension ``j`` of a function ``f \\in \\mathbb{R}^N`` is defined a
 # Examples
 
 ```julia-repl
-julia> using MOpt
 julia> m = MProb()
 julia> p = OrderedDict(:p1=>1.1,:p2=>pi)
 julia> m = OrderedDict(:m1=>rand(),:m2=>e)
