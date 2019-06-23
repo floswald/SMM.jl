@@ -8,7 +8,7 @@ A package providing supporting infrastructure and algorithms to perform [Simulat
 
 * Supply your own objective function to be optimized
 * Optimization can be carried out in parallel
-* Diagnostic plots illustrating the proposal distribution as well as markov chain statistics
+* [Diagnostic tools](@ref) illustrating the proposal distribution as well as markov chain statistics.
 * Includes a parellel tempering [likelihood-free optimizer](http://arxiv.org/abs/1108.3423) using MCMC technology and a [coordinate descent optimizer](https://en.wikipedia.org/wiki/Coordinate_descent).
 
 For some example usage see the [Examples](@ref) page.
@@ -17,7 +17,7 @@ For some example usage see the [Examples](@ref) page.
 ## Manual Outline
 
 ```@contents
-Pages = ["index.md","eval.md","slices.md","algo.md","examples.md"]
+Pages = ["index.md","eval.md","slices.md","algo.md","metrics.md","examples.md"]
 ```
 
 

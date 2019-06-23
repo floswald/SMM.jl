@@ -344,10 +344,6 @@ function snorm_standard6()
 	opts =Dict("N"=>nchains,
 		"maxiter"=>200,
 		"maxtemp"=> 5,
-            # choose inital sd for each parameter p
-            # such that Pr( x \in [init-b,init+b]) = 0.975
-            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
-		"coverage"=>0.02,   # how big should the step size of new params be?
 		"smpl_iters"=>1000,
 		"parallel"=>false,
 		"min_improve"=>[0.0 for i in 1:nchains],
@@ -369,9 +365,9 @@ function snorm_standard6()
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
-	savefig(joinpath(dirname(@__FILE__),"../../histogram6.png"))
+	savefig(joinpath(dirname(@__FILE__),"../docs/images/histogram6.png"))
 	pp = plot(MA.chains[1]);
-	savefig(joinpath(dirname(@__FILE__),"../../lines6.png")	)
+	savefig(joinpath(dirname(@__FILE__),"../docs/images/lines6.png")	)
 	return (MA,ph,pp)
 end
 function snorm_impl(opts,niter=200;npar=2,save=false)

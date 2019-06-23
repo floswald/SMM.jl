@@ -3,10 +3,6 @@
 
 
 
-"""
-load algo from file and compute simple standard errors as in Lise, Meghir, Robin (2016)
-Because of lack of numerical precision in numerical approx of gradient, function [`score`](@ref MOpt.score), this reports simply the standard deviation of the coldest chain.
-"""
 function get_simple_std(f::String)
 	x = readAlgoBGP(f)
 	nms = setdiff(names(x["params"]),[:chain_id,:iter])
@@ -23,6 +19,10 @@ end
 
 Get the gradient of the moment function wrt to some parameter vector via finite difference approximation. 
 The output is a (k,n) matrix, where ``k`` is the number of `m.params_to_sample` and where ``m`` is the number of moments.
+
+* `step_perc`: step size in percent of parameter
+* `diff_method`: `:forward` or `:central` differencing
+* `use_range`: compute the step as a percentage of the parameter range (`true`), or not
 
 The default step size is 1% of the parameter range.
 """
@@ -66,6 +66,8 @@ function FD_gradient(m::MProb,p::Union{Dict,OrderedDict};step_perc=0.01,diff_met
 			println(bw)
 
 			Dict(:p => k, :smm => (fw .- bw) / h)
+		else 
+			error("only :central and :foward implemented")
 		end
 	end
 	d = Dict()
@@ -118,7 +120,7 @@ end
 """
 	getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
 
-Computes var-cov matrix of simulated data.
+Computes var-cov matrix of simulated data. This requires to *unseed* the random shock sequences in the objective function (to generate randomly different moments in each run). Argument `reps` controls how many samples of different moment functions should be taken.
 """
 function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
     ev = [Eval(m,p) for i in 1:reps]

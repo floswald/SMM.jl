@@ -9,10 +9,10 @@ of datamoments `moments`. The key idea here is the one of [simulated method of m
 ## Fields:
 
 * `initial_value`: initial parameter value as a dict
-* `params_to_sample`: OrderedDict with lower and upper bounds
+* `params_to_sample`: `OrderedDict` with lower and upper bounds
 * `objfunc`: objective function
 * `objfunc_opts`: options passed to the objective function, e.g. printlevel
-* `moments`: a dictionary of data moments to track
+* `moments`: a dictionary or dataframe of data moments to track
 
 ## Example:
 
@@ -224,7 +224,9 @@ function ms_names(mprob::MProb)
 end
 
 """
-    map param to [0,1]
+    mapto_01(p::OrderedDict,lb::Vector{Float64},ub::Vector{Float64})
+
+map param to [0,1]
 """
 function mapto_01(p::OrderedDict,lb::Vector{Float64},ub::Vector{Float64})
     mu = collect(values(p))
@@ -232,7 +234,9 @@ function mapto_01(p::OrderedDict,lb::Vector{Float64},ub::Vector{Float64})
 end
 
 """
-    map param from [0,1] to [a,b]
+    mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
+    
+map param from [0,1] to [a,b]
 """
 function mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
     p .* (ub .- lb) .+ lb

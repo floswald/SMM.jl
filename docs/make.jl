@@ -3,14 +3,18 @@ using Documenter
 using MomentOpt
 
 makedocs(
-    format = Documenter.HTML(),
+    format = Documenter.HTML(
+        prettyurls = false,
+        canonical = "https://floswald.github.io/MomentOpt.jl/stable",
+        analytics = "UA-41584331-5"),
     sitename = "MomentOpt.jl",
     modules = [MomentOpt],
     pages = [
-    	"Getting Started" => "index.md",
+    	"Introduction" => "index.md",
     	"Eval Object" => "eval.md",
     	"Slices" => "slices.md",
     	"Moment Algorithms" => "algo.md",
+        "Econometrics" => "metrics.md",
     	"Examples" => "examples.md"]
 )
 

@@ -3,9 +3,7 @@
 
 
 """
-# Moment Minisation Algorithm Type
-
-This abstract type nests all [`MProb`](@ref) algorithms, for example [`MomentOpt.AlgoBGP`](@ref)
+This abstract type nests all [`MProb`](@ref) algorithms, for example [`MomentOpt.MAlgoBGP`](@ref)
 """
 abstract type MAlgo end
 
@@ -78,7 +76,7 @@ function runMOpt!( algo::MAlgo )
 end
 
 """
-  save(algo::MAlgoBGP, filename::AbstractString)
+	save(algo::MAlgo, filename::AbstractString)
 
 Save MAlgo to disk using JLD2
 """
@@ -90,7 +88,7 @@ function save(algo::MAlgo, filename::AbstractString)
 end
 
 """
-   readMalgo(filename::AbstractString)
+	readMalgo(filename::AbstractString)
 
 Load MAlgo from disk
 """

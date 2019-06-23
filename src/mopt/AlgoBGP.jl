@@ -15,7 +15,7 @@ abstract type AbstractChain end
 """
 # `BGPChain`
 
-MCMC Chain storage for BGP algorithm. This is the main datatype for the implementation of Baragatti, Grimaud and Pommeret (BGP) in [*Likelihood-free parallel tempring*](http://arxiv.org/abs/1108.3423)
+MCMC Chain storage for BGP algorithm. This is the main datatype for the implementation of Baragatti, Grimaud and Pommeret (BGP) in [Likelihood-free parallel tempring](http://arxiv.org/abs/1108.3423)
 
 ## Fields
 
@@ -457,7 +457,7 @@ end
 """
 # MAlgoBGP: BGP MCMC Algorithm
 
-This implements the [BGP MCMC Algorithm *Likelihood-Free Parallel Tempering](*http://fr.arxiv.org/abs/1108.3423) by Baragatti, Grimaud and Pommeret (BGP):
+This implements the [BGP MCMC Algorithm Likelihood-Free Parallel Tempering](http://fr.arxiv.org/abs/1108.3423) by Baragatti, Grimaud and Pommeret (BGP):
 
 > Approximate Bayesian Computational (ABC) methods (or likelihood-free methods) have appeared in the past fifteen years as useful methods to perform Bayesian analyses when the likelihood is analytically or computationally intractable. Several ABC methods have been proposed: Monte Carlo Markov BGPChains (MCMC) methods have been developped by Marjoramet al. (2003) and by Bortotet al. (2007) for instance, and sequential methods have been proposed among others by Sissonet al. (2007), Beaumont et al. (2009) and Del Moral et al. (2009). Until now, while ABC-MCMC methods remain the reference, sequential ABC methods have appeared to outperforms them (see for example McKinley et al. (2009) or Sisson et al. (2007)). In this paper a new algorithm combining population-based MCMC methods with ABC requirements is proposed, using an analogy with the Parallel Tempering algorithm (Geyer, 1991). Performances are compared with existing ABC algorithms on simulations and on a real example.
 
@@ -726,7 +726,7 @@ end
 """
   extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 
-Starting from an existing [`AlgoBGP`](@ref), allow for additional iterations
+Starting from an existing [`MAlgoBGP`](@ref), allow for additional iterations
 by extending a specific chain. This function is used to restart a previous estimation run via [`restartMOpt!`](@ref)
 """
 function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)

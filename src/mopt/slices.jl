@@ -5,8 +5,6 @@
 
 
 """
-    Slice 
-
 A *slice* in dimension ``j`` of a function ``f \\in \\mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = range(lower[j], stop = upper[j], length = npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
 
 ## Fields
@@ -94,9 +92,25 @@ end
 
 
 """
-    optSlices(m::MProb,npoints::Int,parallel=false)
+    optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
 
-Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of [cyclic coordinate descent](https://en.wikipedia.org/wiki/Coordinate_descent) in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction (and disregards any gradient information). The grid size shrinks, however, at a rate `update`.
+Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of [cyclic coordinate descent](https://en.wikipedia.org/wiki/Coordinate_descent) in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction (and disregards any gradient information). The grid size shrinks, however, at a rate `update` (constant by default)
+
+## Algorithm Description
+
+Let ``\\theta \\in \\mathbb{R}^K`` be the parameter vector of objective function ``L(\\theta)``. A cyclic coordinate search algorithm defines cycle ``n+1`` as follows:
+
+```math
+\\begin{align*}
+\\theta^{(n+1)}_1 & =\\arg\\min_{\\theta_{1}} L(\\theta_{1},\\theta_{2}^{(n)},\\dots,\\theta_{K}^{(n)})\\\\
+\\theta^{(n+1)}_2 & =\\arg\\min_{\\theta_{2}} L(\\theta_{1}^{(n)},\\theta_{2},\\theta_{3}^{(n)},\\dots,\\theta_{K}^{(n)})\\\\
+\\theta^{(n+1)}_3 & =\\arg\\min_{\\theta_{3}} L(\\theta_{1}^{(n)},\\theta_{2}^{(n)},\\theta_{3},\\theta_{4}^{(n)},\\dots,\\theta_{K}^{(n)})\\\\
+ & \\vdots\\\\
+\\theta^{(n+1)}_K & =\\arg\\min_{\\theta_{K}} L(\\theta_{1}^{(n)},\\theta_{2}^{(n)},\\dots,\\theta_{K}).
+\\end{align*}
+```
+
+The algorithm runs until a convergence criterion is met; here we stop at cycle ``n`` if the norm of the distance between ``\\theta^{(n-1)}`` and ``\\theta^{(n)}`` is less than `tol`.
 """
 function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
 
