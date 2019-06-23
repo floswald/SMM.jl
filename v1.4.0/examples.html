@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · MomentOpt.jl</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-41584331-5', 'auto');
+ga('send', 'pageview');
+</script><link rel="canonical" href="https://floswald.github.io/MomentOpt.jl/stable/examples.html"/><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>MomentOpt.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="index.html">Introduction</a></li><li><a class="toctext" href="eval.html">Eval Object</a></li><li><a class="toctext" href="slices.html">Slices</a></li><li><a class="toctext" href="algo.html">Moment Algorithms</a></li><li><a class="toctext" href="metrics.html">Econometrics</a></li><li class="current"><a class="toctext" href="examples.html">Examples</a><ul class="internal"><li><a class="toctext" href="#Estimating-Means-of-a-bivariate-normal-1">Estimating Means of a bivariate normal</a></li><li><a class="toctext" href="#Diagnostic-tools-1">Diagnostic tools</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href="examples.html">Examples</a></li></ul><a class="edit-page" href="https://github.com/floswald/MomentOpt.jl/blob/master/docs/src/examples.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Examples</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Examples-1" href="#Examples-1">Examples</a></h1><h2><a class="nav-anchor" id="Estimating-Means-of-a-bivariate-normal-1" href="#Estimating-Means-of-a-bivariate-normal-1">Estimating Means of a bivariate normal</a></h2><p>Let&#39;s define a function that returns a Normal distribution with a certain location, and let&#39;s call this <em>our model</em>:</p><div>\[m(p) = \mathcal{N}\left( [p_1,p_2]^T , I_2 \right)\]</div><p>Our aim will be to estimate the location of two means from data that is simulated from this law with an MCMC chain, given some <em>true</em> <span>$p$</span>. (Of course the sample mean would be a perfectly valid estimator.)  The twist here is that we will pretend that we don&#39;t have access to the entire simulated dataset </p><div>\[\{X_i\}_{i=1}^N, X_i = (x_{i1},x_{i2}) \sim m(p),\]</div><p>but only a set of summary statistics <span>$S$</span> - in our case, we&#39;d have two moments of this data, namely <span>$\mu_j = \frac{1}{N}x_{ij},j=1,2$</span>. Our objective function is the squared distance between <span>$\mu$</span>, and what our model produces instead. That is, we give a parameter vector <span>$p&#39;$</span> to our model <span>$m$</span>, which in turn produces 2 <em>simulated</em> moments denoted <span>$\mu&#39;$</span>. Finally, we assess their respective distance - we want to eventuall find <span>$p&#39; \approx p$</span>.</p><p>Again: </p><ol><li>Assume <em>true</em> moments <span>$\mu$</span> (and, hence, true <span>$p$</span>)</li><li>repeatedly create data from <span>$m(p&#39;)$</span> for different <span>$p&#39;$</span> drawn from a space <span>$[-3,3] \times [-2,2]$</span>. For each dataset, compute <span>$\mu_j&#39; = \frac{1}{N}x_{ij},j=1,2$</span>.</li><li>Compute distance <span>$\mu,\mu&#39;$</span> and decide according to the <a href="algo.html#MomentOpt.MAlgoBGP"><code>MomentOpt.MAlgoBGP</code></a> algorithm whether to accept or reject current <span>$p&#39;$</span>. </li></ol><pre><code class="language-julia-repl">julia&gt; using MomentOpt
+julia&gt; pb    = OrderedDict(&quot;p1&quot; =&gt; [0.2,-3,3] , &quot;p2&quot; =&gt; [-0.2,-2,2] )  # param spaces
+julia&gt; moms  = DataFrame(name=[&quot;mu1&quot;,&quot;mu2&quot;],value=[-1.0,1.0],weight=ones(2))  # truth
+julia&gt; mprob = MProb() 
+julia&gt; addSampledParam!(mprob,pb) 
+julia&gt; addMoment!(mprob,moms) 
+julia&gt; addEvalFunc!(mprob,objfunc_norm)
+
+julia&gt; nchains = 3
+
+julia&gt; opts =Dict(&quot;N&quot;=&gt;nchains,
+    &quot;maxiter&quot;=&gt; 10,
+    &quot;maxtemp&quot;=&gt; 5,
+    &quot;coverage&quot;=&gt;0.025,
+    &quot;sigma_update_steps&quot;=&gt;10, 
+    &quot;sigma_adjust_by&quot;=&gt;0.01, 
+    &quot;smpl_iters&quot;=&gt;1000,
+    &quot;parallel&quot;=&gt;true, 
+    &quot;min_improve&quot;=&gt;[0.05 for i in 1:nchains], 
+    &quot;mixprob&quot;=&gt;0.3, 
+    &quot;acc_tuners&quot;=&gt;[12.0 for i in 1:nchains], 
+    &quot;animate&quot;=&gt;false)
+
+julia&gt; MA = MAlgoBGP(mprob,opts)
+
+BGP Algorithm with 3 BGPChains
+============================
+
+Algorithm
+---------
+Current iteration: 0
+Number of params to estimate: 2
+Number of moments to match: 2
+
+julia&gt; runMOpt!(MA)
+[ Info: Starting estimation loop.
+Progress: 100%|████████████████████████████████████████| Time: 0:00:04
+┌ Warning: could not find &#39;filename&#39; in algo.opts
+└ @ MomentOpt ~/.julia/v0.6/MomentOpt/src/mopt/AlgoAbstract.jl:69
+[ Info: Done with estimation after 0.1 minutes
+</code></pre><p>Full list of options is available at the <a href="algo.html#MomentOpt.BGPChain"><code>MomentOpt.BGPChain</code></a> documentation</p><h2><a class="nav-anchor" id="Diagnostic-tools-1" href="#Diagnostic-tools-1">Diagnostic tools</a></h2><p>For this running example, here are a couple of plots that can easily be generated with the package.</p><h3><a class="nav-anchor" id=".-Objective-function-and-param-values-history-1" href="#.-Objective-function-and-param-values-history-1">1. Objective function and param values history</a></h3><ul><li>This can be generated via <code>plot(MA.chains[1])</code> (i.e. plots the first chain). <code>MA</code> is the final object of the above example.</li></ul><p><img src="../images/lines0.png" alt/></p><h3><a class="nav-anchor" id=".-Histograms-of-parameter-values-1" href="#.-Histograms-of-parameter-values-1">2. Histograms of parameter values</a></h3><p>Plot a histogram of all <em>accepted</em> parameter values:</p><pre><code class="language-julia">histogram(MA.chains[1])</code></pre><p><img src="../images/histogram0.png" alt/></p><h3><a class="nav-anchor" id=".-Slices-through-objective-and-moment-functions-1" href="#.-Slices-through-objective-and-moment-functions-1">3. Slices through objective and moment functions</a></h3><p>This can be generated via</p><pre><code class="language-julia">s = doSlices(mprob,30)
+plot(s,:value)  # plot objective function over param values
+plot(s,:mu1)  # plot value of moment :mu1 over param values
+plot(s,:mu2)  # plot value of moment :mu2 over param values</code></pre><p>The moment function plots show with red dashes the true moment value, and how the corresponding simulated moment changes as we move parameter <span>$p$</span>. This basically illustrates how and whether moment <span>$m_i$</span> contributes to the <em>identification</em> of the model.</p><p><img src="../images/slices-m.png" alt="moment function m1"/></p><p><img src="../images/slices-m2.png" alt="moment function m2"/></p><p>Finally, the slice through the objective function illustrates whether we attain a local maximum (in this case at the true parameter values <span>$p = (-1,1)$</span>).</p><p><img src="../images/slices-v.png" alt="slices"/></p><h3><a class="nav-anchor" id=".-Tracking-proposals-1" href="#.-Tracking-proposals-1">4. Tracking proposals</a></h3><ul><li>The variance of the <a href="algo.html#MomentOpt.proposal-Tuple{MomentOpt.BGPChain}"><code>MomentOpt.proposal</code></a> kernel is updated every <code>sigma_update_steps</code> as set in the <code>opts</code> for the <a href="algo.html#MomentOpt.MAlgo"><code>MomentOpt.MAlgo</code></a>.</li><li>There is a plotting method which can generate a gif of its evolution.</li><li>Just set <code>animate = true</code> in the <code>opts</code>, e.g.</li></ul><pre><code class="language-julia">opts =Dict(&quot;N&quot;=&gt;nchains,
+    &quot;maxiter&quot;=&gt;200,
+    &quot;maxtemp&quot;=&gt; 5,
+    &quot;smpl_iters&quot;=&gt;1000,
+    &quot;parallel&quot;=&gt;false,
+    &quot;min_improve&quot;=&gt;[0.0 for i in 1:nchains],
+    &quot;acc_tuners&quot;=&gt;[20;2;1.0],
+    &quot;animate&quot;=&gt;true)</code></pre><p>In the current example, this yields</p><p><img src="../images/proposals.gif" alt="proposals"/></p><footer><hr/><a class="previous" href="metrics.html"><span class="direction">Previous</span><span class="title">Econometrics</span></a></footer></article></body></html>
