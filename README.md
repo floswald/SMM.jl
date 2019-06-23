@@ -214,10 +214,10 @@ New algorithms:
 * [Edoardo Ciscato](https://github.com/edoardociscato)
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://floswald.github.io/MomentOpt/latest
+[docs-dev-url]: https://floswald.github.io/MomentOpt.jl/latest
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://floswald.github.io/MomentOpt/stable
+[docs-stable-url]: https://floswald.github.io/MomentOpt.jl/latest
 
 [travis-img]: https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master
 [travis-url]: https://travis-ci.org/floswald/MomentOpt.jl
