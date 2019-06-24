@@ -75,7 +75,7 @@ function objfunc_norm(ev::Eval)
 	end
 	ns = 10000
 	sigma           = ones(nm)
-	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
+	randMultiNormal = SMM.MvNormal(mu,SMM.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),dims = 2)
 	# simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
@@ -140,7 +140,7 @@ function objfunc_norm2(ev::Eval)
 	end
 	ns = 10000
 	sigma           = ones(length(mu))
-	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
+	randMultiNormal = SMM.MvNormal(mu,SMM.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
 	simM = vcat(simM, var(rand(randMultiNormal,ns)))
 	# simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])

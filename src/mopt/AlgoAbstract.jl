@@ -3,7 +3,7 @@
 
 
 """
-This abstract type nests all [`MProb`](@ref) algorithms, for example [`MomentOpt.MAlgoBGP`](@ref)
+This abstract type nests all [`MProb`](@ref) algorithms, for example [`SMM.MAlgoBGP`](@ref)
 """
 abstract type MAlgo end
 
@@ -20,11 +20,11 @@ end
 
 
 """
-	runMOpt!( algo::MAlgo )
+	run!( algo::MAlgo )
 
 Function to start estimation of an [`MAlgo`](@ref).
 """
-function runMOpt!( algo::MAlgo )
+function run!( algo::MAlgo )
 
 	# tasks
 	# =====

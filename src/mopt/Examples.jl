@@ -26,7 +26,7 @@ end
 function score_moments()
 
 	m = mprob_ex()
-	MomentOpt.FD_gradient(m,Dict(m.initial_value))
+	SMM.FD_gradient(m,Dict(m.initial_value))
 
 end
 
@@ -105,7 +105,7 @@ function parallelNormal(niter=200)
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	runMOpt!(MA)
+	run!(MA)
 	@show summary(MA)
 
 	# histogram(MA.chains[1]);
@@ -188,14 +188,14 @@ function snorm_standard()
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	MomentOpt.addMoment!(mprob,moms) 
-	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+	SMM.addMoment!(mprob,moms) 
+	SMM.addEvalFunc!(mprob,objfunc_norm)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	runMOpt!(MA)
+	run!(MA)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
@@ -221,8 +221,8 @@ function snorm_6_taxi(tol;par=false)
 	
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	MomentOpt.addMoment!(mprob,moms) 
-	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+	SMM.addMoment!(mprob,moms) 
+	SMM.addEvalFunc!(mprob,objfunc_norm)
 
 	s = optSlices(mprob,3,tol=tol,parallel=par,update=0.4)
 	return (moms,s)
@@ -301,14 +301,14 @@ function snorm_18(niter)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	MomentOpt.addMoment!(mprob,moms) 
-	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+	SMM.addMoment!(mprob,moms) 
+	SMM.addEvalFunc!(mprob,objfunc_norm)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	runMOpt!(MA)
+	run!(MA)
 	@show summary(MA)
 
 	# ph = histogram(MA.chains[1],nbins=19);
@@ -354,14 +354,14 @@ function snorm_standard6()
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	MomentOpt.addMoment!(mprob,moms) 
-	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+	SMM.addMoment!(mprob,moms) 
+	SMM.addEvalFunc!(mprob,objfunc_norm)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	runMOpt!(MA)
+	run!(MA)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
@@ -408,8 +408,8 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	MomentOpt.addMoment!(mprob,moms) 
-	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
+	SMM.addMoment!(mprob,moms) 
+	SMM.addEvalFunc!(mprob,objfunc_norm)
 
 
 
@@ -426,7 +426,7 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	runMOpt!(MA)
+	run!(MA)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
@@ -446,7 +446,7 @@ function BGP_example()
 	p = OrderedDict("theta" => [2.0,-2,10])
 	mprob = MProb()
 	addSampledParam!(mprob,p)
-	addEvalFunc!(mprob,MomentOpt.objfunc_BGP)
+	addEvalFunc!(mprob,SMM.objfunc_BGP)
 
 	nchains = 15
 
@@ -464,7 +464,7 @@ function BGP_example()
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 	# run the estimation
-	runMOpt!(MA)
+	run!(MA)
 	@show summary(MA)
 
 	histogram(MA.chains[1])

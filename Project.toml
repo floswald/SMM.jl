@@ -1,4 +1,4 @@
-name = "MomentOpt"
+name = "SMM"
 uuid = "bc769cb7-f249-5bba-802a-79f18cb247ec"
 authors = ["Florian Oswald <florian.oswald@gmail.com>"]
 version = "1.4.0"

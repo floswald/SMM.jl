@@ -1,10 +1,10 @@
 # Econometrics
 
-* This set of methods is concerned with inference about an [`MomentOpt.MAlgoBGP`](@ref)
+* This set of methods is concerned with inference about an [`SMM.MAlgoBGP`](@ref)
 * This is mostly standard GMM technology
 
 
 ```@autodocs
-Modules = [MomentOpt]
+Modules = [SMM]
 Pages = ["econometrics.jl"]
 ```

@@ -1,6 +1,6 @@
 # [Slices from a `MProb`](@id slices)
 
 ```@autodocs
-Modules = [MomentOpt]
+Modules = [SMM]
 Pages = ["slices.jl"]
 ```

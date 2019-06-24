@@ -9,9 +9,9 @@
 		addMoment!(mprob,moms) 
 		# addEvalFunc!(mprob,objfunc_norm)
 
-		ev = MomentOpt.Eval( mprob, OrderedDict(:p1 => 1.0 , :p2 => 0.0))
+		ev = SMM.Eval( mprob, OrderedDict(:p1 => 1.0 , :p2 => 0.0))
 		@test ev.status == -1
-		ev = MomentOpt.Testobj2(ev)	
+		ev = SMM.Testobj2(ev)	
 		@test ev.status == 1
 		@test param(ev,:p1) == 1.0
 		@test param(ev,:p2) == 0.0
@@ -21,8 +21,8 @@
 
 	@testset "testing bivariate normal" begin
 
-		ev = MomentOpt.Eval( Dict(:p1 => 0.0 , :p2 => 0.0), Dict(:mu1 =>0.0 , :mu2 => 0.0))
-		ev = MomentOpt.objfunc_norm(ev)	
+		ev = SMM.Eval( Dict(:p1 => 0.0 , :p2 => 0.0), Dict(:mu1 =>0.0 , :mu2 => 0.0))
+		ev = SMM.objfunc_norm(ev)	
 		@test isapprox(ev.simMoments[:mu1], ev.dataMoments[:mu1], atol= 0.1 )
 		@test isapprox(ev.simMoments[:mu2], ev.dataMoments[:mu2], atol= 0.1 )
 

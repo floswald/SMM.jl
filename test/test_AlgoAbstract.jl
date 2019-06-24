@@ -7,7 +7,7 @@
     mprob = MProb()
     addSampledParam!(mprob,pb)
     addMoment!(mprob,moms)
-    addEvalFunc!(mprob,MomentOpt.objfunc_norm)
+    addEvalFunc!(mprob,SMM.objfunc_norm)
 
     # estimation options:
     #--------------------
@@ -37,7 +37,7 @@
     MA = MAlgoBGP(mprob,opts)
 
     # run the estimation:
-    @time MomentOpt.runMOpt!(MA)
+    @time SMM.run!(MA)
 
     # load MA saved above
     MA2 = readMalgo(opts["filename"])
