@@ -14,7 +14,7 @@
 	p2    = Dict(:a => 3.1 , :b => 4.9)
 	moms2 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
-	p3    = MomentOpt.OrderedDict(:a => 3.1 , :b => 4.9)
+	p3    = SMM.OrderedDict(:a => 3.1 , :b => 4.9)
 	moms3 = DataFrame(name=[:alpha;:beta;:gamma],value=[0.8;0.7;0.5],weight=[0.1;0.4;0.5])
 
 	ev = Eval(p,moms)
@@ -41,7 +41,7 @@
 		@test paramd(ev3) == Dict(:a => 3.1 , :b => 4.9)
 
 		myp = MyP()
-		MomentOpt.fill(myp,ev)
+		SMM.fill(myp,ev)
 		@test myp.a == 3.1
 	end
 
@@ -59,17 +59,17 @@
 		setMoments!(ev,Dict( :alpha => 0.78, :beta => 0.81) )	
 		@test ev.simMoments[:beta] == 0.81
 
-		MomentOpt.setValue!(ev,4.2)
+		SMM.setValue!(ev,4.2)
 		@test ev.value == 4.2
 	end
 
 	@testset "testing saving/loading" begin
-		MomentOpt.FileIO.save("test5.jld2",Dict("ev"=>ev,"evs"=>[ev,ev2]))
+		SMM.FileIO.save("test5.jld2",Dict("ev"=>ev,"evs"=>[ev,ev2]))
 		sleep(1)
-		ev2_ = MomentOpt.FileIO.load("test5.jld2", "ev")
+		ev2_ = SMM.FileIO.load("test5.jld2", "ev")
 		@test ev2_ == ev
 
-		evs = MomentOpt.FileIO.load("test5.jld2","evs")
+		evs = SMM.FileIO.load("test5.jld2","evs")
 		@test evs[1] == ev
 		@test evs[2] == ev2
 		rm("test5.jld2")

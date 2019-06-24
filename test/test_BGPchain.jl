@@ -30,24 +30,24 @@
 		v = rand()
 		ev.value = v
 		ev.accepted = true
-		MomentOpt.set_eval!(chain,ev)
+		SMM.set_eval!(chain,ev)
 		@test isa(chain.evals[1],Eval)
 		@test chain.evals[1].value == v 
 		@test chain.accepted[1]
-		MomentOpt.set_acceptRate!(chain)
+		SMM.set_acceptRate!(chain)
 		@test chain.accept_rate == 1.0
 
-		# MomentOpt.set_sigma!(chain,sig2)
+		# SMM.set_sigma!(chain,sig2)
 		# @test diag(chain.sigma) == sig2
 
-		MomentOpt.getLastAccepted(chain) == ev
+		SMM.getLastAccepted(chain) == ev
 	end
 
 	@testset "proposal" begin
 	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain()
 		@test chain.iter == 0
 		chain.iter = 1
-		pp = MomentOpt.proposal(chain)
+		pp = SMM.proposal(chain)
 		@test pp == mprob.initial_value
 
 		#  set a value:
@@ -55,20 +55,20 @@
 		v = rand()
 		ev.value = v
 		ev.accepted = true
-		MomentOpt.set_eval!(chain,ev)
+		SMM.set_eval!(chain,ev)
 		# next period:
 		chain.iter += 1
-		pp = MomentOpt.proposal(chain)
+		pp = SMM.proposal(chain)
 		@test pp != mprob.initial_value
 
 	end
 
-	# https://github.com/floswald/MomentOpt.jl/issues/31
+	# https://github.com/floswald/SMM.jl/issues/31
 	@testset "high dimensional proposal" begin
 	    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite) = test_chain3()
 		@test chain.iter == 0
 		chain.iter = 1
-		pp = MomentOpt.proposal(chain)
+		pp = SMM.proposal(chain)
 		@test pp == mprob.initial_value
 
 		#  set a value:
@@ -80,9 +80,9 @@
 		for i in 1:n-1
 			ev.value = rand()
 			ev.accepted = true
-			MomentOpt.set_eval!(chain,ev)
+			SMM.set_eval!(chain,ev)
 			chain.iter += 1
-			p = MomentOpt.proposal(chain)
+			p = SMM.proposal(chain)
 			@test p != pp
 			pp = deepcopy(p)
 		end
@@ -97,11 +97,11 @@
 		    c.iter += 1
 
 			# get a getNewCandidates
-		    pp = MomentOpt.proposal(c)
+		    pp = SMM.proposal(c)
 		    # evaluate objective 
-		    ev = MomentOpt.evaluateObjective(c.m,pp)
+		    ev = SMM.evaluateObjective(c.m,pp)
 
-		    MomentOpt.doAcceptReject!(c,ev)
+		    SMM.doAcceptReject!(c,ev)
 
 			# is accepted: 
 			@test c.accepted[c.iter]
@@ -117,7 +117,7 @@
 			# get 2 Evals: one with good, one with bad value
 			# want to accept good and reject bad.
 
-			ev_0 = MomentOpt.getLastAccepted(c)
+			ev_0 = SMM.getLastAccepted(c)
 			ev_good = Eval()
 			ev_bad  = Eval()
 
@@ -127,7 +127,7 @@
 			ev_bad.status  = 1
 
 
-			MomentOpt.doAcceptReject!(c,ev_bad)
+			SMM.doAcceptReject!(c,ev_bad)
 			@test ev_bad.prob < 1
 			if ev_bad.prob > c.probs_acc[c.iter]
 				@test ev_bad.accepted
@@ -136,9 +136,9 @@
 
 			# force accept 
 			ev_bad.accepted = true
-			MomentOpt.set_eval!(c,ev_bad)
+			SMM.set_eval!(c,ev_bad)
 
-			MomentOpt.doAcceptReject!(c,ev_good)
+			SMM.doAcceptReject!(c,ev_good)
 			@test ev_good.prob == 1.0
 			@test ev_good.accepted
 			@test c.accepted[c.iter]

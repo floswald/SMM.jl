@@ -1,6 +1,6 @@
 
 
-module MomentOpt
+module SMM
 
 __precompile__(false)
 
@@ -52,9 +52,9 @@ export addParam!,
        finish,
        save,
        readMalgo,
-       restartMOpt!,
+       restart!,
        extendBGPChain!,
-       runMOpt!,
+       run!,
        mean,median,CI
 
 # create a random device that is immune to seeds

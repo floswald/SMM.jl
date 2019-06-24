@@ -1,14 +1,14 @@
 module TestSobol
 
-	using FactCheck,DataFrames,Lazy,MomentOpt
+	using FactCheck,DataFrames,Lazy,SMM
 
 	# initial value
 	pb    = Dict("p1" => [1.0;-2;2] , "p2" => [-1.0;-2;2] ) 
 	moms = DataFrame(name=["mu1";"mu2"],value=[0.0;0.0],weight=rand(2))
-	mprob = @> MomentOpt.MProb() MomentOpt.addSampledParam!(pb) MomentOpt.addMoment!(moms) MomentOpt.addEvalFunc!(MomentOpt.objfunc_norm);
+	mprob = @> SMM.MProb() SMM.addSampledParam!(pb) SMM.addMoment!(moms) SMM.addEvalFunc!(SMM.objfunc_norm);
 
 	# compute the slices
-	sl = MomentOpt.sobolsearch(mprob,500);
+	sl = SMM.sobolsearch(mprob,500);
 
 	# find the min value
 
@@ -19,7 +19,7 @@ module TestSobol
 		end
 	end
 
-	sl = MomentOpt.sobolWeightedSearch(mprob,500);
+	sl = SMM.sobolWeightedSearch(mprob,500);
 
 	using PyPlot
 
@@ -28,17 +28,17 @@ module TestSobol
 
 
 	# subplot(231)
-	# r = MomentOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
+	# r = SMM.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
 	# subplot(232)
-	# r = MomentOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
+	# r = SMM.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
 	# subplot(233)
-	# r = MomentOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
+	# r = SMM.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
 	# subplot(234)
-	# r = MomentOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
+	# r = SMM.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
 	# subplot(235)
-	# r = MomentOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
+	# r = SMM.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
 	# subplot(236)
-	# r = MomentOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
+	# r = SMM.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
 
 
 	# generate a sobol sequence
@@ -51,11 +51,11 @@ module TestSobol
 	# define a simple objective function
 	mu = [1.0,1.0]
 	C  = [0.5 0.3; 0.1 0.8]
-	R = MomentOpt.MvNormal(mu, C)
+	R = SMM.MvNormal(mu, C)
 	function f(x)
-	 x1 = quantile(MomentOpt.Normal(),x[1])
-	 x2 = quantile(MomentOpt.Normal(),x[2]) 
-	 return MomentOpt.pdf(R,[x1,x2])
+	 x1 = quantile(SMM.Normal(),x[1])
+	 x2 = quantile(SMM.Normal(),x[2]) 
+	 return SMM.pdf(R,[x1,x2])
 	end
 
 	V = map(f,S)

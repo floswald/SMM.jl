@@ -5,7 +5,7 @@ function test_chain()
     mprob = MProb() 
     addSampledParam!(mprob,pb) 
     addMoment!(mprob,moms) 
-    addEvalFunc!(mprob,MomentOpt.objfunc_norm)
+    addEvalFunc!(mprob,SMM.objfunc_norm)
     id = 180
     n = 23
     sig = rand()
@@ -14,7 +14,7 @@ function test_chain()
     upd_by = rand()
     ite = 1000
     b_size = 2
-    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
+    chain = SMM.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
 end
 
@@ -24,7 +24,7 @@ function test_chain2()
     mprob = MProb() 
     addSampledParam!(mprob,pb) 
     addMoment!(mprob,moms) 
-    addEvalFunc!(mprob,MomentOpt.objfunc_norm)
+    addEvalFunc!(mprob,SMM.objfunc_norm)
     id = 180
     n = 23
     sig = rand()
@@ -33,7 +33,7 @@ function test_chain2()
     upd_by = rand()
     ite = 1000
     b_size = 2
-    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
+    chain = SMM.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
 end
 
@@ -79,7 +79,7 @@ function test_chain3()
     mprob = MProb() 
     addSampledParam!(mprob,pb) 
     addMoment!(mprob,moms) 
-    addEvalFunc!(mprob,MomentOpt.objfunc_norm)
+    addEvalFunc!(mprob,SMM.objfunc_norm)
     id = 180
     n = 100
     sig = rand()
@@ -88,7 +88,7 @@ function test_chain3()
     upd_by = rand()
     ite = 1000
     b_size = 1
-    chain = MomentOpt.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
+    chain = SMM.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
     (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
 end
 

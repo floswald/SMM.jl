@@ -5,6 +5,6 @@ This is a datatype to track function evaluations:
 
 
 ```@autodocs
-Modules = [MomentOpt]
+Modules = [SMM]
 Pages = ["Eval.jl"]
 ```

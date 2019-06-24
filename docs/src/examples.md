@@ -23,10 +23,10 @@ Again:
 
 1. Assume *true* moments ``\mu`` (and, hence, true ``p``)
 1. repeatedly create data from ``m(p')`` for different ``p'`` drawn from a space ``[-3,3] \times [-2,2]``. For each dataset, compute ``\mu_j' = \frac{1}{N}x_{ij},j=1,2``.
-1. Compute distance ``\mu,\mu'`` and decide according to the [`MomentOpt.MAlgoBGP`](@ref) algorithm whether to accept or reject current ``p'``. 
+1. Compute distance ``\mu,\mu'`` and decide according to the [`SMM.MAlgoBGP`](@ref) algorithm whether to accept or reject current ``p'``. 
 
 ```julia-repl
-julia> using MomentOpt
+julia> using SMM
 julia> pb    = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2] )  # param spaces
 julia> moms  = DataFrame(name=["mu1","mu2"],value=[-1.0,1.0],weight=ones(2))  # truth
 julia> mprob = MProb() 
@@ -60,16 +60,16 @@ Current iteration: 0
 Number of params to estimate: 2
 Number of moments to match: 2
 
-julia> runMOpt!(MA)
+julia> run!(MA)
 [ Info: Starting estimation loop.
 Progress: 100%|████████████████████████████████████████| Time: 0:00:04
 ┌ Warning: could not find 'filename' in algo.opts
-└ @ MomentOpt ~/.julia/v0.6/MomentOpt/src/mopt/AlgoAbstract.jl:69
+└ @ SMM ~/.julia/v0.6/SMM/src/mopt/AlgoAbstract.jl:69
 [ Info: Done with estimation after 0.1 minutes
 
 ```
 
-Full list of options is available at the [`MomentOpt.BGPChain`](@ref) documentation
+Full list of options is available at the [`SMM.BGPChain`](@ref) documentation
 
 ## Diagnostic tools
 
@@ -116,7 +116,7 @@ Finally, the slice through the objective function illustrates whether we attain 
 
 ### 4. Tracking proposals
 
-* The variance of the [`MomentOpt.proposal`](@ref) kernel is updated every `sigma_update_steps` as set in the `opts` for the [`MomentOpt.MAlgo`](@ref).
+* The variance of the [`SMM.proposal`](@ref) kernel is updated every `sigma_update_steps` as set in the `opts` for the [`SMM.MAlgo`](@ref).
 * There is a plotting method which can generate a gif of its evolution.
 * Just set `animate = true` in the `opts`, e.g.
 

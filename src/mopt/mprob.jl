@@ -22,7 +22,7 @@ moms  = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=rand(2))
 m     = MProb() 
 addSampledParam!(m,pb) 
 addMoment!(m,moms) 
-MomentOpt.addEvalFunc!(m,MomentOpt.objfunc_norm)
+SMM.addEvalFunc!(m,SMM.objfunc_norm)
 ```
     
 """

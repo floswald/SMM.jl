@@ -1,13 +1,13 @@
 
 
-using MomentOpt
+using SMM
 using Test
 using DataFrames
 using OrderedCollections
 using Distributed
 using LinearAlgebra
 using Random
-using Plots: Animation
+using Plots
 using JSON
 
 # If we want the test to pass, we need this

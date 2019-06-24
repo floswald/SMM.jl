@@ -727,7 +727,7 @@ end
   extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 
 Starting from an existing [`MAlgoBGP`](@ref), allow for additional iterations
-by extending a specific chain. This function is used to restart a previous estimation run via [`restartMOpt!`](@ref)
+by extending a specific chain. This function is used to restart a previous estimation run via [`restart!`](@ref)
 """
 function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 
@@ -769,18 +769,18 @@ function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 end
 
 """
-  restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
+  restart!(algo::MAlgoBGP, extraIter::Int64)
 
 Starting from an existing AlgoBGP, restart the optimization from where it
 stopped. Add `extraIter` additional steps to the optimization process.
 """
-function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
+function restart!(algo::MAlgoBGP, extraIter::Int64)
 
   @info "Restarting estimation loop with $(extraIter) iterations."
-  @info "Current best value on chain 1 before restarting $(MomentOpt.summary(algo)[:best_val][1])"
+  @info "Current best value on chain 1 before restarting $(SMM.summary(algo)[:best_val][1])"
   t0 = time()
 
-  # Minus 1, to follow the MomentOpt convention
+  # Minus 1, to follow the SMM convention
   initialIter = algo.i
   finalIter = initialIter + extraIter
 
@@ -791,7 +791,7 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
     extendBGPChain!(algo.chains[chainNumber], algo, extraIter)
   end
 
-  # To follow the conventions in MomentOpt:
+  # To follow the conventions in SMM:
   #----------------------------------------
   for ic in 1:algo["N"]
       algo.chains[ic].iter =   algo.i - 1
@@ -803,7 +803,7 @@ function restartMOpt!(algo::MAlgoBGP, extraIter::Int64)
   algo.opts["maxiter"] = finalIter
 
   # do iterations, starting at initialIter
-  # and not at i=1, as in runMOpt!
+  # and not at i=1, as in run!
     @info "restarting estimation"
     @showprogress for i in initialIter:finalIter
 

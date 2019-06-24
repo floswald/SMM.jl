@@ -1,10 +1,12 @@
 
 
-# MomentOpt.jl: Moment Optimization Library for Julia
+# SMM.jl: Simulated Method of Moments for Julia
 
 | **Documentation** | **Build Status**                                                                                |
 |:---------------------:|:------------------:|
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] |
+
+*Notice*: this package was previously called *MomentOpt.jl*.
 
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
@@ -12,8 +14,10 @@ This package provides a `Julia` infrastructure for *[Simulated Method of Moments
 
 ## Installation
 
+In your julia REPL, type
+
 ```julia
-Pkg.clone("https://github.com/floswald/MomentOpt.jl")
+] add SMM
 ```
 
 ## Documentation
@@ -31,7 +35,7 @@ Let's start slowly. Here we want to estimate the mean parameters of a bivariate 
 
 ```julia
 
-julia> MomentOpt.snorm_standard()
+julia> SMM.snorm_standard()
 INFO: These moments are our targets
 INFO: Parameter p_i corresponds to moment m_i
 2×3 DataFrames.DataFrame
@@ -65,7 +69,7 @@ Now the two moments are an order of magnitude apart.
 
 
 ```julia
-julia> MomentOpt.serialNormal(2,400,save=true)
+julia> SMM.serialNormal(2,400,save=true)
 2×3 DataFrames.DataFrame
 │ Row │ name │ value │ weight │
 ├─────┼──────┼───────┼────────┤
@@ -97,7 +101,7 @@ summary(MA) = 3×5 DataFrames.DataFrame
 
 
 ```julia
-julia> MomentOpt.snorm_standard6()
+julia> SMM.snorm_standard6()
 INFO: These moments are our targets
 INFO: Parameter p_i corresponds to moment m_i
 6×3 DataFrames.DataFrame
@@ -137,7 +141,7 @@ This example is to illustrate that the tuning parameters `acc_tuner`, `maxtemp` 
 
 
 ```julia
-julia> MomentOpt.serialNormal(6,1000,save=true)
+julia> SMM.serialNormal(6,1000,save=true)
 INFO: These moments are our targets
 INFO: Parameter p_i corresponds to moment m_i
 6×3 DataFrames.DataFrame
@@ -214,13 +218,13 @@ New algorithms:
 * [Edoardo Ciscato](https://github.com/edoardociscato)
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://floswald.github.io/MomentOpt.jl/latest
+[docs-dev-url]: https://floswald.github.io/SMM.jl/latest
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://floswald.github.io/MomentOpt.jl/latest
+[docs-stable-url]: https://floswald.github.io/SMM.jl/latest
 
-[travis-img]: https://travis-ci.org/floswald/MomentOpt.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/floswald/MomentOpt.jl
+[travis-img]: https://travis-ci.org/floswald/SMM.jl.svg?branch=master
+[travis-url]: https://travis-ci.org/floswald/SMM.jl
 
-[appveyor-img]: https://ci.appveyor.com/api/projects/status/github/floswald/MomentOpt.jl?branch=master&svg=true
-[appveyor-url]: https://ci.appveyor.com/project/floswald/MomentOpt.jl/branch/master
+[appveyor-img]: https://ci.appveyor.com/api/projects/status/github/floswald/SMM.jl?branch=master&svg=true
+[appveyor-url]: https://ci.appveyor.com/project/floswald/SMM.jl/branch/master

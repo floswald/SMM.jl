@@ -10,7 +10,7 @@
 	mprob = MProb()
 	addSampledParam!(mprob,pb)
 	addMoment!(mprob,moms)
-	addEvalFunc!(mprob,MomentOpt.objfunc_norm)
+	addEvalFunc!(mprob,SMM.objfunc_norm)
 	@testset "Constructor" begin
 
 		MA = MAlgoBGP(mprob)
@@ -23,13 +23,13 @@
 		@test length(MA.chains) == 3
 
 		for ix = 1:length(MA.chains)
-			@test isa( MA.chains[ix] , MomentOpt.BGPChain)
+			@test isa( MA.chains[ix] , SMM.BGPChain)
 		end
 	end
 
 	@testset "serialNormal() runs" begin
-	    o = MomentOpt.serialNormal(2,20)[1];
-	    h = MomentOpt.history(o.chains[1])
+	    o = SMM.serialNormal(2,20)[1];
+	    h = SMM.history(o.chains[1])
 	    @test isa(o,MAlgoBGP)
 	    @test isa(h,DataFrame)
 	    @test nrow(h) == 20
@@ -42,9 +42,9 @@
 
 		addprocs(1)
 
-		@everywhere using MomentOpt
-	    o = MomentOpt.parallelNormal(20);
-	    h = MomentOpt.history(o.chains[1])
+		@everywhere using SMM
+	    o = SMM.parallelNormal(20);
+	    h = SMM.history(o.chains[1])
 	    @test isa(o,MAlgoBGP)
 	    @test isa(h,DataFrame)
 	    @test nrow(h) == 20
@@ -63,7 +63,7 @@
 
 		addprocs(2)
 
-		@everywhere using MomentOpt
+		@everywhere using SMM
 
 		Random.seed!(1234)
 		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
@@ -73,7 +73,7 @@
 		mprob = MProb()
 		addSampledParam!(mprob,pb)
 		addMoment!(mprob,moms)
-		addEvalFunc!(mprob, MomentOpt.objfunc_norm)
+		addEvalFunc!(mprob, SMM.objfunc_norm)
 
 
 		# estimation options:
@@ -93,7 +93,7 @@
 		        "acc_tuners"=>[5;1.0],
 		        "animate"=>false)
 		MA = MAlgoBGP(mprob,opts)
-		MomentOpt.runMOpt!(MA)
+		SMM.run!(MA)
 
 		me = mean(MA.chains[1])
 		med = median(MA.chains[1])
@@ -129,7 +129,7 @@
 
 		addprocs(2)
 
-		@everywhere using MomentOpt
+		@everywhere using SMM
 
 		Random.seed!(1234)
 		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
@@ -139,7 +139,7 @@
 		mprob = MProb()
 		addSampledParam!(mprob,pb)
 		addMoment!(mprob,moms)
-		addEvalFunc!(mprob, MomentOpt.objfunc_norm)
+		addEvalFunc!(mprob, SMM.objfunc_norm)
 
 
 		# estimation options:
@@ -161,9 +161,9 @@
 		        "animate"=>false,
 		        "batch_size"=> 1)
 		MA = MAlgoBGP(mprob,opts)
-		MomentOpt.runMOpt!(MA)
+		SMM.run!(MA)
 
-		# dat_chain1 = MomentOpt.history(MA.chains[1])
+		# dat_chain1 = SMM.history(MA.chains[1])
 		# dat_chain1[round(Int, niter/10):niter, :]
 		# dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
 
@@ -231,11 +231,11 @@
 		MA = MAlgoBGP(mprob,opts)
 
 		# run the estimation
-		MomentOpt.runMOpt!(MA)
+		SMM.run!(MA)
 
 		# restart the estimation:
 		newiters = 20
-		MomentOpt.restartMOpt!(MA, newiters)
+		SMM.restart!(MA, newiters)
 
 		mprob2 = MProb()
 		addSampledParam!(mprob2,pb)
@@ -264,10 +264,10 @@
 		MA2 = MAlgoBGP(mprob2,opts2)
 
 		# run the estimation:
-		MomentOpt.runMOpt!(MA2)
+		SMM.run!(MA2)
 
-		MomentOpt.summary(MA2)
-		MomentOpt.summary(MA)
+		SMM.summary(MA2)
+		SMM.summary(MA)
 
 		Qmean = zeros(2,2)
 		Qmedian = zeros(2,2)
@@ -276,7 +276,7 @@
 
 			# Realization of the first chain:
 			#-------------------------------
-			dat_chain1 = MomentOpt.history(algo.chains[1])
+			dat_chain1 = SMM.history(algo.chains[1])
 
 			# discard the first 10th of the observations ("burn-in" phase):
 			#--------------------------------------------------------------
@@ -314,7 +314,7 @@
 
 	@testset "high-dim test" begin
 	    
-	    m = MomentOpt.snorm_18(100)
+	    m = SMM.snorm_18(100)
 	end
 
 
