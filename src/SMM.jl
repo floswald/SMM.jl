@@ -2,6 +2,7 @@
 
 module SMM
 
+__precompile__(false)
 
 # Dependencies
 # ############
