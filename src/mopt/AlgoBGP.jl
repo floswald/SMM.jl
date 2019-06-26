@@ -379,8 +379,10 @@ function mysample(d::Distributions.MultivariateDistribution,lb::Float64,ub::Floa
 
     # draw until all points are in support
     for i in 1:iters
+        println(i)
         x = rand(RAND,d)
         if all(x.>=lb) && all(x.<=ub)
+            println(x)
             return x
         end
     end
@@ -418,15 +420,16 @@ function proposal(c::BGPChain)
         # if there is only one batch of params
         if length(c.batches) == 1
             pp = mysample(MvNormal(mu01,c.sigma),0.0,1.0,c.smpl_iters)
+            println(pp)
         else
             # do it in batches of params
             pp = zero(mu01)
             for (sig_ix,i) in enumerate(c.batches)
-                try
+                # try
                     pp[i] = mysample(MvNormal(mu01[i],c.sigma),0.0,1.0,c.smpl_iters)
-                catch err
-                    println("caught exception $err. this is param index $sig_ix, mean = $(mu01[i]), sigma $(c.sigma), lb,ub = $((0,1))")
-                end
+                # catch err
+                #     println("caught exception $err. this is param index $sig_ix, mean = $(mu01[i]), sigma $(c.sigma), lb,ub = $((0,1))")
+                # end
             end
         end
         # map [0,1] -> [a,b]

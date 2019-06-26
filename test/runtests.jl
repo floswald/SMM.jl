@@ -7,7 +7,7 @@ using OrderedCollections
 using Distributed
 using LinearAlgebra
 using Random
-using Plots
+using Plots: Animation
 using JSON
 
 # If we want the test to pass, we need this

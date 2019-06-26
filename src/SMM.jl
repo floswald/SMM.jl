@@ -60,6 +60,10 @@ export addParam!,
 const RAND = RandomDevice()
 
 
+# logger=Logging.ConsoleLogger(stderr,Logging.Debug)
+logger=Logging.SimpleLogger(stderr,Logging.Info)
+global_logger(logger)
+
 # load files
 # ############
 
@@ -75,8 +79,6 @@ include("mopt/plotting.jl")
 include("mopt/econometrics.jl")
 # include("mopt/deprecating.jl")
 
-logger = ConsoleLogger()
-global_logger(logger)
 
 
 end 	# module

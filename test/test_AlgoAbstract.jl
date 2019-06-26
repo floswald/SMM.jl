@@ -24,7 +24,7 @@
             "sigma_update_steps"=>10,
             "sigma_adjust_by"=>0.01,
             "smpl_iters"=>1000,
-            "parallel"=>true,
+            "parallel"=>false,
             "min_improve"=>[0.05 for i in 1:nchains],
             "mixprob"=>0.3,
             "acc_tuner"=>12.0,

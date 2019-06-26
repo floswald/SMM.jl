@@ -15,7 +15,7 @@ function test_chain()
     ite = 1000
     b_size = 2
     chain = SMM.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
-    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
+    (chain=chain, id=id, n=n, mprob=mprob, sig=sig, sig2=sig2, upd=upd, upd_by=upd_by, ite=ite,b_size=b_size)
 end
 
 function test_chain2()
@@ -34,7 +34,7 @@ function test_chain2()
     ite = 1000
     b_size = 2
     chain = SMM.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
-    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
+    (chain=chain, id=id, n=n, mprob=mprob, sig=sig, sig2=sig2, upd=upd, upd_by=upd_by, ite=ite,b_size=b_size)
 end
 
 function test_chain3()
@@ -89,7 +89,7 @@ function test_chain3()
     ite = 1000
     b_size = 1
     chain = SMM.BGPChain(id,n,m=mprob,sig=sig,upd=upd,upd_by=upd_by,smpl_iters=ite,batch_size=b_size)
-    (chain, id, n, mprob, sig, sig2, upd, upd_by, ite,b_size)
+    (chain=chain, id=id, n=n, mprob=mprob, sig=sig, sig2=sig2, upd=upd, upd_by=upd_by, ite=ite,b_size=b_size)
 end
 
 mutable struct MyP
