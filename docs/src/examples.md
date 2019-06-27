@@ -79,7 +79,7 @@ For this running example, here are a couple of plots that can easily be generate
 
 * This can be generated via `plot(MA.chains[1])` (i.e. plots the first chain). `MA` is the final object of the above example.
 
-![](../images/lines0.png)
+![](images/lines0.png)
 
 ### 2. Histograms of parameter values 
 
@@ -89,7 +89,7 @@ Plot a histogram of all *accepted* parameter values:
 histogram(MA.chains[1])
 ```
 
-![](../images/histogram0.png)
+![](images/histogram0.png)
 
 ### 3. Slices through objective and moment functions 
 
@@ -104,14 +104,14 @@ plot(s,:mu2)  # plot value of moment :mu2 over param values
 
 The moment function plots show with red dashes the true moment value, and how the corresponding simulated moment changes as we move parameter ``p``. This basically illustrates how and whether moment ``m_i`` contributes to the *identification* of the model.
 
-![moment function m1](../images/slices-m.png)
+![moment function m1](images/slices-m.png)
 
 
-![moment function m2](../images/slices-m2.png)
+![moment function m2](images/slices-m2.png)
 
 Finally, the slice through the objective function illustrates whether we attain a local maximum (in this case at the true parameter values ``p = (-1,1)``).
 
-![slices](../images/slices-v.png)
+![slices](images/slices-v.png)
 
 
 ### 4. Tracking proposals
@@ -134,5 +134,5 @@ opts =Dict("N"=>nchains,
 In the current example, this yields
 
 
-![proposals](../images/proposals.gif)
+![proposals](images/proposals.gif)
 
