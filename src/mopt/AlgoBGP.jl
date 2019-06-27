@@ -425,7 +425,7 @@ function proposal(c::BGPChain)
                 try
                     pp[i] = mysample(MvNormal(mu01[i],c.sigma),0.0,1.0,c.smpl_iters)
                 catch err
-                    println("caught exception $err. this is param index $sig_ix, mean = $(mu01[i]), sigma $(c.sigma), lb,ub = $((0,1))")
+                    @error "caught exception $err. this is param index $sig_ix, mean = $(mu01[i]), sigma $(c.sigma), lb,ub = $((0,1))"
                 end
             end
         end
