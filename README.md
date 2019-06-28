@@ -37,6 +37,10 @@ New algorithms:
 * You can model your algo on the basis of `src/AlgoBGP.jl` -
 * you need to implement the function `computeNextIteration!( algo )` for your `algo`
 
+## History
+
+This package grew out of the [R package `mopt`](https://github.com/tlamadon/mopt). 
+
 ## Thanks to all Contributors!
 
 * [Julien Pascal](https://github.com/JulienPascal)
