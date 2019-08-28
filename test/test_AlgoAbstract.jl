@@ -7,7 +7,7 @@
     mprob = MProb()
     addSampledParam!(mprob,pb)
     addMoment!(mprob,moms)
-    addEvalFunc!(mprob,SMM.objfunc_norm)
+    addEvalFunc!(mprob,MomentOpt.objfunc_norm)
 
     # estimation options:
     #--------------------
@@ -37,7 +37,7 @@
     MA = MAlgoBGP(mprob,opts)
 
     # run the estimation:
-    @time SMM.run!(MA)
+    @time MomentOpt.runMOpt!(MA)
 
     # load MA saved above
     MA2 = readMalgo(opts["filename"])
@@ -49,7 +49,7 @@
 
     # Compare chains
     for chainNumber = 1:MA.opts["N"]
-        for fieldName in fieldnames(typeof(MA.chains[chainNumber]))
+        for fieldName in fieldnames(MA.chains[chainNumber])
           # for fields m and sigma, the test returns false, eventhough they have
           # the same values
             if fieldName!= :m && fieldName != :sigma

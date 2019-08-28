@@ -1,13 +1,10 @@
 
 
-using SMM
-using Test
+using MomentOpt
+using Base.Test
+using TestSetExtensions
 using DataFrames
-using OrderedCollections
-using Distributed
-using LinearAlgebra
-using Random
-using Plots
+using DataStructures
 using JSON
 
 # If we want the test to pass, we need this
@@ -23,12 +20,8 @@ ENV["GKSwstype"] = "100"
 
 include(joinpath(dirname(@__FILE__),"include","test-include.jl"))
 
-include("test_MProb.jl")
-include("test_Eval.jl")
-include("test_slices.jl")
-include("test_BGPchain.jl")
-include("test_AlgoAbstract.jl")
-include("test_algoBGP.jl")
-include("test_objfunc.jl")
+@testset ExtendedTestSet "Running MomentOpt tests" begin
 
+    @includetests ARGS
 
+end

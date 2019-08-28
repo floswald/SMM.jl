@@ -10,7 +10,7 @@
 	mprob = MProb()
 	addSampledParam!(mprob,pb)
 	addMoment!(mprob,moms)
-	addEvalFunc!(mprob,SMM.objfunc_norm)
+	addEvalFunc!(mprob,MomentOpt.objfunc_norm)
 	@testset "Constructor" begin
 
 		MA = MAlgoBGP(mprob)
@@ -23,13 +23,13 @@
 		@test length(MA.chains) == 3
 
 		for ix = 1:length(MA.chains)
-			@test isa( MA.chains[ix] , SMM.BGPChain)
+			@test isa( MA.chains[ix] , MomentOpt.BGPChain)
 		end
 	end
 
 	@testset "serialNormal() runs" begin
-	    o = SMM.serialNormal(2,20)[1];
-	    h = SMM.history(o.chains[1])
+	    o = MomentOpt.serialNormal(2,20)[1];
+	    h = MomentOpt.history(o.chains[1])
 	    @test isa(o,MAlgoBGP)
 	    @test isa(h,DataFrame)
 	    @test nrow(h) == 20
@@ -42,9 +42,9 @@
 
 		addprocs(1)
 
-		@everywhere using SMM
-	    o = SMM.parallelNormal(20);
-	    h = SMM.history(o.chains[1])
+		@everywhere using MomentOpt
+	    o = MomentOpt.parallelNormal(20);
+	    h = MomentOpt.history(o.chains[1])
 	    @test isa(o,MAlgoBGP)
 	    @test isa(h,DataFrame)
 	    @test nrow(h) == 20
@@ -63,9 +63,9 @@
 
 		addprocs(2)
 
-		@everywhere using SMM
+		@everywhere using MomentOpt
 
-		Random.seed!(1234)
+		srand(1234)
 		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
 		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
 		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
@@ -73,7 +73,7 @@
 		mprob = MProb()
 		addSampledParam!(mprob,pb)
 		addMoment!(mprob,moms)
-		addEvalFunc!(mprob, SMM.objfunc_norm)
+		addEvalFunc!(mprob, MomentOpt.objfunc_norm)
 
 
 		# estimation options:
@@ -93,7 +93,7 @@
 		        "acc_tuners"=>[5;1.0],
 		        "animate"=>false)
 		MA = MAlgoBGP(mprob,opts)
-		SMM.run!(MA)
+		MomentOpt.runMOpt!(MA)
 
 		me = mean(MA.chains[1])
 		med = median(MA.chains[1])
@@ -129,9 +129,9 @@
 
 		addprocs(2)
 
-		@everywhere using SMM
+		@everywhere using MomentOpt
 
-		Random.seed!(1234)
+		srand(1234)
 		pb = OrderedDict("p1" => [0.2,-3,3] , "p2" => [-0.2,-2,2])
 		trueValues = OrderedDict("mu1" => [-1.0] , "mu2" => [1.0])
 		moms = DataFrame(name=["mu1","mu2"],value=[-1.0, 1.0], weight=ones(2))
@@ -139,7 +139,7 @@
 		mprob = MProb()
 		addSampledParam!(mprob,pb)
 		addMoment!(mprob,moms)
-		addEvalFunc!(mprob, SMM.objfunc_norm)
+		addEvalFunc!(mprob, MomentOpt.objfunc_norm)
 
 
 		# estimation options:
@@ -161,9 +161,9 @@
 		        "animate"=>false,
 		        "batch_size"=> 1)
 		MA = MAlgoBGP(mprob,opts)
-		SMM.run!(MA)
+		MomentOpt.runMOpt!(MA)
 
-		# dat_chain1 = SMM.history(MA.chains[1])
+		# dat_chain1 = MomentOpt.history(MA.chains[1])
 		# dat_chain1[round(Int, niter/10):niter, :]
 		# dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
 
@@ -227,21 +227,21 @@
 
 
 		# set-up BGP algorithm:
-		Random.seed!(1234)
+		srand(1234)
 		MA = MAlgoBGP(mprob,opts)
 
 		# run the estimation
-		SMM.run!(MA)
+		MomentOpt.runMOpt!(MA)
 
 		# restart the estimation:
 		newiters = 20
-		SMM.restart!(MA, newiters)
+		MomentOpt.restartMOpt!(MA, newiters)
 
 		mprob2 = MProb()
 		addSampledParam!(mprob2,pb)
 		addMoment!(mprob2,moms)
 		addEvalFunc!(mprob2, objfunc_norm)
-		niter = niter + newiters
+		niter = niter + 	newiters
 		# number of chains
 		nchains = 2
 
@@ -260,14 +260,14 @@
 
 
 		# set-up BGP algorithm:
-		Random.seed!(1234)
+		srand(1234)
 		MA2 = MAlgoBGP(mprob2,opts2)
 
 		# run the estimation:
-		SMM.run!(MA2)
+		MomentOpt.runMOpt!(MA2)
 
-		SMM.summary(MA2)
-		SMM.summary(MA)
+		MomentOpt.summary(MA2)
+		MomentOpt.summary(MA)
 
 		Qmean = zeros(2,2)
 		Qmedian = zeros(2,2)
@@ -276,7 +276,7 @@
 
 			# Realization of the first chain:
 			#-------------------------------
-			dat_chain1 = SMM.history(algo.chains[1])
+			dat_chain1 = MomentOpt.history(algo.chains[1])
 
 			# discard the first 10th of the observations ("burn-in" phase):
 			#--------------------------------------------------------------
@@ -296,8 +296,8 @@
 			#-------------------------------------------------------------------
 			for (estimatedParameter, param) in zip(estimatedParameters, parameters)
 
-			  Qmean[indexAlgo,:] .= mean(dat_chain1[estimatedParameter])
-			  Qmedian[indexAlgo,:] .= median(dat_chain1[estimatedParameter])
+			  Qmean[indexAlgo,:] = mean(dat_chain1[estimatedParameter])
+			  Qmedian[indexAlgo,:] = median(dat_chain1[estimatedParameter])
 
 			end
 
@@ -314,7 +314,7 @@
 
 	@testset "high-dim test" begin
 	    
-	    m = SMM.snorm_18(100)
+	    m = MomentOpt.snorm_18(100)
 	end
 
 

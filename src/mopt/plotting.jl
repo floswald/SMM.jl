@@ -123,7 +123,7 @@ end
     legend     := false
 
 
-    if get(plotattributes,:seriestype, :path) == :histogram
+    if get(d,:seriestype, :path) == :histogram
         # do hist for each parameter
         indices,ly = param_grid(c.m.initial_value)
         # data
@@ -149,7 +149,7 @@ end
         layout := @layout [ one{0.3h}; grid(rows,cols)]
         dat = history(c)
         ex = convert(Array{Float64},dat[:exchanged])
-        ex[ex.==0] .= NaN
+        ex[ex.==0] = NaN
         # values plot
         # @series begin
         #     subplot := 1    
@@ -176,7 +176,7 @@ end
             linecolor := :black
             linewidth --> 1
             yguide := "Obj Value"
-            ylim := [y_e[1] .- y_lim;y_e[2] .+ 2*y_lim]
+            ylim := [y_e[1]-y_lim;y_e[2]+2*y_lim]
             xguide := "iteration"
             dat[:curr_val]
         end
@@ -211,7 +211,7 @@ end
 
 
     # @gif for i in 1:ma["maxiter"]
-        dd = SMM.cur_param(ma)[chain]
+        dd = MomentOpt.cur_param(ma)[chain]
         acc = ma.chains[chain].accepted[ma.i]
         for (k,v) in ma.m.params_to_sample
             dist = Normal(dd[:mu][k],diag(dd[:sigma])[indices[k]])
@@ -250,8 +250,8 @@ end
     legend    := false
     # foreground_color_border := nothing
     # titlefont --> font(11)
-    fillcolor --> Plots.fg_color(plotattributes)
-    linecolor --> Plots.fg_color(plotattributes)
+    fillcolor --> Plots.fg_color(d)
+    linecolor --> Plots.fg_color(d)
     grid      --> true
     link      --> :x
     xticks     := true
@@ -260,7 +260,7 @@ end
     # build series
     for (k,v) in s.res 
         da = get(s,k,w)
-        if haskey(plotattributes,:markersize)
+        if haskey(d,:markersize)
             @series begin
                 seriestype := :scatter
                 subplot    := indices[k]
@@ -296,25 +296,25 @@ function testslice()
 
 s = Slice(Dict(:p1=>1, :p2=>0.0),Dict(:m1=>rand(),:m2=>rand()))
 s.res = Dict(k => Dict(j => Dict(:value=>rand(),:moments=>Dict(:m1=>rand(),:m2=>rand())) for j in linspace(-1,1,10)) for k in [Symbol("p$i") for i in 1:2])
-display(SMM.plot(s,:m1))
+display(MomentOpt.plot(s,:m1))
 return s
-# SMM.plot(s,:value,markersize=10,markercolor=:red,link=:both)
+# MomentOpt.plot(s,:value,markersize=10,markercolor=:red,link=:both)
 end
 
 function plotExample(s::Slice)
 
     subplot(231)
-    r = SMM.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m1 , :m1); PyPlot.plot(r[:x],r[:y],".")
     subplot(232)
-    r = SMM.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m1 , :m2); PyPlot.plot(r[:x],r[:y],".")
     subplot(233)
-    r = SMM.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m1 , :value); PyPlot.plot(r[:x],r[:y],".")
     subplot(234)
-    r = SMM.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m2 , :m1); PyPlot.plot(r[:x],r[:y],".")
     subplot(235)
-    r = SMM.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m2 , :m2); PyPlot.plot(r[:x],r[:y],".")
     subplot(236)
-    r = SMM.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
+    r = MomentOpt.get(sl, :m2 , :value); PyPlot.plot(r[:x],r[:y],".")
 
 
 end

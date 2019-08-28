@@ -17,34 +17,34 @@
 
 	@testset "testing MProb methods" begin
 
-		p   = SMM.OrderedDict(
+		p   = MomentOpt.OrderedDict(
 			"a" => 0.1 ,
 			"b" => 0.2 ,
 			"c" => 0.5 )
-		pb   = SMM.OrderedDict(
+		pb   = MomentOpt.OrderedDict(
 			"a" => [0.1; 0; 1] ,
 			"b" => [0.2; 0; 1] )
 		mprob = MProb();
 
 		addParam!(mprob,p)
-		@test collect(SMM.ps_names(mprob)) == Any[:a,:b,:c]
+		@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b,:c]
 		@test length(mprob.params_to_sample) == 0
 
 		mprob = MProb();
 		addSampledParam!(mprob,pb)	
-		@test collect(SMM.ps_names(mprob)) == Any[:a,:b]
-		@test collect(SMM.ps2s_names(mprob)) == Any[:a,:b]
+		@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b]
+		@test collect(MomentOpt.ps2s_names(mprob)) == Any[:a,:b]
 
 		mprob = MProb();
 		addSampledParam!(mprob,"a",0.1,0,1)
 		addSampledParam!(mprob,"b",0.1,0,1)
 		addMoment!(mprob,moms)
-		addEvalFunc!(mprob,SMM.Testobj2)
+		addEvalFunc!(mprob,MomentOpt.Testobj2)
 
 		@test isa(mprob.objfunc,Function)
 
-		@test collect(SMM.ps_names(mprob)) == Any[:a,:b]
-		@test collect(SMM.ms_names(mprob)) == Any[:alpha,:beta,:gamma]
+		@test collect(MomentOpt.ps_names(mprob)) == Any[:a,:b]
+		@test collect(MomentOpt.ms_names(mprob)) == Any[:alpha,:beta,:gamma]
 
 	end
 end

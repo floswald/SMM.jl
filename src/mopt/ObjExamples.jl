@@ -71,12 +71,12 @@ function objfunc_norm(ev::Eval)
 	if get(ev.options,:noseed,false)
 
 	else
-		Random.seed!(1234)
+		srand(1234)
 	end
 	ns = 10000
 	sigma           = ones(nm)
-	randMultiNormal = SMM.MvNormal(mu,SMM.PDiagMat(sigma)) 
-	simM            = mean(rand(randMultiNormal,ns),dims = 2)
+	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
+	simM            = mean(rand(randMultiNormal,ns),2)
 	# simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
 
 
@@ -136,11 +136,11 @@ function objfunc_norm2(ev::Eval)
 	if get(ev.options,:noseed,false)
 		
 	else
-		Random.seed!(1234)
+		srand(1234)
 	end
 	ns = 10000
 	sigma           = ones(length(mu))
-	randMultiNormal = SMM.MvNormal(mu,SMM.PDiagMat(sigma)) 
+	randMultiNormal = MomentOpt.MvNormal(mu,MomentOpt.PDiagMat(sigma)) 
 	simM            = mean(rand(randMultiNormal,ns),2)
 	simM = vcat(simM, var(rand(randMultiNormal,ns)))
 	# simMoments = Dict(:mu1 => simM[1], :mu2 => simM[2])
@@ -185,7 +185,7 @@ function banana(ev::Eval)
 
     start(ev)
 	p = paramd(ev)
-    model = 100 .* (p["b"] - p["a"].^2 ).^2 .+ (1 .- p["a"])^2
+    model = 100 .* (p["b"] - p["a"].^2 ).^2 .+ (1.-p["a"])^2
     data  = 0.0
 
     setValue!(ev,model)

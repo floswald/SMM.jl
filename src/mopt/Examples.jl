@@ -9,7 +9,7 @@ function sliceOpt(tol)
 	addEvalFunc!(mprob,objfunc_norm)
 
 	s = optSlices(mprob,30,tol=tol)
-	return Dict(:optimized => s, :targets => moms)
+	return s
 end
 
 function mprob_ex()
@@ -26,7 +26,7 @@ end
 function score_moments()
 
 	m = mprob_ex()
-	SMM.FD_gradient(m,Dict(m.initial_value))
+	MomentOpt.FD_gradient(m,Dict(m.initial_value))
 
 end
 
@@ -105,7 +105,7 @@ function parallelNormal(niter=200)
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	run!(MA)
+	runMOpt!(MA)
 	@show summary(MA)
 
 	# histogram(MA.chains[1]);
@@ -182,20 +182,20 @@ function snorm_standard()
 		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false)
-	# @info "These moments are our targets"
-	# @info "Parameter p_i corresponds to moment m_i"
-	# println(moms)
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	SMM.addMoment!(mprob,moms) 
-	SMM.addEvalFunc!(mprob,objfunc_norm)
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	run!(MA)
+	runMOpt!(MA)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
@@ -221,8 +221,8 @@ function snorm_6_taxi(tol;par=false)
 	
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	SMM.addMoment!(mprob,moms) 
-	SMM.addEvalFunc!(mprob,objfunc_norm)
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
 	s = optSlices(mprob,3,tol=tol,parallel=par,update=0.4)
 	return (moms,s)
@@ -295,20 +295,20 @@ function snorm_18(niter)
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false,
 		"batch_size" => 1)
-	# @info "These moments are our targets"
-	# @info "Parameter p_i corresponds to moment m_i"
-	# println(moms)
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	SMM.addMoment!(mprob,moms) 
-	SMM.addEvalFunc!(mprob,objfunc_norm)
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	run!(MA)
+	runMOpt!(MA)
 	@show summary(MA)
 
 	# ph = histogram(MA.chains[1],nbins=19);
@@ -344,30 +344,35 @@ function snorm_standard6()
 	opts =Dict("N"=>nchains,
 		"maxiter"=>200,
 		"maxtemp"=> 5,
+            # choose inital sd for each parameter p
+            # such that Pr( x \in [init-b,init+b]) = 0.975
+            # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
+		"coverage"=>0.02,   # how big should the step size of new params be?
 		"smpl_iters"=>1000,
 		"parallel"=>false,
 		"min_improve"=>[0.0 for i in 1:nchains],
 		"acc_tuners"=>[20;2;1.0],
 		"animate"=>false)
-	# @info "These moments are our targets"
-	# @info "Parameter p_i corresponds to moment m_i"
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	SMM.addMoment!(mprob,moms) 
-	SMM.addEvalFunc!(mprob,objfunc_norm)
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	run!(MA)
+	runMOpt!(MA)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
-	savefig(joinpath(dirname(@__FILE__),"../docs/images/histogram6.png"))
+	savefig(joinpath(dirname(@__FILE__),"../../histogram6.png"))
 	pp = plot(MA.chains[1]);
-	savefig(joinpath(dirname(@__FILE__),"../docs/images/lines6.png")	)
+	savefig(joinpath(dirname(@__FILE__),"../../lines6.png")	)
 	return (MA,ph,pp)
 end
 function snorm_impl(opts,niter=200;npar=2,save=false)
@@ -387,10 +392,10 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 	pb["p1"] = [0.2,-3,3]
 	pb["p2"] = [-0.2,-20,20]
 	moms = DataFrame(name=["mu1","mu2"],value=[-1.0,10.0],weight=ones(2))
-	Random.seed!(12)
+	srand(12)
 
 	if npar > 2
-		spaces = vcat(rand(2),4.0^(-4),reverse(range(0.25,stop = 0.45,length = npar-1).^(-4)))
+		spaces = vcat(rand(2),4.0^(-4),reverse(linspace(0.25,0.45,npar-1).^(-4)))
 		for j in 3:npar
 			ii = j
 			# spaces = rand()^(-4)
@@ -398,18 +403,18 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 			# push!(moms, [Symbol("mu$j"); pb["p$j"][1]; pb["p$j"][1]])   # if moments are equal starting value - easy.
 			# push!(moms, [Symbol("mu$j"); pb["p$j"][1] * 1.1; pb["p$j"][1]])   # if moments are 110% of starting value - easy.
 			y = mapRange(0,1,-spaces[ii],spaces[ii],rand())
-			push!(moms, ["mu$j"; y ; y])
+			push!(moms, [Symbol("mu$j"); y ; y])
 		end
 	end
 
-	# @info "These moments are our targets"
-	# @info "Parameter p_i corresponds to moment m_i"
-	# println(moms)
+	info("These moments are our targets")
+	info("Parameter p_i corresponds to moment m_i")
+	println(moms)
 
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
-	SMM.addMoment!(mprob,moms) 
-	SMM.addEvalFunc!(mprob,objfunc_norm)
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
 
 
@@ -426,7 +431,7 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 	MA = MAlgoBGP(mprob,opts)
 
 	# run the estimation
-	run!(MA)
+	runMOpt!(MA)
 	@show summary(MA)
 
 	ph = histogram(MA.chains[1],nbins=19);
@@ -446,7 +451,7 @@ function BGP_example()
 	p = OrderedDict("theta" => [2.0,-2,10])
 	mprob = MProb()
 	addSampledParam!(mprob,p)
-	addEvalFunc!(mprob,SMM.objfunc_BGP)
+	addEvalFunc!(mprob,MomentOpt.objfunc_BGP)
 
 	nchains = 15
 
@@ -457,14 +462,14 @@ function BGP_example()
             # such that Pr( x \in [init-b,init+b]) = 0.975
             # where b = (p[:ub]-p[:lb])*opts["coverage"] i.e. the fraction of the search interval you want to search around the initial value
 		"coverage"=>0.005,  # i.e. this gives you a 95% CI about the current parameter on chain number 1.
-		"min_improve"=>range(0.025,stop =  2,length = nchains),
+		"min_improve"=>linspace(0.025, 2,nchains),
 		"mixprob"=>0.3,
 		"acc_tuners"=>[12.0 for i in 1:nchains],
 		"animate"=>false)
 	# setup the BGP algorithm
 	MA = MAlgoBGP(mprob,opts)
 	# run the estimation
-	run!(MA)
+	runMOpt!(MA)
 	@show summary(MA)
 
 	histogram(MA.chains[1])

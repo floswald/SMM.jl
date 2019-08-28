@@ -1,3 +1,4 @@
+export fitMirror
 
 
 # transpose a 2-column dataframe to a one-row dataframe, so that 
@@ -156,3 +157,24 @@ function fitMirror!(x::DataFrame,b::Dict)
                 convert(Float64,b[col][:ub]))
     end
 end
+
+
+function findInterval{T<:Number}(x::T,vec::Array{T})
+
+    out = zeros(Int,length(x))
+    sort!(vec)
+
+    for j in 1:length(x)
+        if x[j] < vec[1]
+            out[1] = 0
+        elseif x[j] > vec[end]
+            out[end] = 0
+        else
+            out[j] = searchsortedfirst(vec,x[j])-1 
+        end
+    end
+    return out
+end
+
+            
+

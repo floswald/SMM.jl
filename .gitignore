@@ -1,4 +1,2 @@
 *.log
 *.jld
-docs/build/
-Manifest.toml

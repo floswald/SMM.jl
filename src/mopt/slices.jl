@@ -1,11 +1,26 @@
 
+# TODO
+# add plot slices
+type MyT
+    data :: Dict
+end
+
+# @recipe function f{T<:Distribution}(::Type{T}, dist::T; func = pdf)
+#     xi -> func(dist, xi)
+# end
 
 
-# export Slice,slices,add!,get,optSlices
+
+
+
+
+export Slice,slices,add!,get,optSlices
 
 
 """
-A *slice* in dimension ``j`` of a function ``f \\in \\mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = range(lower[j], stop = upper[j], length = npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
+    Slice 
+
+A *slice* in dimension ``j`` of a function ``f \in \mathbb{R}^N`` is defined as ``f(p[1],...,p[j],...,p[N])``, where `p` is the initial parameter vector and `p[j] = linspace(lower[j],upper[j],npoints)`, where `lower[j],upper[j]` are the bounds of the parameter space in dimension ``j``.
 
 ## Fields
 
@@ -15,7 +30,8 @@ A *slice* in dimension ``j`` of a function ``f \\in \\mathbb{R}^N`` is defined a
 
 # Examples
 
-```julia-repl
+```julia
+julia> using MOpt
 julia> m = MProb()
 julia> p = OrderedDict(:p1=>1.1,:p2=>pi)
 julia> m = OrderedDict(:m1=>rand(),:m2=>e)
@@ -24,7 +40,7 @@ julia> Slice(p,m)
 ```
 
 """
-mutable struct Slice
+type Slice
     res  :: Union{Dict,OrderedDict}    # result
     p0   :: Union{Dict,OrderedDict}    # initial param
     m0   :: Union{Dict,OrderedDict}    # data moments
@@ -91,25 +107,9 @@ end
 
 
 """
-    optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
+    optSlices(m::MProb,npoints::Int,parallel=false)
 
-Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of [cyclic coordinate descent](https://en.wikipedia.org/wiki/Coordinate_descent) in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction (and disregards any gradient information). The grid size shrinks, however, at a rate `update` (constant by default)
-
-## Algorithm Description
-
-Let ``\\theta \\in \\mathbb{R}^K`` be the parameter vector of objective function ``L(\\theta)``. A cyclic coordinate search algorithm defines cycle ``n+1`` as follows:
-
-```math
-\\begin{align*}
-\\theta^{(n+1)}_1 & =\\arg\\min_{\\theta_{1}} L(\\theta_{1},\\theta_{2}^{(n)},\\dots,\\theta_{K}^{(n)})\\\\
-\\theta^{(n+1)}_2 & =\\arg\\min_{\\theta_{2}} L(\\theta_{1}^{(n)},\\theta_{2},\\theta_{3}^{(n)},\\dots,\\theta_{K}^{(n)})\\\\
-\\theta^{(n+1)}_3 & =\\arg\\min_{\\theta_{3}} L(\\theta_{1}^{(n)},\\theta_{2}^{(n)},\\theta_{3},\\theta_{4}^{(n)},\\dots,\\theta_{K}^{(n)})\\\\
- & \\vdots\\\\
-\\theta^{(n+1)}_K & =\\arg\\min_{\\theta_{K}} L(\\theta_{1}^{(n)},\\theta_{2}^{(n)},\\dots,\\theta_{K}).
-\\end{align*}
-```
-
-The algorithm runs until a convergence criterion is met; here we stop at cycle ``n`` if the norm of the distance between ``\\theta^{(n-1)}`` and ``\\theta^{(n)}`` is less than `tol`.
+Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
 function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
 
@@ -135,29 +135,30 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
     delta = Inf
     iter = 0
 
-    prog = ProgressThresh(tol, "Minimizing norm:")
+    prog = ProgressThresh(tol, "Minimizing:")
     while delta > tol
         ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
         iter += 1
+        println("iteration $iter")
 
         for (pp,bb) in ranges
-            # println("   working on $pp")
+            println("   working on $pp")
         
             # initialize eval
             cur_param = deepcopy(bestp)
             ev = Eval(m,cur_param)
 
             if parallel
-                takes = @elapsed vv = pmap( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
+                takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                     ev2 = deepcopy(ev)
                     ev2.params[pp] = pval
                     ev2 = evaluateObjective(m,ev2)
                     return(ev2)
                 end
             else
-                takes = @elapsed vv = map( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
+                takes = @elapsed vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                     ev2 = deepcopy(ev)
                     ev2.params[pp] = pval
                     ev2 = evaluateObjective(m,ev2)
@@ -173,12 +174,12 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
             for iv in 1:length(vv)
                 if (typeof(vv[iv]) <: Exception)
                         # warn("exception received. value not stored.")
-                    allvals[iv] = Dict(:p => "Exception", :value => NaN)
+                    allvals[iv] = Dict(:p => "Exception", :value => NaN, :status => -1)
                 else
                     val = vv[iv]
-                    allvals[iv] = Dict(:p => val.params, :value => val.value)
+                    allvals[iv] = Dict(:p => val.params, :value => val.value, :status => val.status)
                     # println("good value? $(isfinite(val.value) && val.value < minv)")
-                    if isfinite(val.value) && val.value < minv
+                    if (val.status > -1) && (isfinite(val.value) && val.value < minv)
                         minv = val.value
                         bestp = deepcopy(val.params)
                         dout[:best] = Dict(:p => val.params, :value => val.value)
@@ -197,6 +198,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                         x[ki] = vi
                     end
                     x[:value] = v[:value]
+                    x[:status] = v[:status]
                     append!(df0,x)
                 else
                     df0[:iter] = iter
@@ -206,6 +208,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                         df0[ki] = vi
                     end
                     df0[:value] = v[:value]
+                    df0[:status] = v[:status]
                 end
             end
             sort!(df0,(:iter,:param,:val_idx))
@@ -226,15 +229,13 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                 ranges[k][:lb] = max(v - update * r,ranges[k][:lb])
                 ranges[k][:ub] = min(v + update * r,ranges[k][:ub])
             end
-            @debug "search ranges updated to $ranges"
+            @debug(logger,"search ranges updated to $ranges")
         end
 
         # println(cur_param)
         # println(bestp)
         delta = norm(collect(values(dvec)))
     end
-    println()
-    @info "converged after $iter iterations"
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")
     JLD2.@save filename dout
@@ -257,17 +258,17 @@ function doSlices(m::MProb,npoints::Int,parallel=false)
     
         # initialize eval
         ev = Eval(m,m.initial_value)
-        @info "slicing along $pp"
+        @info(logger,"slicing along $pp")
 
         if parallel
-            vv = pmap( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
+            vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                 ev2 = deepcopy(ev)
                 ev2.params[pp] = pval
                 ev2 = evaluateObjective(m,ev2)
                 return(ev2)
             end
         else
-            vv = map( range(bb[:lb], stop = bb[:ub], length = npoints) ) do pval
+            vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                 ev2 = deepcopy(ev)
                 ev2.params[pp] = pval
                 ev2 = evaluateObjective(m,ev2)
@@ -277,14 +278,14 @@ function doSlices(m::MProb,npoints::Int,parallel=false)
 
         for v in vv 
             if (typeof(v) <: Exception)
-                @warn "exception received. value not stored."
+                warn("exception received. value not stored.")
             else
                 add!( res, pp, v)
             end
         end
     end  
     t1 = round((time()-t0)/60)
-    @info "done after $t1 minutes"
+    @info(logger,"done after $t1 minutes")
 
     return res 
 end

@@ -11,7 +11,7 @@ facts("checking standard errors") do
 	opts =["N"=>3,"shock_var"=>1.0,"mode"=>"serial","maxiter"=>500,"path"=>".","maxtemp"=>100,"min_shock_sd"=>0.1,"max_shock_sd"=>1.0,"past_iterations"=>30,"min_disttol"=>0.1,"max_disttol"=>1.0,"min_jump_prob"=>0.05,"max_jump_prob"=>0.1] 
 
 	MA = MAlgoBGP(mprob,opts)
-	run!(MA)
+	runMOpt!(MA)
 
 	m = MOpt.score(MA)
 	println(m)

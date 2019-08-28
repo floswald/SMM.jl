@@ -46,7 +46,7 @@ MA = MOpt.MAlgoBGP(mprob,opts)
 # MOpt.add_truck(mt,"debuglogger")
 
 # run the estimation
-MOpt.run!(MA)
+MOpt.runMOpt!(MA)
 
 # save results
 # save(MA,MA["savefile"])

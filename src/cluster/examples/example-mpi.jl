@@ -36,7 +36,7 @@ end
 println("calling runMopt now")
 
 # run it
-run!(MA)
+runMOpt!(MA)
 
 
 
