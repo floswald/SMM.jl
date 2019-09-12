@@ -177,7 +177,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     allvals[iv] = Dict(:p => "Exception", :value => NaN, :status => -1)
                 else
                     val = vv[iv]
-                    allvals[iv] = Dict(:p => val.params, :value => val.value, :status => val.status)
+                    allvals[iv] = Dict(:p => val.params, :value => val.value, :status => val.status, :m => val.simMoments)
                     # println("good value? $(isfinite(val.value) && val.value < minv)")
                     if (val.status > -1) && (isfinite(val.value) && val.value < minv)
                         minv = val.value
@@ -199,6 +199,9 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     end
                     x[:value] = v[:value]
                     x[:status] = v[:status]
+                    for (ki,vi) in v[:m]
+                        x[Symbol("m_"*String(ki))] = vi
+                    end
                     append!(df0,x)
                 else
                     df0[:iter] = iter
@@ -209,6 +212,9 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     end
                     df0[:value] = v[:value]
                     df0[:status] = v[:status]
+                    for (ki,vi) in v[:m]
+                        df0[Symbol("m_"*String(ki))] = vi
+                    end
                 end
             end
             sort!(df0,(:iter,:param,:val_idx))
