@@ -148,13 +148,13 @@ function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false)
     if noseed
       ev.options[:noseed] = true
     end
-    try
+    # try
        # ev = eval(Expr(:call,m.objfunc,ev))
       ev = m.objfunc(ev)
-    catch ex
-      warn("caught exception $ex at param $p")
-      ev.status = -2
-    end
+    # catch ex
+    #   warn("caught exception $ex at param $p")
+    #   ev.status = -2
+    # end
     gc()
     return ev
 end
@@ -166,13 +166,13 @@ Evaluate the objective function of an [`MProb`](@ref) at a given `Eval`.
 """
 function evaluateObjective(m::MProb,ev)
     # catching errors
-    try
+    # try
        # ev = eval(Expr(:call,m.objfunc,ev))
        ev = m.objfunc(ev)
-    catch ex
-      warn("caught exception $ex at param $(ev.params)")
-      ev.status = -2
-    end
+    # catch ex
+    #   warn("caught exception $ex at param $(ev.params)")
+    #   ev.status = -2
+    # end
     gc()
     return ev
 end
