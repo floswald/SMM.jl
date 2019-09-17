@@ -182,7 +182,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     if (val.status > -1) && (isfinite(val.value) && val.value < minv)
                         minv = val.value
                         bestp = deepcopy(val.params)
-                        dout[:best] = Dict(:p => val.params, :value => val.value)
+                        dout[:best] = Dict(:p => val.params, :value => val.value, :moments => val.simMoments)
                         # println("best value for $pp is $minv")
                     # else
                     #     dout[:best] = iter > 2 ? dout[:best] : Dict(:p => "Exception", :value => NaN)
