@@ -205,9 +205,25 @@ function snorm_standard()
 	return (MA,ph,pp)
 end
 
+function snorm_3_taxi(npoints;update = nothing)
 
+	pb = OrderedDict()
+	pb["p1"] = [-2.0,-3,3]
+	pb["p2"] = [-0.1,-4,4]
+	moms = DataFrame(name=["mu1","mu2","mu3"],
+		value=[1.0,2.0,3.0],weight=ones(3))
+	
+	mprob = MProb() 
+	addSampledParam!(mprob,pb) 
+	MomentOpt.addMoment!(mprob,moms) 
+	MomentOpt.addEvalFunc!(mprob,objfunc_norm_corr)
 
-function snorm_6_taxi()
+	s = optSlices(mprob,npoints,update=update)
+	return (moms,s)
+	
+end
+
+function snorm_6_taxi(npoints;update = 0.4)
 
 	pb = OrderedDict()
 	pb["p1"] = [0.2,-3,3]
@@ -224,7 +240,7 @@ function snorm_6_taxi()
 	MomentOpt.addMoment!(mprob,moms) 
 	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
-	s = optSlices(mprob,3,update=0.4)
+	s = optSlices(mprob,npoints,update=update)
 	return (moms,s)
 	
 end

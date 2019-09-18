@@ -117,6 +117,76 @@ end
 
 
 """
+    objfunc_norm_corr(ev::Eval)
+
+Test objective function with correlated bivariate normal distribution
+"""
+function objfunc_norm_corr(ev::Eval)
+    
+	start(ev)
+	# info("in Test objective function objfunc_norm")
+
+	# extract parameters    
+    # mu  = convert(Array{Float64,1},param(ev)) # returns entire parameter vector 
+	p  = collect(values(ev.params))
+	nm = length(ev.dataMoments)
+	# use paramd(ev) to get as a dict.
+	if nm != 3
+		error("for this example you need 3 moments and 2 params")
+	end
+
+	# compute simulated moments
+	if get(ev.options,:noseed,false)
+
+	else
+		srand(1234)
+	end
+	ns = 10000
+
+	# m1 = N(p1)
+	# m2 = N(p2)
+	# m3 = N(p1 + p2)
+	normals = [Normal(p[i],1) for i in 1:2]
+	push!(normals, Normal(sum(p),1))
+	simM = map(x->mean(rand(x,ns)),normals)
+
+	# get data mometns
+	# same thing here, and use dataMomentsWeights for sd
+	# second argument can be optional
+	# get objective value: (data[i] - model[i]) / weight[i]
+	v = Dict{Symbol,Float64}()
+	simMoments = Dict{Symbol,Float64}()
+	i = 0
+	for (k,mom) in dataMomentd(ev)
+		i += 1
+		simMoments[k] = simM[i]
+		if haskey(dataMomentWd(ev),k)
+			v[k] = ((simMoments[k] .- mom) ./ dataMomentW(ev,k)) .^2
+			# v[k] = (simMoments[k] ./ mom .- 1.0) .^2    # true scale of all moments is 1.0
+		else
+			v[k] = ((simMoments[k] .- mom) ) .^2
+			# v[k] = (simMoments[k] ./ mom .- 1.0) .^2
+		end
+	end
+	setValue!(ev, mean(collect(values(v))))
+	# value = data - model
+	# setValue!(ev, mean((simMoments - trueMoments).^2) )
+
+	# also return the moments
+	setMoments!(ev, simMoments)
+	# mdf = DataFrame(name=["m1","m2"],value=simMoments[:])
+	# setMoments!(ev, mdf)
+
+	ev.status = 1
+
+	# finish and return
+	finish(ev)
+
+    return ev
+end
+
+
+"""
     objfunc_norm2(ev::Eval)
 
 Test objective function. This is a bivariate normal distribution that returns more moments tham parameters. From this simulated data, sample means are computed, which should be close to the empirical moments on `ev`. The aim is to minimize this function.
