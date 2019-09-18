@@ -111,7 +111,7 @@ end
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
-function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
+function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=nothing,filename="trace.jld2")
 
     t0 = time()
     # res = Slice(m.initial_value, m.moments)
@@ -126,6 +126,10 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
         v = Inf
     end
 
+    # also track obj values
+    bestval = Inf
+    currval = Inf
+
     # output
     dout = Dict()
 
@@ -133,15 +137,19 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
     df0 = DataFrame()
 
     delta = Inf
+    deltav = Inf
     iter = 0
 
-    prog = ProgressThresh(tol, "Minimizing:")
-    while delta > tol
+    prog = ProgressThresh(tolp, "Minimizing:")
+    while (delta > tolp) | (deltav > tolv)
         ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
         iter += 1
         println("iteration $iter")
+
+        # update current best function value
+        currval = bestval
 
         for (pp,bb) in ranges
             println("   working on $pp")
@@ -150,27 +158,19 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
             cur_param = deepcopy(bestp)
             ev = Eval(m,cur_param)
 
-            if parallel
-                takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
-                    ev2 = deepcopy(ev)
-                    ev2.params[pp] = pval
-                    ev2 = evaluateObjective(m,ev2)
-                    return(ev2)
-                end
-            else
-                takes = @elapsed vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
-                    ev2 = deepcopy(ev)
-                    ev2.params[pp] = pval
-                    ev2 = evaluateObjective(m,ev2)
-                    return(ev2)
-                end
+
+            takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                ev2 = deepcopy(ev)
+                ev2.params[pp] = pval
+                ev2 = evaluateObjective(m,ev2)
+                return(ev2)
             end
 
             allvals = Dict()
 
             # find best parameter value
             minv = Inf
-            bestp = deepcopy(ev.params)
+            bestp = deepcopy(cur_param)
             for iv in 1:length(vv)
                 if (typeof(vv[iv]) <: Exception)
                         # warn("exception received. value not stored.")
@@ -182,6 +182,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     if (val.status > -1) && (isfinite(val.value) && val.value < minv)
                         minv = val.value
                         bestp = deepcopy(val.params)
+                        bestval = val.value
                         dout[:best] = Dict(:p => val.params, :value => val.value, :moments => val.simMoments)
                         # println("best value for $pp is $minv")
                     # else
@@ -241,6 +242,9 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
         # println(cur_param)
         # println(bestp)
         delta = norm(collect(values(dvec)))
+        deltav = abs(currval - bestval)
+        println("delta = $delta")
+        println("deltav = $deltav")
     end
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")

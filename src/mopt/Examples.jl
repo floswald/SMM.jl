@@ -207,7 +207,7 @@ end
 
 
 
-function snorm_6_taxi(tol;par=false)
+function snorm_6_taxi()
 
 	pb = OrderedDict()
 	pb["p1"] = [0.2,-3,3]
@@ -224,7 +224,7 @@ function snorm_6_taxi(tol;par=false)
 	MomentOpt.addMoment!(mprob,moms) 
 	MomentOpt.addEvalFunc!(mprob,objfunc_norm)
 
-	s = optSlices(mprob,3,tol=tol,parallel=par,update=0.4)
+	s = optSlices(mprob,3,update=0.4)
 	return (moms,s)
 	
 end
