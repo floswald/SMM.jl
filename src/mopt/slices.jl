@@ -111,7 +111,7 @@ end
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
-function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,filename="trace.jld2")
+function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename="trace.jld2")
 
     t0 = time()
     # res = Slice(m.initial_value, m.moments)
@@ -120,11 +120,17 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
 
     ranges = m.params_to_sample
     cur_param = m.initial_value
-    bestp = deepcopy(m.initial_value)
+    bestp = deepcopy(cur_param)
+    newp = deepcopy(cur_param)
     dvec = deepcopy(cur_param)
-    for (k,v) in dvec
-        v = Inf
+    bestval = deepcopy(cur_param)
+    dval = deepcopy(cur_param)
+    for k in keys(dvec)
+        dvec[k] = Inf
+        dval[k] = Inf
+        bestval[k] = Inf
     end
+    currval = deepcopy(bestval)
 
     # output
     dout = Dict()
@@ -133,44 +139,45 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
     df0 = DataFrame()
 
     delta = Inf
+    deltav = Inf
     iter = 0
 
-    prog = ProgressThresh(tol, "Minimizing:")
-    while delta > tol
+    println("initial ranges")
+    JSON.print(ranges,4)
+
+
+    prog = ProgressThresh(tolp, "Minimizing:")
+    while (delta > tolp) | (deltav > tolv)
         ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
         iter += 1
         println("iteration $iter")
 
+        # update current best function value
+        currval = deepcopy(bestval)
+        cur_param = deepcopy(newp)
+
+
         for (pp,bb) in ranges
             println("   working on $pp")
         
             # initialize eval
-            cur_param = deepcopy(bestp)
             ev = Eval(m,cur_param)
 
-            if parallel
-                takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
-                    ev2 = deepcopy(ev)
-                    ev2.params[pp] = pval
-                    ev2 = evaluateObjective(m,ev2)
-                    return(ev2)
-                end
-            else
-                takes = @elapsed vv = map( linspace(bb[:lb], bb[:ub], npoints) ) do pval
-                    ev2 = deepcopy(ev)
-                    ev2.params[pp] = pval
-                    ev2 = evaluateObjective(m,ev2)
-                    return(ev2)
-                end
+
+            takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
+                ev2 = deepcopy(ev)
+                ev2.params[pp] = pval
+                ev2 = evaluateObjective(m,ev2)
+                return(ev2)
             end
 
             allvals = Dict()
 
             # find best parameter value
             minv = Inf
-            bestp = deepcopy(ev.params)
+            # bestp = deepcopy(cur_param)
             for iv in 1:length(vv)
                 if (typeof(vv[iv]) <: Exception)
                         # warn("exception received. value not stored.")
@@ -181,7 +188,9 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     # println("good value? $(isfinite(val.value) && val.value < minv)")
                     if (val.status > -1) && (isfinite(val.value) && val.value < minv)
                         minv = val.value
-                        bestp = deepcopy(val.params)
+                        # bestp = deepcopy(val.params)
+                        newp[pp] = val.params[pp]
+                        bestval[pp] = val.value
                         dout[:best] = Dict(:p => val.params, :value => val.value, :moments => val.simMoments)
                         # println("best value for $pp is $minv")
                     # else
@@ -224,23 +233,31 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                 JLD2.@save filename dout
             end
 
-            dvec[pp] = cur_param[pp] - bestp[pp]
+            # dvec[pp] = cur_param[pp] - bestp[pp]
+            dvec[pp] = cur_param[pp] - newp[pp]
+            dval[pp] = currval[pp] - bestval[pp]
         end  # end all values in ranges
 
         # update search ranges
         # maintain range boundaries
-        if update!=nothing
-            for (k,v) in bestp
+        if (update!=nothing) & (iter > 1)
+            # for (k,v) in bestp
+            for (k,v) in newp
                 r = (ranges[k][:ub] - ranges[k][:lb])/2
                 ranges[k][:lb] = max(v - update * r,ranges[k][:lb])
                 ranges[k][:ub] = min(v + update * r,ranges[k][:ub])
             end
-            @debug(logger,"search ranges updated to $ranges")
+            print("search ranges updated to")
+            JSON.print(ranges,4)
         end
 
-        # println(cur_param)
-        # println(bestp)
+        println("cur_param and newp")
+        JSON.print(cur_param,4)
+        JSON.print(newp,4)
         delta = norm(collect(values(dvec)))
+        deltav = norm(collect(values(dval)),Inf) # inf norm
+        println("delta = $delta")
+        println("deltav = $deltav")
     end
     t1 = round((time()-t0)/60)
     # @info(logger,"done after $t1 minutes")
