@@ -146,9 +146,9 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename
     JSON.print(ranges,4)
 
 
-    prog = ProgressThresh(tolp, "Minimizing:")
+    # prog = ProgressThresh(tolp, "Minimizing:")
     while (delta > tolp) | (deltav > tolv)
-        ProgressMeter.update!(prog, delta)
+        # ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
         iter += 1
