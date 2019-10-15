@@ -137,6 +137,7 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename
 
     # history data.frame
     df0 = DataFrame()
+    allowmissing!(df0)
 
     delta = Inf
     deltav = Inf
@@ -203,13 +204,20 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename
             for (k,v) in allvals
                 if (nrow(df0)) > 0
                     x = DataFrame(iter=iter,param=pp,val_idx=k)
+                    allowmissing!(x)
                     for (ki,vi) in v[:p]
                         x[ki] = vi
                     end
                     x[:value] = v[:value]
                     x[:status] = v[:status]
-                    for (ki,vi) in v[:m]
-                        x[Symbol("m_"*String(ki))] = vi
+                    if (x[:status] < 0) || (length(v[:m]) == 0)
+                        for (ki,vi) in v[:m]
+                            x[Symbol("m_"*String(ki))] = missing
+                        end
+                    else
+                        for (ki,vi) in v[:m]
+                            x[Symbol("m_"*String(ki))] = vi
+                        end
                     end
                     append!(df0,x)
                 else
