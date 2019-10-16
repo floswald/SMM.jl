@@ -210,7 +210,7 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename
                     end
                     x[:value] = v[:value]
                     x[:status] = v[:status]
-                    println(x[:status])
+                    # println(x[:status])
                     if (x[:status][1] < 0) || (length(v[:m]) == 0)
                         for (ki,vi) in v[:m]
                             x[Symbol("m_"*String(ki))] = missing
