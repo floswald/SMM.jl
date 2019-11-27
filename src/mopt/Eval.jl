@@ -194,7 +194,7 @@ Obtain all data momoents as dict
 """
 dataMomentd(ev::Eval) = ev.dataMoments
 
-dataMomentW(ev::Eval)                      = dataMomentW(ev,collect(keys(ev.dataMomentW)))
+dataMomentW(ev::Eval)                      = dataMomentW(ev,collect(keys(ev.dataMomentsW)))
 dataMomentW(ev::Eval,ll::Array{Symbol,1}) = Float64[ ev.dataMomentsW[i] for i in ll]
 dataMomentW(ev::Eval,s::Symbol)= ev.dataMomentsW[s]
 
