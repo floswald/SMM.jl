@@ -626,7 +626,7 @@ function exchangeMoves!(algo::MAlgoBGP)
     props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (i<j)]
     # N pairs of chains are chosen uniformly in all possibel pairs with replacement
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
-    pairs = sample(props,samples,replace=false)
+    pairs = sample(props,samples,replace=true)
 
     # @debug(logger,"")
     # @debug(logger,"exchangeMoves: proposing pairs")
