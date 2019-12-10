@@ -19,12 +19,12 @@ of datamoments `moments`. The key idea here is the one of [simulated method of m
 ```julia-repl
 pb    = Dict(p1" => [0.2,-2,2] , "p2" => [-0.2,-2,2] )
 moms  = DataFrame(name=["mu2","mu1"],value=[0.0,0.0],weight=rand(2))
-m     = MProb() 
-addSampledParam!(m,pb) 
-addMoment!(m,moms) 
+m     = MProb()
+addSampledParam!(m,pb)
+addMoment!(m,moms)
 SMM.addEvalFunc!(m,SMM.objfunc_norm)
 ```
-    
+
 """
 mutable struct MProb
 
@@ -80,7 +80,7 @@ Add parameters to be sampled to an `MProb`.
 """
 function addSampledParam!(m::MProb,name::Any,init::Any, lb::Any, ub::Any)
   @assert ub>lb
-  m.initial_value[Symbol(name)] = init 
+  m.initial_value[Symbol(name)] = init
   m.params_to_sample[Symbol(name)] = Dict( :lb => lb , :ub => ub)
   return m
 end
@@ -110,7 +110,7 @@ Add Moments to an `MProb`. Adds a single moment to the mprob.
 """
 function addMoment!(m::MProb,name::Symbol,value,weight)
   m.moments[Symbol(name)] = Dict( :value => value , :weight => weight )
-  return m 
+  return m
 end
 
 """
@@ -132,14 +132,14 @@ function addMoment!(m::MProb,d::Dict)
   for k in keys(d)
     addMoment!(m,Symbol(k),d[k][:value],d[k][:weight])
   end
-  return m 
+  return m
 end
 
 function addMoment!(m::MProb,d::DataFrame)
   for i in 1:nrow(d)
     m = addMoment!(m,Symbol(d[i,:name]),d[i,:value],d[i,:weight])
   end
-  return m 
+  return m
 end
 
 
@@ -148,10 +148,15 @@ function addEvalFunc!(m::MProb,f::Function)
     m.objfunc = f
 end
 
+# -------------------- ADDING OBJ FUNCTION OPTIONS --------------------
+function addEvalFuncOpts!(m::MProb,d::Dict)
+    m.objfunc_opts = d
+end
+
 """
     evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false)
 
-Evaluate the objective function of an [`MProb`](@ref) at a given parameter vector `p`. 
+Evaluate the objective function of an [`MProb`](@ref) at a given parameter vector `p`.
 Set `noseed` to `true` if you want to generate new random draws for shocks in the
 objective function (necessary for estimation of standard errors in [`get_stdErrors`](@ref), for example)
 """
@@ -162,7 +167,7 @@ function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false)
     end
     try
        # ev = eval(Expr(:call,m.objfunc,ev))
-        ev = m.objfunc(ev)
+        ev = m.objfunc(ev;m.objfunc_opts...)
     catch ex
         @warn "caught exception $ex at param $p"
         ev.status = -2
@@ -180,7 +185,7 @@ function evaluateObjective(m::MProb,ev)
     # catching errors
     try
         # ev = eval(Expr(:call,m.objfunc,ev))
-        ev = m.objfunc(ev)
+        ev = m.objfunc(ev;m.objfunc_opts...)
     catch ex
         @warn "caught exception $ex at param $(ev.params)"
         ev.status = -2
@@ -235,7 +240,7 @@ end
 
 """
     mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
-    
+
 map param from [0,1] to [a,b]
 """
 function mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
@@ -255,7 +260,7 @@ function show(io::IO,m::MProb)
     # print(io,"\nobjective function call:    $(Expr(:call,m.objfunc,m.current_param,m.moments,m.moments_to_use))\n")
     # if !m.prepared
     #   print(io,"\ncall MoptPrepare(m) to setup cluster\n")
-    # else 
+    # else
     #   print(io,"\nNumber of chains: $(m.N)\n")
     # end
     print(io,"\nEND SHOW MProb\n")
