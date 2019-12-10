@@ -593,10 +593,6 @@ function computeNextIteration!( algo::MAlgoBGP )
     # incrementBGPChainIter!(algo.chains)
 
 
-    # TODO
-    # this is probably inefficeint
-    # ideally, would only pmap evaluateObjective, to avoid large data transfers to each worker (now we're transferring each chain back and forth to each worker.)
-
     if get(algo.opts, "parallel", false)
         for i in 1:length(algo.chains)
             algo.chains[i].iter +=1   #increment iteration on master
@@ -604,7 +600,7 @@ function computeNextIteration!( algo::MAlgoBGP )
 
         pps = map(proposal, algo.chains)  # proposals on master
 
-        evs = pmap(x -> evaluateObjective(algo.chains[1].m, x), pps) # pmap only the objective function evaluation step
+        evs = pmap(x -> evaluateObjective(algo.m, x), pps) # pmap only the objective function evaluation step
 
         cs = map(next_acceptreject, algo.chains, evs) # doAcceptRecject, set_eval
 
