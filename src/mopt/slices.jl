@@ -199,17 +199,17 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                     x[:value] = v[:value]
                     append!(df0,x)
                 else
-                    df0[:iter] = iter
-                    df0[:param] = pp
-                    df0[:val_idx] = k
+                    df0[!,:iter] = iter
+                    df0[!,:param] = pp
+                    df0[!,:val_idx] = k
                     for (ki,vi) in v[:p]
                         df0[ki] = vi
                     end
-                    df0[:value] = v[:value]
+                    df0[!,:value] = v[!,:value]
                 end
             end
             sort!(df0,(:iter,:param,:val_idx))
-            dout[:history] = df0
+            dout[!,:history] = df0
 
             if takes > 60
                 JLD2.@save filename dout

@@ -140,12 +140,12 @@ function history(c::BGPChain)
     cols = Any[]
     # d = DataFrame([Int64,Float64,Bool,Int64],[:iter,:value,:accepted,:prob],N)
     d = DataFrame()
-    d[:iter] = collect(1:c.iter)
-    d[:exchanged] = c.exchanged
-    d[:accepted] = c.accepted
-    d[:best_val] = c.best_val
-    d[:curr_val] = c.curr_val
-    d[:best_id] = c.best_id
+    d.iter = collect(1:c.iter)
+    d[!,:exchanged] = c.exchanged
+    d[!,:accepted] = c.accepted
+    d[!,:best_val] = c.best_val
+    d[!,:curr_val] = c.curr_val
+    d[!,:best_id] = c.best_id
     # get fields from evals
     nms = [:value,:prob]
     for n in nms
@@ -156,7 +156,7 @@ function history(c::BGPChain)
         d[k] = eltype(v)[c.evals[i].params[k] for i in 1:N]
     end
 
-    return d[[:iter,:value,:accepted,:curr_val, :best_val, :prob, :exchanged,collect(keys(c.evals[1].params))...]]
+    return d[!,[:iter,:value,:accepted,:curr_val, :best_val, :prob, :exchanged,collect(keys(c.evals[1].params))...]]
 end
 
 """
