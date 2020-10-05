@@ -8,7 +8,7 @@ This is a modified version of SMM.jl with two changes for the STBNews project:
 To install, in your julia REPL, type
 
 ```julia
-] add add https://github.com/gregobad/SMM.jl#better_parallel
+] add https://github.com/gregobad/SMM.jl#better_parallel
 ```
 
 
