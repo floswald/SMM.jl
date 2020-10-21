@@ -238,6 +238,20 @@ function mapto_01(p::OrderedDict,lb::Vector{Float64},ub::Vector{Float64})
     return (mu .- lb) ./ (ub .- lb)
 end
 
+function mapto_01(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
+    return (p .- lb) ./ (ub .- lb)
+end
+
+function mapto_01!(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
+    p .-= lb
+    p ./= (ub .- lb)
+end
+
+function mapto_01!(p::Float64,lb::Float64,ub::Float64)
+    p -= lb
+    p /= (ub - lb)
+end
+
 """
     mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
 
@@ -245,6 +259,16 @@ map param from [0,1] to [a,b]
 """
 function mapto_ab(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
     p .* (ub .- lb) .+ lb
+end
+
+function mapto_ab!(p::Vector{Float64},lb::Vector{Float64},ub::Vector{Float64})
+    p .*= (ub .- lb)
+    p .+= lb
+end
+
+function mapto_ab!(p::Float64,lb::Float64,ub::Float64)
+    p *= (ub - lb)
+    p += lb
 end
 
 function show(io::IO,m::MProb)
