@@ -97,6 +97,24 @@ function addSampledParam!(m::MProb,d=OrderedDict{Any,Array{Any,1}})
   return m
 end
 
+
+# --------------------- CHANGING STARTING VALUE ----------
+function reInit!(m::MProb, name::Any, init::Any)
+    m.initial_value[Symbol(name)] = init
+end
+
+function reInit!(m::Mprob, d = OrderedDict{Any, Any})
+    for k in keys(d)
+        reInit!(m, Symbol(k), d[k])
+    end
+end
+
+function reInit!(m::Mprob, ev::Eval)
+    reInit!(m, params(ev))
+end
+
+
+
 # -------------------- ADDING MOMENTS --------------------
 
 """
