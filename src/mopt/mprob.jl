@@ -104,16 +104,14 @@ function reInit!(m::MProb, name::Any, init::Any)
 end
 
 function reInit!(m::Mprob, d = OrderedDict{Any, Any})
-    for k in keys(d)
-        reInit!(m, Symbol(k), d[k])
+    for (k,v) in d
+        reInit!(m, Symbol(k), v)
     end
 end
 
 function reInit!(m::Mprob, ev::Eval)
-    reInit!(m, params(ev))
+    reInit!(m, ev.params)
 end
-
-
 
 # -------------------- ADDING MOMENTS --------------------
 
