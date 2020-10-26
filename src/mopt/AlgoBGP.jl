@@ -600,7 +600,7 @@ function computeNextIteration!( algo::MAlgoBGP )
 
         pps = map(proposal, algo.chains)  # proposals on master
 
-        evs = pmap(x -> evaluateObjective(algo.m, x), pps) # pmap only the objective function evaluation step
+        evs = pmap(x -> evaluateObjective(algo.m, x), get(algo.opts, "worker_pool", workers()), pps) # pmap only the objective function evaluation step
 
         cs = map(next_acceptreject, algo.chains, evs) # doAcceptRecject, set_eval
 
@@ -651,7 +651,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 
     # algo["N"] exchange moves are proposed
     props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (i<j)]
-    # N pairs of chains are chosen uniformly in all possibel pairs with replacement
+    # N pairs of chains are chosen uniformly in all possible pairs with replacement
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
     pairs = sample(props,samples,replace=false)
 
