@@ -103,13 +103,13 @@ function reInit!(m::MProb, name::Any, init::Any)
     m.initial_value[Symbol(name)] = init
 end
 
-function reInit!(m::Mprob, d = OrderedDict{Any, Any})
+function reInit!(m::MProb, d = OrderedDict{Any, Any})
     for (k,v) in d
         reInit!(m, Symbol(k), v)
     end
 end
 
-function reInit!(m::Mprob, ev::Eval)
+function reInit!(m::MProb, ev::Eval)
     reInit!(m, ev.params)
 end
 
