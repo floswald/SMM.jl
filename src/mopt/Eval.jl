@@ -1,9 +1,9 @@
 
 
 """
-# `Eval` type for managing function evaluations 
+# `Eval` type for managing function evaluations
 
-## fields 
+## fields
 
 * `value`: current function value
 * `time`: timing of evaluation
@@ -16,7 +16,7 @@
 * `accepted`: whether draw was accepted
 * `options`: Dict of options and other info
 
-""" 
+"""
 mutable struct Eval
 
 	value        :: Float64
@@ -92,7 +92,7 @@ mutable struct Eval
         this.prob = 0.0
         this.accepted = false
 
-		for kk in keys(mprob.moments) 
+		for kk in keys(mprob.moments)
 			this.dataMoments[kk]  = mprob.moments[kk][:value]
 			this.dataMomentsW[kk] = mprob.moments[kk][:weight]
 		end
@@ -117,7 +117,7 @@ mutable struct Eval
         this.prob = 0.0
         this.accepted = false
 
-        for kk in keys(mprob.moments) 
+        for kk in keys(mprob.moments)
             this.dataMoments[kk]  = mprob.moments[kk][:value]
             this.dataMomentsW[kk] = mprob.moments[kk][:weight]
         end
@@ -232,7 +232,7 @@ function setMoments!(ev::Eval,d::DataFrame)
 end
 
 
-function getBest(evs::Array{Eval,1}) 
+function getBest(evs::Array{Eval,1})
   best_val = Inf
   best = None
   for ev in evs
@@ -258,11 +258,11 @@ function check_moments(ev::Eval)
 	r = join(d,dsim, on=:moment)
 	r[:distance] =  r[:simulation] .- r[:data]
     r[:abs_percent] = 100 .* abs.(r[:distance] ./ r[:data])
-    r[:abs_percent_2] = (r[:distance] ./ r[:data] ).^2 
+    r[:abs_percent_2] = (r[:distance] ./ r[:data] ).^2
     r[:abs_percent_1000] = r[:abs_percent] ./ 1000
     r[:abs_percent_2_1000] = r[:abs_percent_2] ./ 1000
     if length(ev.dataMomentsW) > 0
-       r[:MSE_SD] = (r[:distance] ./ r[:data_sd] ).^2 
+       r[:MSE_SD] = (r[:distance] ./ r[:data_sd] ).^2
 	   r[:abs_percent_SD_weighted] = abs.(r[:distance]./ r[:data_sd] )
        r[:MSE_SD_1000] = r[:MSE_SD] ./ 1000
 	   r[:abs_percent_SD_weighted_1000] = r[:abs_percent_SD_weighted] ./ 1000
@@ -281,4 +281,9 @@ function show(io::IO,e::Eval)
   print(io,"\nMoments:\n")
   print(io,collect(keys(e.dataMoments)))
   print(io,"\n===========================\n")
+end
+
+
+function reInit!(m::MProb, ev::Eval)
+    reInit!(m, ev.params)
 end

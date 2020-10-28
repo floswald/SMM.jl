@@ -109,10 +109,6 @@ function reInit!(m::MProb, d = OrderedDict{Any, Any})
     end
 end
 
-function reInit!(m::MProb, ev::Eval)
-    reInit!(m, ev.params)
-end
-
 # -------------------- ADDING MOMENTS --------------------
 
 """

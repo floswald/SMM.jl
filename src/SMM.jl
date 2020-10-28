@@ -7,7 +7,7 @@ __precompile__(false)
 # Dependencies
 # ############
 
-using Distributions 
+using Distributions
 using DataFrames, DataFramesMeta
 using OrderedCollections
 using PDMats
@@ -30,16 +30,16 @@ import Base.get, Base.write, Base.==
 import Base.show, Statistics.mean, Statistics.median
 
 # exports: Types
-export MProb, Eval,MAlgo, MAlgoBGP 
+export MProb, Eval, MAlgo, MAlgoBGP 
 
 # exports: methods
-export addParam!, 
-       addSampledParam!, 
-       addMoment!, 
-       addEvalFunc!, 
-       setMoments!, 
+export addParam!,
+       addSampledParam!,
+       addMoment!,
+       addEvalFunc!,
+       setMoments!,
        setValue!,
-       readEvalArray , 
+       readEvalArray ,
        dataMoment,
        dataMomentd,
        dataMomentW,
@@ -77,7 +77,3 @@ include("mopt/econometrics.jl")
 
 
 end 	# module
-
-
-
-
