@@ -600,7 +600,7 @@ function computeNextIteration!( algo::MAlgoBGP )
 
         pps = map(proposal, algo.chains)  # proposals on master
 
-        evs = pmap(x -> evaluateObjective(algo.m, x), get(algo.opts, "worker_pool", workers()), pps) # pmap only the objective function evaluation step
+        evs = pmap(x -> evaluateObjective(algo.m, x), get(algo.opts, "worker_pool", default_worker_pool()), pps) # pmap only the objective function evaluation step
 
         cs = map(next_acceptreject, algo.chains, evs) # doAcceptRecject, set_eval
 
