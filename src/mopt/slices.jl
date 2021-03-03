@@ -194,22 +194,22 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
                 if (nrow(df0)) > 0
                     x = DataFrame(iter=iter,param=pp,val_idx=k)
                     for (ki,vi) in v[:p]
-                        x[ki] = vi
+                        x[!,ki] .= vi
                     end
-                    x[:value] = v[:value]
+                    x[!,:value] .= v[:value]
                     append!(df0,x)
                 else
-                    df0[:iter] = iter
-                    df0[:param] = pp
-                    df0[:val_idx] = k
+                    df0[!,:iter] .= iter
+                    df0[!,:param] .= pp
+                    df0[!,:val_idx] .= k
                     for (ki,vi) in v[:p]
-                        df0[ki] = vi
+                        df0[!,ki] .= vi
                     end
-                    df0[:value] = v[:value]
+                    df0[!,:value] .= v[:value]
                 end
             end
-            sort!(df0,(:iter,:param,:val_idx))
-            dout[:history] = df0
+            sort!(df0,[:iter, :param, :val_idx])
+            dout[!,:history] = df0
 
             if takes > 60
                 JLD2.@save filename dout
@@ -220,7 +220,7 @@ function optSlices(m::MProb,npoints::Int;parallel=false,tol=1e-5,update=nothing,
 
         # update search ranges
         # maintain range boundaries
-        if update!=nothing
+        if !isnothing(update)
             for (k,v) in bestp
                 r = (ranges[k][:ub] - ranges[k][:lb])/2
                 ranges[k][:lb] = max(v - update * r,ranges[k][:lb])

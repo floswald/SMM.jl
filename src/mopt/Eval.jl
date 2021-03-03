@@ -57,9 +57,9 @@ mutable struct Eval
         this.prob = 0.0
         this.accepted = false
 
-		if !in(:name,names(mom)) throw(ArgumentError("moment dataframe needs column named `name`")) end
-		if !in(:value,names(mom)) throw(ArgumentError("moment dataframe needs column named `value`")) end
-		if !in(:weight,names(mom)) throw(ArgumentError("moment dataframe needs column named `weight`")) end
+		if !in("name",names(mom)) throw(ArgumentError("moment dataframe needs column named `name`")) end
+		if !in("value",names(mom)) throw(ArgumentError("moment dataframe needs column named `value`")) end
+		if !in("weight",names(mom)) throw(ArgumentError("moment dataframe needs column named `weight`")) end
 
 		for i in eachrow(mom)
 			kk = Symbol(i[:name])

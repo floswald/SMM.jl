@@ -115,7 +115,7 @@ function parallelNormal(niter=200)
 	return MA
 end
 
-function serialNormal(npars,niter;save=false)
+function serialNormal(npars,niter;save=false, slow = false)
 
 	nchains = 3
 
@@ -147,7 +147,7 @@ function serialNormal(npars,niter;save=false)
 		"animate"=>false)
 
 	end
-	o = snorm_impl(opts,niter,npar=npars,save=save)
+	o = snorm_impl(opts,niter,npar=npars,save=save, slow = slow)
 	return o
 
 end
@@ -370,7 +370,7 @@ function snorm_standard6()
 	savefig(joinpath(dirname(@__FILE__),"../docs/images/lines6.png")	)
 	return (MA,ph,pp)
 end
-function snorm_impl(opts,niter=200;npar=2,save=false)
+function snorm_impl(opts,niter=200;npar=2,save=false,slow = false)
 	# data are generated from a bivariate normal
 	# with mu = [a,b] = [0,0]
 	# aim: 
@@ -409,7 +409,11 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 	mprob = MProb() 
 	addSampledParam!(mprob,pb) 
 	SMM.addMoment!(mprob,moms) 
-	SMM.addEvalFunc!(mprob,objfunc_norm)
+	if slow
+		SMM.addEvalFunc!(mprob,objfunc_norm_slow)
+	else
+		SMM.addEvalFunc!(mprob,objfunc_norm)
+	end
 
 
 
@@ -429,6 +433,7 @@ function snorm_impl(opts,niter=200;npar=2,save=false)
 	run!(MA)
 	@show summary(MA)
 
+	MA
 	ph = histogram(MA.chains[1],nbins=19);
 	if save
 		savefig(joinpath(dirname(@__FILE__),"../../histogram.png"))
