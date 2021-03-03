@@ -149,11 +149,11 @@ function history(c::BGPChain)
     # get fields from evals
     nms = [:value,:prob]
     for n in nms
-        d[n] = eltype(getfield(c.evals[1],n))[getfield(c.evals[i],n) for i in 1:N]
+        d[!,n] = eltype(getfield(c.evals[1],n))[getfield(c.evals[i],n) for i in 1:N]
     end
     # get fields from evals.params
     for (k,v) in c.evals[1].params
-        d[k] = eltype(v)[c.evals[i].params[k] for i in 1:N]
+        d[!,k] = eltype(v)[c.evals[i].params[k] for i in 1:N]
     end
 
     return d[!,[:iter,:value,:accepted,:curr_val, :best_val, :prob, :exchanged,collect(keys(c.evals[1].params))...]]
@@ -575,17 +575,17 @@ function computeNextIteration!( algo::MAlgoBGP )
     # this is probably inefficeint
     # ideally, would only pmap evaluateObjective, to avoid large data transfers to each worker (now we're transferring each chain back and forth to each worker.)
 
-    if get(algo.opts, "parallel", false)
+    # if get(algo.opts, "parallel", false)
         cs = pmap( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
-    else
+    # else
         # for i in algo.chains
         #     @debug(logger," ")
         #     @debug(logger," ")
         #     @debug(logger,"debugging chain id $(i.id)")
         #     next_eval!(i)
         # end
-        cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
-    end
+        # cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+    # end
     # reorder and insert into algo
     for i in 1:algo.opts["N"]
         algo.chains[i] = cs[map(x->getfield(x,:id) == i,cs)][1]

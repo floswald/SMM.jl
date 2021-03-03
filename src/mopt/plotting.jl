@@ -148,7 +148,7 @@ end
         # layout := @layout [ one{0.3h}; grid(rows,cols, heights=ones(rows)/rows,widths=ones(cols)/cols)]
         layout := @layout [ one{0.3h}; grid(rows,cols)]
         dat = history(c)
-        ex = convert(Array{Float64},dat[:exchanged])
+        ex = convert(Array{Float64},dat[!,:exchanged])
         ex[ex.==0] .= NaN
         # values plot
         # @series begin
@@ -172,19 +172,19 @@ end
         # end
         @series begin
             subplot := 1 
-            linetype := :line
+            seriestype := :line
             linecolor := :black
             linewidth --> 1
             yguide := "Obj Value"
             ylims := [y_e[1] .- y_lim;y_e[2] .+ 2*y_lim]
             xguide := "iteration"
-            dat[:curr_val]
+            dat[!,:curr_val]
         end
         data = params(c,accepted_only=false)
         for (k,v) in data
             @series begin
                 subplot  := indices[k] + 1
-                linetype := :line
+                seriestype := :line
                 linecolor := :black
                 title := "$k"
                 v
@@ -214,8 +214,8 @@ end
         dd = SMM.cur_param(ma)[chain]
         acc = ma.chains[chain].accepted[ma.i]
         for (k,v) in ma.m.params_to_sample
-            dist = Normal(dd[:mu][k],diag(dd[:sigma])[indices[k]])
-            x = linspace(v[:lb],v[:ub],100)
+            dist = Normal(dd[:mu][k],dd[:sigma])
+            x = range(v[:lb],stop = v[:ub],length = 100)
             @series begin
                 seriestype := :path
                 subplot    := indices[k]
@@ -226,11 +226,10 @@ end
             end
             @series begin
                 subplot    := indices[k]
-                seriestype := :line
-                linetype   := :vline
+                seriestype := :vline
                 linecolor  := :red
                 xguide     := "$k"
-                title := "iter $(ma.i) was accepted: $acc \n (mu,sigma)=$(map(x->round(x,2),Distributions.params(dist)))"
+                title := "iter $(ma.i) was accepted: $acc \n (mu,sigma)=$(map(x->round(x,digits = 2),Distributions.params(dist)))"
                 [dd[:mu][k]]
             end
         end
