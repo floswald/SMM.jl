@@ -37,7 +37,7 @@ julia> using SMM
 
 julia> x = SMM.serialNormal(2,200,slow = true)
 [ Info: Starting estimation loop.
-Progress: 100%|██████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:01:05
+Progress: 100%|██████████████████████████████████████████████| Time: 0:01:05
 ┌ Warning: could not find 'filename' in algo.opts - not saving anything
 └ @ SMM ~/.julia/dev/SMM/src/mopt/AlgoAbstract.jl:67
 [ Info: Done with estimation after 1.1 minutes
@@ -71,7 +71,7 @@ julia> @everywhere using SMM
 
 julia> x = SMM.serialNormal(2,200,slow = true)
 [ Info: Starting estimation loop.
-Progress: 100%|██████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:49
+Progress: 100%|█████████████████████████████████████████████| Time: 0:00:49
 ┌ Warning: could not find 'filename' in algo.opts - not saving anything
 └ @ SMM ~/.julia/dev/SMM/src/mopt/AlgoAbstract.jl:67
 [ Info: Done with estimation after 0.8 minutes
