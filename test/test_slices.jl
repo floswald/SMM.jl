@@ -60,7 +60,7 @@ end
 @testset "naive coordinate descent works in parallel" begin
 	addprocs(2)
 	@everywhere using MomentOpt
-    m,s = MomentOpt.snorm_6_taxi(0.1,par=true)
+    m,s = MomentOpt.snorm_6_taxi(0.1,3)
 	rmprocs(workers())
     @test norm(m[:value] .- collect(values(s[:best][:p]))) < 0.5
 end

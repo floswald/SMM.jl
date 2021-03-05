@@ -111,7 +111,7 @@ end
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
-function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename="trace.jld2")
+function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,maxiter=Inf ,filename="trace.jld2")
 
     t0 = time()
     # res = Slice(m.initial_value, m.moments)
@@ -148,7 +148,7 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,filename
 
 
     # prog = ProgressThresh(tolp, "Minimizing:")
-    while (delta > tolp) | (deltav > tolv)
+    while ((delta > tolp) | (deltav > tolv)) && (iter < maxiter)
         # ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
