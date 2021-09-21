@@ -143,19 +143,22 @@ end
 
 Evaluate the objective function of an [`MProb`](@ref) at a given parameter vector `p`.
 """
-function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false)
+function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false, trycatch = true)
     ev = Eval(m,p)
     if noseed
       ev.options[:noseed] = true
     end
-    try
-       # ev = eval(Expr(:call,m.objfunc,ev))
-      ev = m.objfunc(ev)
-    catch ex
-      warn("caught exception $ex at param $p")
-      ev.status = -2
+    if trycatch
+        try
+           # ev = eval(Expr(:call,m.objfunc,ev))
+            ev = m.objfunc(ev)
+        catch ex
+            @warn "caught exception $ex at param $p"
+            ev.status = -2
+        end
+    else 
+        ev = m.objfunc(ev)
     end
-    gc()
     return ev
 end
 
@@ -164,16 +167,19 @@ end
 
 Evaluate the objective function of an [`MProb`](@ref) at a given `Eval`.
 """
-function evaluateObjective(m::MProb,ev)
+function evaluateObjective(m::MProb,ev, trycatch = true)
     # catching errors
-    try
-       # ev = eval(Expr(:call,m.objfunc,ev))
-       ev = m.objfunc(ev)
-    catch ex
-      warn("caught exception $ex at param $(ev.params)")
-      ev.status = -2
+    if trycatch
+        try
+            # ev = eval(Expr(:call,m.objfunc,ev))
+            ev = m.objfunc(ev)
+        catch ex
+            @warn "caught exception $ex at param $(ev.params)"
+            ev.status = -2
+        end
+    else
+        ev = m.objfunc(ev)
     end
-    gc()
     return ev
 end
 
