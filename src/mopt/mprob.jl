@@ -167,7 +167,7 @@ end
 
 Evaluate the objective function of an [`MProb`](@ref) at a given `Eval`.
 """
-function evaluateObjective(m::MProb,ev, trycatch = true)
+function evaluateObjective(m::MProb,ev; trycatch = true)
     # catching errors
     if trycatch
         try
