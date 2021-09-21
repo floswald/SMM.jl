@@ -111,7 +111,7 @@ end
 
 Computes [`Slice`](@ref)s of an [`MProb`](@ref) and keeps the best value from each slice. This implements a naive form of gradient descent in that it optimizes wrt to one direction at a time, keeping the best value. It's naive because it does a grid search in that direction. The grid size shrinks, however, at a rate `update`.
 """
-function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,maxiter=Inf ,filename="trace.jld2")
+function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,maxiter=Inf ,filename="trace.jld2",trycatch = true)
 
     t0 = time()
     # res = Slice(m.initial_value, m.moments)
@@ -170,7 +170,7 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,maxiter=
             takes = @elapsed vv = pmap( linspace(bb[:lb], bb[:ub], npoints) ) do pval
                 ev2 = deepcopy(ev)
                 ev2.params[pp] = pval
-                ev2 = evaluateObjective(m,ev2)
+                ev2 = evaluateObjective(m,ev2,trycatch = trycatch)
                 return(ev2)
             end
 
