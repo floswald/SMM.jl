@@ -161,7 +161,7 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,maxiter=
 
 
         for (pp,bb) in ranges
-            println("   working on $pp")
+            # println("   working on $pp")
         
             # initialize eval
             ev = Eval(m,cur_param)
