@@ -148,7 +148,7 @@ function optSlices(m::MProb,npoints::Int;tolp=1e-5,tolv=1e-6,update=0.9,maxiter=
 
 
     # prog = ProgressThresh(tolp, "Minimizing:")
-    while ((delta > tolp) | (deltav > tolv)) && (iter < maxiter)
+    while ((delta > tolp) | (deltav > tolv)) && (iter <= maxiter)
         # ProgressMeter.update!(prog, delta)
         # println("current search range:")
         # print(json(ranges,4))
