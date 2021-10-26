@@ -206,6 +206,29 @@ function getSigma(m::MProb,p::Union{Dict,OrderedDict},reps::Int)
     return Σ
 end
 
+# crucially here: turn off any random seeds in the objective function!
+function getSigma(m::MProb,reps::Int)
+  ev = [Eval(m) for i in 1:reps]
+  mnames = collect(keys(m.moments))
+  for e in ev
+    e.options[:noseed] = true
+  end
+  if length(workers()) > 1
+    evs = pmap(x->evaluateObjective(m,x),ev)
+  else
+    evs = map(x->evaluateObjective(m,x),ev)
+  end
+  N = length(evs)
+  d = DataFrame()
+
+  for (k,v) in filter((x,y)->in(x,mnames),evs[1].simMoments)
+        d[k] = eltype(v)[evs[i].simMoments[k] for i in 1:reps]
+    end
+
+    Σ = cov(convert(Matrix,d))
+    return Σ
+end
+
 # -------------------- GETTERS --------------------
 
 
