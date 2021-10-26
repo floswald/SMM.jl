@@ -85,6 +85,7 @@ end
 function FD_gradient(m::MProb;step_perc=0.01,diff_method=:forward,use_range=true)
 
 	# get g(p)
+	p = m.initial_value
 	ev = Eval(m)
     ev = evaluateObjective(m,ev)
     mnames = collect(keys(m.moments))
