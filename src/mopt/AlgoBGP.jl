@@ -371,23 +371,13 @@ end
 
 
 """
-    mysample(d::Distributions.MultivariateDistribution,lb::Vector{Float64},ub::Vector{Float64},iters::Int)
+Truncated multivariate normal distribution.
 
-mysample from distribution `d` until all poins are in support. This is a crude version of a truncated distribution: It just samples until all draws are within the admissible domain.
+From https://github.com/JuliaStats/Distributions.jl/issues/480#issuecomment-1316525345
 """
-function mysample(d::Distributions.MultivariateDistribution,lb::Float64,ub::Float64,iters::Int)
-
-    # draw until all points are in support
-    for i in 1:iters
-        x = rand(RAND,d)
-        if all(x.>=lb) && all(x.<=ub)
-            return x
-        end
-    end
-    error("no draw in support after $iters trials. increase either opts[smpl_iters] or opts[bound_prob].")
+function truncated_mv_normal(mu::Vector{Float64}, sigma::Float64, lb::Float64, ub::Float64)
+    Product([truncated(Normal(m,sigma), lb, ub) for m in mu])
 end
-
-
 
 """
     proposal(c::BGPChain)
@@ -417,13 +407,15 @@ function proposal(c::BGPChain)
 
         # if there is only one batch of params
         if length(c.batches) == 1
-            pp = mysample(MvNormal(mu01,c.sigma),0.0,1.0,c.smpl_iters)
+            d = truncated_mv_normal(mu01, c.sigma, 0.0, 1.0)
+            pp = mysample(d,0.0,1.0,c.smpl_iters)
         else
             # do it in batches of params
             pp = zero(mu01)
             for (sig_ix,i) in enumerate(c.batches)
                 try
-                    pp[i] = mysample(MvNormal(mu01[i],c.sigma),0.0,1.0,c.smpl_iters)
+                    d = truncated_mv_normal([mu01[i]], c.sigma, 0.0, 1.0)
+                    pp[i] = mysample(d,0.0,1.0,c.smpl_iters)
                 catch err
                     @error "caught exception $err. this is param index $sig_ix, mean = $(mu01[i]), sigma $(c.sigma), lb,ub = $((0,1))"
                 end
