@@ -611,8 +611,8 @@ function computeNextIteration!( algo::MAlgoBGP )
         #     @debug(logger,"debugging chain id $(i.id)")
         #     next_eval!(i)
         # end
-        # cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
-    # end
+        cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+    end
     # reorder and insert into algo
     for i in 1:algo.opts["N"]
         algo.chains[i] = cs[map(x->getfield(x,:id) == i,cs)][1]
