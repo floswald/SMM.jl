@@ -184,7 +184,6 @@ function evaluateObjective(m::MProb,p::Union{Dict,OrderedDict};noseed=false)
         @warn "caught exception $ex at param $p"
         ev.status = -2
     end
-    GC.gc()
     return ev
 end
 
@@ -202,7 +201,6 @@ function evaluateObjective(m::MProb,ev)
         @warn "caught exception $ex at param $(ev.params)"
         ev.status = -2
     end
-    GC.gc()
     return ev
 end
 

@@ -284,7 +284,7 @@
 
 			# keep only accepted draws:
 			#--------------------------
-			dat_chain1 = dat_chain1[dat_chain1[:accepted ].== true, : ]
+			dat_chain1 = dat_chain1[dat_chain1[!,:accepted ].== true, : ]
 
 			# create a list with the parameters to be estimated
 			parameters = [Symbol(String("mu$(i)")) for i=1:2]
@@ -296,8 +296,8 @@
 			#-------------------------------------------------------------------
 			for (estimatedParameter, param) in zip(estimatedParameters, parameters)
 
-			  Qmean[indexAlgo,:] .= mean(dat_chain1[estimatedParameter])
-			  Qmedian[indexAlgo,:] .= median(dat_chain1[estimatedParameter])
+			  Qmean[indexAlgo,:] .= mean(dat_chain1[!,estimatedParameter])
+			  Qmedian[indexAlgo,:] .= median(dat_chain1[!,estimatedParameter])
 
 			end
 
