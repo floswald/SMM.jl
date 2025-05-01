@@ -231,6 +231,12 @@ function setMoments!(ev::Eval,d::DataFrame)
 	end
 end
 
+function setMoments!(ev::Eval, ks::Vector{Symbol}, values::Vector{Float64})
+	for (k,v) in zip(ks, values)
+		ev.simMoments[k] = v
+	end
+end
+
 
 function getBest(evs::Array{Eval,1})
   best_val = Inf
