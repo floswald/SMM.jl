@@ -64,7 +64,7 @@ function run!( algo::MAlgo )
 	if haskey(algo.opts,"filename")
 		save(algo,algo.opts["filename"])
 	else
-		@warn "could not find 'filename' in algo.opts"
+		@warn "could not find 'filename' in algo.opts - not saving anything"
 	end
 
 	@info "Done with estimation after $t1 minutes"

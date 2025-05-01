@@ -57,7 +57,7 @@
 
 	@testset "naive coordinate descent works" begin
 	    m,s = SMM.snorm_6_taxi(0.1)
-	    @test norm(m[:value] .- collect(values(s[:best][:p]))) < 0.5
+	    @test norm(m[!,:value] .- collect(values(s[:best][:p]))) < 0.5
 	end
 
 	@testset "naive coordinate descent works in parallel" begin
@@ -65,7 +65,7 @@
 		@everywhere using SMM
 	    m,s = SMM.snorm_6_taxi(0.1,par=true)
 		rmprocs(workers())
-	    @test norm(m[:value] .- collect(values(s[:best][:p]))) < 0.5
+	    @test norm(m[!,:value] .- collect(values(s[:best][:p]))) < 0.5
 	end
 
 	@testset "simple slice optimization works" begin

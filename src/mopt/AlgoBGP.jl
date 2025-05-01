@@ -75,7 +75,7 @@ mutable struct BGPChain <: AbstractChain
         * `min_improve`: minimally required improvement in chain `j` over chain `i` for an exchange move `j->i` to talk place.
         * `batch_size`: size of batches in which to update parameter vector.
     """
-    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,min_improve::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
+    function BGPChain(id::Int=1,n::Int=10;m::MProb=MProb(),sig::Float64=0.5,upd::Int=10,upd_by::Float64=0.01,smpl_iters::Int=1000,min_improve::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
         np = length(m.params_to_sample)
         this           = new()
         this.evals     = Array{Eval}(undef,n)
@@ -140,23 +140,23 @@ function history(c::BGPChain)
     cols = Any[]
     # d = DataFrame([Int64,Float64,Bool,Int64],[:iter,:value,:accepted,:prob],N)
     d = DataFrame()
-    d[:iter] = collect(1:c.iter)
-    d[:exchanged] = c.exchanged
-    d[:accepted] = c.accepted
-    d[:best_val] = c.best_val
-    d[:curr_val] = c.curr_val
-    d[:best_id] = c.best_id
+    d.iter = collect(1:c.iter)
+    d[!,:exchanged] = c.exchanged
+    d[!,:accepted] = c.accepted
+    d[!,:best_val] = c.best_val
+    d[!,:curr_val] = c.curr_val
+    d[!,:best_id] = c.best_id
     # get fields from evals
     nms = [:value,:prob]
     for n in nms
-        d[n] = eltype(getfield(c.evals[1],n))[getfield(c.evals[i],n) for i in 1:N]
+        d[!,n] = eltype(getfield(c.evals[1],n))[getfield(c.evals[i],n) for i in 1:N]
     end
     # get fields from evals.params
     for (k,v) in c.evals[1].params
-        d[k] = eltype(v)[c.evals[i].params[k] for i in 1:N]
+        d[!,k] = eltype(v)[c.evals[i].params[k] for i in 1:N]
     end
 
-    return d[[:iter,:value,:accepted,:curr_val, :best_val, :prob, :exchanged,collect(keys(c.evals[1].params))...]]
+    return d[!,[:iter,:value,:accepted,:curr_val, :best_val, :prob, :exchanged,collect(keys(c.evals[1].params))...]]
 end
 
 """
