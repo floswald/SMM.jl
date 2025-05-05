@@ -93,7 +93,7 @@ mutable struct BGPChain <: AbstractChain
         this.m         = m
         # how many bundles + rest
         nb, rest = divrem(np,batch_size)
-        this.sigma = sig 
+        this.sigma = sig
         this.batches = UnitRange{Int}[]
         i = 1
         for ib in 1:nb
@@ -262,7 +262,7 @@ end
 
 Computes the next `Eval` for chain `c`:
 
-1. Get last accepted param 
+1. Get last accepted param
 2. get a new param via [`proposal`](@ref)
 3. [`evaluateObjective`](@ref)
 4. Accept or Reject the new value via [`doAcceptReject!`](@ref)
@@ -287,6 +287,28 @@ function next_eval(c::BGPChain)
     doAcceptReject!(c,ev)
 
     # save eval on BGPChain
+    set_eval!(c,ev)
+
+    return c
+
+end
+
+"""
+    next_acceptreject(c::BGPChain, ev::Eval)
+
+Stores `ev` to chain `c`, given already computed obj fn value:
+
+1. Accept or Reject the new value via [`doAcceptReject!`](@ref)
+2. Store `Eval` on chain `c`.
+
+"""
+function next_acceptreject(c::BGPChain, ev::Eval)
+    @debug "iteration = $(c.iter)"
+
+    # accept reject
+    doAcceptReject!(c,ev)
+
+    # save eval on STBChain
     set_eval!(c,ev)
 
     return c
@@ -392,7 +414,7 @@ end
 """
     proposal(c::BGPChain)
 
-Gaussian Transition Kernel centered on current parameter value. 
+Gaussian Transition Kernel centered on current parameter value.
 
 1. Map all ``k`` parameters into ``\\mu \\in [0,1]^k``.
 2. update all parameters by sampling from `MvNormal`, ``N(\\mu,\\sigma)``, where ``sigma`` is `c.sigma` until all params are in ``[0,1]^k``
@@ -411,8 +433,8 @@ function proposal(c::BGPChain)
 
         # map into [0,1]
         # (x-a)/(b-a) = z \in [0,1]
-        mu01 = mapto_01(mu,lb,ub) 
-        
+        mu01 = mapto_01(mu,lb,ub)
+
         # Transition Kernel is q(.|theta(t-1)) ~ TruncatedN(theta(t-1), Sigma,lb,ub)
 
         # if there is only one batch of params
@@ -571,21 +593,26 @@ function computeNextIteration!( algo::MAlgoBGP )
     # incrementBGPChainIter!(algo.chains)
 
 
-    # TODO
-    # this is probably inefficeint
-    # ideally, would only pmap evaluateObjective, to avoid large data transfers to each worker (now we're transferring each chain back and forth to each worker.)
+    if get(algo.opts, "parallel", false)
+        for i in 1:length(algo.chains)
+            algo.chains[i].iter +=1   #increment iteration on master
+        end
 
-    # if get(algo.opts, "parallel", false)
-        cs = pmap( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
-    # else
+        pps = map(proposal, algo.chains)  # proposals on master
+
+        evs = pmap(x -> evaluateObjective(algo.m, x), get(algo.opts, "worker_pool", default_worker_pool()), pps) # pmap only the objective function evaluation step
+
+        cs = map(next_acceptreject, algo.chains, evs) # doAcceptRecject, set_eval
+
+    else
         # for i in algo.chains
         #     @debug(logger," ")
         #     @debug(logger," ")
         #     @debug(logger,"debugging chain id $(i.id)")
         #     next_eval!(i)
         # end
-        # cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
-    # end
+        cs = map( x->next_eval(x), algo.chains ) # this does proposal, evaluateObjective, doAcceptRecject
+    end
     # reorder and insert into algo
     for i in 1:algo.opts["N"]
         algo.chains[i] = cs[map(x->getfield(x,:id) == i,cs)][1]
@@ -624,7 +651,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 
     # algo["N"] exchange moves are proposed
     props = [(i,j) for i in 1:algo["N"], j in 1:algo["N"] if (i<j)]
-    # N pairs of chains are chosen uniformly in all possibel pairs with replacement
+    # N pairs of chains are chosen uniformly in all possible pairs with replacement
     samples = algo["N"] < 3 ? algo["N"]-1 : algo["N"]
     pairs = sample(props,samples,replace=false)
 

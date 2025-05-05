@@ -1,3 +1,15 @@
+# Forked version of SMM.jl
+
+This is a modified version of SMM.jl with two changes for the STBNews project:
+
+1. Change to parallel dispatch to improve memory usage (in `algoBGP.jl`). Note STB code uses `algoSTB.jl`, in `stb-model` project.
+2. Allow passing options to objective function (in `mprob.jl::evaluateObjective`)
+
+To install, in your julia REPL, type
+
+```julia
+] add https://github.com/gregobad/SMM.jl#better_parallel
+```
 
 
 # SMM.jl: Simulated Method of Moments for Julia
@@ -10,15 +22,6 @@
 
 
 This package provides a `Julia` infrastructure for *[Simulated Method of Moments](http://en.wikipedia.org/wiki/Method_of_simulated_moments)* estimation, or other problems where we want to optimize a non-differentiable objective function. The setup is suitable for all kinds of **likelihood-free estimators** - in general, those require evaluating the objective at many regions. The user can supply their own algorithms for generating successive new parameter guesses. We provide a set of MCMC template algorithms. The code can be run in serial or on a cluster.
-
-
-## Installation
-
-In your julia REPL, type
-
-```julia
-] add SMM
-```
 
 ## Documentation
 
@@ -105,7 +108,7 @@ New algorithms:
 
 ## History
 
-This package grew out of the [R package `mopt`](https://github.com/tlamadon/mopt). 
+This package grew out of the [R package `mopt`](https://github.com/tlamadon/mopt).
 
 ## Thanks to all Contributors!
 
