@@ -777,7 +777,7 @@ stopped. Add `extraIter` additional steps to the optimization process.
 function restart!(algo::MAlgoBGP, extraIter::Int64)
 
   @info "Restarting estimation loop with $(extraIter) iterations."
-  @info "Current best value on chain 1 before restarting $(SMM.summary(algo)[:best_val][1])"
+  @info "Current best value on chain 1 before restarting $(SMM.summary(algo)[!,:best_val][1])"
   t0 = time()
 
   # Minus 1, to follow the SMM convention
