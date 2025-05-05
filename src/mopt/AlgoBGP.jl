@@ -375,7 +375,7 @@ end
 
 mysample from distribution `d` until all poins are in support. This is a crude version of a truncated distribution: It just samples until all draws are within the admissible domain.
 """
-function mysample(d::Distributions.MultivariateDistribution,lb::Float64,ub::Float64,iters::Int)
+function mysample(d::Distributions.MultivariateDistribution,lb::Float64,ub::Float64,iters::Int64)
 
     # draw until all points are in support
     for i in 1:iters
