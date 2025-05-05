@@ -45,23 +45,23 @@ mutable struct BGPChain <: AbstractChain
     best_val  :: Vector{Float64}   # best eval.value so far
     curr_val  :: Vector{Float64}   # current value
     probs_acc :: Vector{Float64}    # vector of probabilities with which to accept
-    id        :: Int64
-    iter      :: Int64
+    id        :: Int
+    iter      :: Int
     accepted  :: Array{Bool}
     accept_rate :: Float64
     acc_tuner :: Float64
     exchanged :: Array{Int}
     m         :: MProb
     sigma     :: Float64
-    sigma_update_steps :: Int64   # update sampling vars every sigma_update_steps iterations
+    sigma_update_steps :: Int   # update sampling vars every sigma_update_steps iterations
     sigma_adjust_by :: Float64   # adjust sampling vars by sigma_adjust_by percent up or down
-    smpl_iters :: Int64   # max number of trials to get a new parameter from MvNormal that lies within support
-    min_improve  :: Float64
+    smpl_iters :: Int   # max number of trials to get a new parameter from MvNormal that lies within support
+    min_improve  :: Float64  
     batches  :: Vector{UnitRange{Int}}  # vector of indices to update together.
 
     """
         BGPChain(id::Int=1,n::Int=10;
-            m::MProb=MProb(),sig::Float64=0.5,upd::Int64=10,upd_by::Float64=0.01,smpl_iters::Int=1000,
+            m::MProb=MProb(),sig::Float64=0.5,upd::Int=10,upd_by::Float64=0.01,smpl_iters::Int=1000,
             min_improve::Float64=10.0,acc_tuner::Float64=2.0,batch_size=1)
 
     Constructor of a BGPChain. Keyword args:
@@ -138,7 +138,7 @@ Returns a `DataFrame` with a history of the chain.
 function history(c::BGPChain)
     N = length(c.evals)
     cols = Any[]
-    # d = DataFrame([Int64,Float64,Bool,Int64],[:iter,:value,:accepted,:prob],N)
+    # d = DataFrame([Int,Float64,Bool,Int],[:iter,:value,:accepted,:prob],N)
     d = DataFrame()
     d.iter = collect(1:c.iter)
     d[!,:exchanged] = c.exchanged
@@ -693,7 +693,7 @@ function exchangeMoves!(algo::MAlgoBGP)
 	# for ch in 1:algo["N"]
  #        e1 = getLastAccepted(algo.chains[ch])
 	# 	# 1) find all other BGPChains with value +/- x% of BGPChain ch
-	# 	close = Int64[]  # vector of indices of "close" BGPChains
+	# 	close = Int[]  # vector of indices of "close" BGPChains
 	# 	for ch2 in 1:algo["N"]
 	# 		if ch != ch2
 	# 			e2 = getLastAccepted(algo.chains[ch2])
@@ -751,12 +751,12 @@ end
 
 
 """
-  extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
+  extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int)
 
 Starting from an existing [`MAlgoBGP`](@ref), allow for additional iterations
 by extending a specific chain. This function is used to restart a previous estimation run via [`restart!`](@ref)
 """
-function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
+function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int)
 
   initialIter = algo.i
   finalIter = algo.i + extraIter
@@ -796,15 +796,15 @@ function extendBGPChain!(chain::BGPChain, algo::MAlgoBGP, extraIter::Int64)
 end
 
 """
-  restart!(algo::MAlgoBGP, extraIter::Int64)
+  restart!(algo::MAlgoBGP, extraIter::Int)
 
 Starting from an existing AlgoBGP, restart the optimization from where it
 stopped. Add `extraIter` additional steps to the optimization process.
 """
-function restart!(algo::MAlgoBGP, extraIter::Int64)
+function restart!(algo::MAlgoBGP, extraIter::Int)
 
   @info "Restarting estimation loop with $(extraIter) iterations."
-  @info "Current best value on chain 1 before restarting $(SMM.summary(algo)[:best_val][1])"
+  @info "Current best value on chain 1 before restarting $(SMM.summary(algo)[!,:best_val][1])"
   t0 = time()
 
   # Minus 1, to follow the SMM convention
