@@ -774,7 +774,7 @@ end
 Starting from an existing AlgoBGP, restart the optimization from where it
 stopped. Add `extraIter` additional steps to the optimization process.
 """
-function restart!(algo::MAlgoBGP, extraIter::Int64)
+function restart!(algo::MAlgoBGP, extraIter::Int)
 
   @info "Restarting estimation loop with $(extraIter) iterations."
   @info "Current best value on chain 1 before restarting $(SMM.summary(algo)[!,:best_val][1])"
